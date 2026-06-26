@@ -27,30 +27,6 @@
 <main id="graphView" class="layout">
     <aside class="sidebar">
         <section class="panel">
-            <h2>Pohled</h2>
-            <label>Uložený view</label>
-            <select id="viewSelect"></select>
-            <div class="view-actions">
-                <button id="btnSaveView">Uložit view</button>
-                <button id="btnCloneView">Nový view z aktuálního</button>
-                <button id="btnDeleteView" class="danger subtle-danger">Smazat view</button>
-            </div>
-
-            <label>Dynamický režim</label>
-            <select id="modeSelect">
-                <option value="saved">Uložený / celý graf</option>
-                <option value="hardware">Hardware view</option>
-                <option value="data">Data view</option>
-                <option value="process">Process view</option>
-                <option value="supplier">Supplier view</option>
-                <option value="critical">Kritická a vysoká aktiva</option>
-                <option value="personal_data">Osobní data</option>
-                <option value="impact">Impact vybraného uzlu</option>
-            </select>
-            <button id="btnReload">Načíst graf</button>
-        </section>
-
-        <section class="panel">
             <h2>Filtr v UI</h2>
             <input id="searchBox" type="search" placeholder="Hledat název / popis...">
             <label>Typ uzlu</label>
@@ -84,6 +60,30 @@
             <div><span class="dot data"></span> data</div>
             <div><span class="dot process"></span> proces</div>
             <div><span class="dot supplier"></span> dodavatel</div>
+        </section>
+
+        <section class="panel">
+            <h2>Pohled</h2>
+            <label>Uložený view</label>
+            <select id="viewSelect"></select>
+            <div class="view-actions">
+                <button id="btnSaveView">Uložit view</button>
+                <button id="btnCloneView">Nový view z aktuálního</button>
+                <button id="btnDeleteView" class="danger subtle-danger">Smazat view</button>
+            </div>
+
+            <label>Dynamický režim</label>
+            <select id="modeSelect">
+                <option value="saved">Uložený / celý graf</option>
+                <option value="hardware">Hardware view</option>
+                <option value="data">Data view</option>
+                <option value="process">Process view</option>
+                <option value="supplier">Supplier view</option>
+                <option value="critical">Kritická a vysoká aktiva</option>
+                <option value="personal_data">Osobní data</option>
+                <option value="impact">Impact vybraného uzlu</option>
+            </select>
+            <button id="btnReload">Načíst graf</button>
         </section>
     </aside>
 
