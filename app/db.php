@@ -8,24 +8,167 @@ function app_config(): array
     return $config;
 }
 
-function db(): PDO
+function app_data_dir(): string
 {
-    static $pdo = null;
-    if ($pdo instanceof PDO) {
-        return $pdo;
+    $config = app_config();
+    $base = $config['data_dir'] ?? null;
+    if (!$base) {
+        $legacyPath = $config['db_path'] ?? (getenv('DORA_DB_PATH') ?: __DIR__ . '/../data/assets.sqlite');
+        $base = dirname($legacyPath);
+    }
+    return rtrim($base, '/');
+}
+
+function models_dir(): string
+{
+    return app_data_dir() . '/models';
+}
+
+function deleted_models_dir(): string
+{
+    return app_data_dir() . '/deleted';
+}
+
+function current_model_file(): string
+{
+    return app_data_dir() . '/current_model.txt';
+}
+
+function default_model_name(): string
+{
+    return 'default.sqlite';
+}
+
+function sanitize_model_name(string $name): string
+{
+    $name = trim($name);
+    $name = preg_replace('/\.sqlite$/i', '', $name);
+    $name = preg_replace('/[^A-Za-z0-9_-]+/', '-', $name);
+    $name = trim($name, '-_');
+    if ($name === '') {
+        json_response(['ok' => false, 'error' => 'Neplatný název modelu'], 400);
+    }
+    return $name . '.sqlite';
+}
+
+function validate_model_file_name(string $name): string
+{
+    $name = trim(basename($name));
+    if (!preg_match('/^[A-Za-z0-9_-]+\.sqlite$/', $name)) {
+        json_response(['ok' => false, 'error' => 'Neplatný název modelu'], 400);
+    }
+    return $name;
+}
+
+function model_path(string $name): string
+{
+    return models_dir() . '/' . validate_model_file_name($name);
+}
+
+function ensure_app_dirs(): void
+{
+    foreach ([app_data_dir(), models_dir(), deleted_models_dir()] as $dir) {
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+    }
+}
+
+function ensure_model_environment(): void
+{
+    ensure_app_dirs();
+
+    $defaultPath = model_path(default_model_name());
+    $legacyPath = app_config()['db_path'] ?? (app_data_dir() . '/assets.sqlite');
+
+    if (!file_exists($defaultPath)) {
+        if ($legacyPath && file_exists($legacyPath)) {
+            copy($legacyPath, $defaultPath);
+        } else {
+            init_sqlite_file($defaultPath);
+        }
     }
 
-    $config = app_config();
-    $path = $config['db_path'];
+    $current = null;
+    if (file_exists(current_model_file())) {
+        $current = trim((string)file_get_contents(current_model_file()));
+    }
+    if (!$current || !preg_match('/^[A-Za-z0-9_-]+\.sqlite$/', $current) || !file_exists(model_path($current))) {
+        file_put_contents(current_model_file(), default_model_name());
+    }
+}
+
+function init_sqlite_file(string $path): void
+{
     $dir = dirname($path);
     if (!is_dir($dir)) {
         mkdir($dir, 0775, true);
+    }
+    $pdo = new PDO('sqlite:' . $path, null, null, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    ]);
+    $pdo->exec('PRAGMA foreign_keys = ON');
+    init_db($pdo);
+}
+
+function list_models(): array
+{
+    ensure_model_environment();
+    $files = glob(models_dir() . '/*.sqlite') ?: [];
+    $models = array_map('basename', $files);
+    sort($models, SORT_NATURAL | SORT_FLAG_CASE);
+    return $models;
+}
+
+function current_model_name(): string
+{
+    ensure_model_environment();
+    return trim((string)file_get_contents(current_model_file())) ?: default_model_name();
+}
+
+function set_current_model(string $name): void
+{
+    $name = validate_model_file_name($name);
+    if (!file_exists(model_path($name))) {
+        json_response(['ok' => false, 'error' => 'Model neexistuje'], 404);
+    }
+    file_put_contents(current_model_file(), $name);
+}
+
+function unique_model_name(string $requested): string
+{
+    $requested = sanitize_model_name($requested);
+    $base = preg_replace('/\.sqlite$/', '', $requested);
+    $candidate = $requested;
+    $i = 2;
+    while (file_exists(model_path($candidate))) {
+        $candidate = $base . '-' . gmdate('Ymd-His') . ($i > 2 ? '-' . $i : '') . '.sqlite';
+        $i++;
+    }
+    return $candidate;
+}
+
+function current_db_path(): string
+{
+    return model_path(current_model_name());
+}
+
+function db(): PDO
+{
+    static $pdo = null;
+    static $pdoPath = null;
+
+    $path = current_db_path();
+    if ($pdo instanceof PDO && $pdoPath === $path) {
+        return $pdo;
     }
 
     $pdo = new PDO('sqlite:' . $path, null, null, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
+    $pdoPath = $path;
     $pdo->exec('PRAGMA foreign_keys = ON');
     $pdo->exec('PRAGMA journal_mode = WAL');
     $pdo->exec('PRAGMA busy_timeout = 5000');
@@ -39,9 +182,7 @@ function init_db(PDO $pdo): void
     $schema = file_get_contents(__DIR__ . '/schema.sql');
     $pdo->exec($schema);
     ensure_schema_upgrades($pdo);
-    seed_demo_data($pdo);
 }
-
 
 function ensure_schema_upgrades(PDO $pdo): void
 {
@@ -63,50 +204,6 @@ function ensure_schema_upgrades(PDO $pdo): void
         if (!isset($columns[$name])) {
             $pdo->exec('ALTER TABLE nodes ADD COLUMN ' . $name . ' ' . $type);
         }
-    }
-}
-
-function seed_demo_data(PDO $pdo): void
-{
-    $count = (int)$pdo->query('SELECT COUNT(*) FROM nodes')->fetchColumn();
-    if ($count > 0) {
-        return;
-    }
-
-    $now = gmdate('c');
-    $nodes = [
-        ['hardware', 'scsap8cp', 'Produkční SAP server', 'high', 'prod'],
-        ['software', 'SAP ECC', 'Core SAP systém', 'critical', 'prod'],
-        ['software', 'ALICE', 'Pojistný systém / funkcionalita v SAP', 'critical', 'prod'],
-        ['data', 'Pojistné smlouvy', 'Data pojistných smluv a klientů', 'critical', 'prod'],
-        ['process', 'Správa smluv', 'Proces správy pojistných smluv', 'critical', 'prod'],
-        ['supplier', 'SV Informatik', 'Poskytovatel ICT služeb', 'high', 'prod'],
-    ];
-
-    $stmt = $pdo->prepare('INSERT INTO nodes (type, name, description, criticality, environment, vendor_manufacturer, confidentiality, integrity_level, availability, data_sensitivity, status, lifecycle_state, rto_hours, rpo_hours, mtd_hours, threats, risk_scenarios, risk_likelihood, risk_impact, risk_controls, residual_risk, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    foreach ($nodes as $n) {
-        $vendor = $n[0] === 'supplier' ? $n[1] : ($n[1] === 'SAP ECC' || $n[1] === 'ALICE' ? 'SAP' : null);
-        $stmt->execute([$n[0], $n[1], $n[2], $n[3], $n[4], $vendor, 'high', 'high', 'high', $n[0] === 'data' ? 'private' : null, 'active', 'production', $n[3] === 'critical' ? 8 : 24, $n[3] === 'critical' ? 24 : 48, $n[3] === 'critical' ? 48 : 72, 'Výpadek, nedostupnost, ztráta nebo kompromitace služby/dat', 'Narušení podpůrného ICT aktiva může omezit dostupnost procesu nebo zpracování dat.', $n[3] === 'critical' ? 3 : 2, $n[3] === 'critical' ? 4 : 3, 'Zálohování, monitoring, provozní dohled, řízení změn', 'medium', $now, $now]);
-    }
-
-    $edges = [
-        [1, 2, 'hosts', 'Server hostuje SAP ECC'],
-        [2, 3, 'contains', 'SAP ECC obsahuje ALICE'],
-        [3, 4, 'processes_data', 'ALICE zpracovává pojistné smlouvy'],
-        [3, 5, 'supports_process', 'ALICE podporuje správu smluv'],
-        [2, 6, 'provided_by', 'SAP provozně poskytuje SV Informatik'],
-    ];
-    $stmt = $pdo->prepare('INSERT INTO edges (source_node_id, target_node_id, type, description, criticality, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    foreach ($edges as $e) {
-        $stmt->execute([$e[0], $e[1], $e[2], $e[3], 'high', $now, $now]);
-    }
-
-    $positions = [
-        [1, 1, 80, 150], [1, 2, 320, 150], [1, 3, 560, 150], [1, 4, 800, 60], [1, 5, 800, 240], [1, 6, 320, 360],
-    ];
-    $stmt = $pdo->prepare('INSERT OR REPLACE INTO view_node_positions (view_id, node_id, x, y) VALUES (?, ?, ?, ?)');
-    foreach ($positions as $p) {
-        $stmt->execute($p);
     }
 }
 

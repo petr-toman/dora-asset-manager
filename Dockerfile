@@ -13,6 +13,6 @@ COPY app/ /var/www/html/
 RUN mkdir -p /data \
     && chown -R www-data:www-data /data /var/www/html
 
-ENV DORA_DB_PATH=/data/assets.sqlite
+ENV DORA_DATA_DIR=/data
 
 EXPOSE 80

@@ -14,11 +14,15 @@ Aplikace poběží na:
 http://localhost:8888
 ```
 
-SQLite databáze je uložená v persistentním adresáři:
+SQLite modely/databáze jsou uložené v persistentním adresáři:
 
 ```text
-./data/assets.sqlite
+./data/models/*.sqlite
+./data/current_model.txt
+./data/deleted/*.sqlite
 ```
+
+Při prvním spuštění se vytvoří `default.sqlite`. Pokud aplikace najde starší `./data/assets.sqlite`, zkopíruje jej do `./data/models/default.sqlite` jako výchozí model.
 
 ## Funkce prototypu
 
@@ -34,6 +38,9 @@ SQLite databáze je uložená v persistentním adresáři:
 - nový view z aktuálního včetně zkopírování pozic
 - smazání view s ochranou výchozího view `Celková mapa`
 - export JSON
+- více modelů/projektů jako samostatné SQLite dokumenty
+- nový prázdný model, kopie aktuálního modelu, přepnutí modelu, bezpečné smazání do koše
+- stažení/nahrání SQLite DB souboru pro výměnu modelů mezi instancemi aplikace
 - excel-like tabulka assetů s editací buněk, filtrováním, sortováním a copy/paste přes TSV
 - excel-like tabulka vazeb s editací buněk, filtrováním, sortováním a copy/paste přes TSV
 - tisknutelný report: `/report.php`
@@ -84,3 +91,18 @@ Grafové view obsahuje volbu **Snap to grid** v panelu Pohled. Při zapnutí se 
 ## Reporty
 
 HTML/PDF report otevřeš tlačítkem `Report / PDF`. V reportu je tlačítko `Export DOCX / Word`, případně lze přímo použít `/report_docx.php`. DOCX export vyžaduje PHP rozšíření `zip`, které Dockerfile v této verzi instaluje.
+
+
+## v14 - Modely / projekty jako SQLite dokumenty
+
+Aplikace nyní podporuje více samostatných modelů/projektů. Každý model je jeden SQLite soubor v `./data/models`. Aktuální model je uložen v `./data/current_model.txt`.
+
+V levém panelu je sekce **Model / projekt**:
+
+- `Nový prázdný` vytvoří nový prázdný SQLite model bez demo dat.
+- `Kopie aktuálního` vytvoří kopii aktuálního modelu a přepne se na ni. Defaultní název je původní název + `kopie` + časové razítko.
+- `Smazat model` přesune model do `./data/deleted`, fyzicky jej okamžitě nemaže. `default.sqlite` nelze smazat.
+- `Stáhnout DB` stáhne aktuální SQLite soubor.
+- `Nahrát DB` nahraje SQLite soubor do `./data/models`, zkontroluje duplicitu názvu a přepne se na importovaný model.
+
+Tento režim je záměrně podobný práci s dokumentem ve Wordu/Excelu: aplikace je editor, SQLite soubor je dokument.

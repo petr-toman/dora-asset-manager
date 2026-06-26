@@ -477,3 +477,26 @@ select option { color: #0f172a; background: #f8fafc; }
 .snap-box input[type="number"] {
     margin-top: 5px;
 }
+
+/* v14 model/document manager */
+.model-panel code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 11px;
+    background: rgba(15, 23, 42, .06);
+    border: 1px solid rgba(148, 163, 184, .35);
+    border-radius: 6px;
+    padding: 1px 5px;
+}
+.model-actions {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+.model-actions button { width: 100%; }
+.hint {
+    margin: 10px 0 0;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.45;
+}

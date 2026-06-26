@@ -52,6 +52,87 @@ async function loadViews() {
     select.value = currentViewId;
 }
 
+async function loadModels() {
+    const data = await fetchJson(`${api}?action=get_models`);
+    const select = $('#modelSelect');
+    if (!select) return data;
+    select.innerHTML = '';
+    data.models.forEach(name => {
+        const label = name === data.default ? `${name} (default)` : name;
+        select.append(new Option(label, name));
+    });
+    select.value = data.current;
+    return data;
+}
+
+async function reloadAfterModelChange(message) {
+    selected = null;
+    currentViewId = 1;
+    await loadModels();
+    await loadViews();
+    $('#viewSelect').value = currentViewId;
+    await loadGraph();
+    if (!$('#assetsTableView').classList.contains('hidden')) await loadAssetsTable();
+    if (!$('#edgesTableView').classList.contains('hidden')) await loadEdgesTable();
+    updateSelectedInfo();
+    toast(message);
+}
+
+async function switchModel() {
+    const name = $('#modelSelect').value;
+    await postJson('switch_model', { name });
+    await reloadAfterModelChange(`Model přepnut: ${name}`);
+}
+
+async function createNewModel() {
+    const name = prompt('Název nového prázdného modelu:', `novy-model-${new Date().toISOString().slice(0,10)}`);
+    if (!name) return;
+    const res = await postJson('create_model', { name });
+    await reloadAfterModelChange(`Vytvořen nový model: ${res.model}`);
+}
+
+async function copyCurrentModel() {
+    const current = $('#modelSelect').value || 'model.sqlite';
+    const base = current.replace(/\.sqlite$/i, '');
+    const def = `${base}-kopie-${new Date().toISOString().replace(/[-:T]/g,'').slice(0,14)}`;
+    const name = prompt('Název kopie aktuálního modelu:', def);
+    if (!name) return;
+    const res = await postJson('copy_model', { name });
+    await reloadAfterModelChange(`Vytvořena kopie modelu: ${res.model}`);
+}
+
+async function deleteCurrentModel() {
+    const name = $('#modelSelect').value;
+    if (!name) return;
+    if (!confirm(`Smazat model „${name}“? Soubor se přesune do /data/deleted, assety z ostatních modelů zůstanou beze změny.`)) return;
+    const res = await postJson('delete_model', { name });
+    await reloadAfterModelChange(`Model přesunut do koše: ${res.deleted}`);
+}
+
+function downloadCurrentModel() {
+    const name = $('#modelSelect').value || '';
+    window.location.href = `${api}?action=download_model&name=${encodeURIComponent(name)}`;
+}
+
+function openUploadModelDialog() {
+    $('#modelUploadInput').value = '';
+    $('#modelUploadInput').click();
+}
+
+async function uploadModelFile(evt) {
+    const file = evt.target.files && evt.target.files[0];
+    if (!file) return;
+    const suggested = file.name.replace(/\.(db|sqlite)$/i, '') || 'import-model';
+    const name = prompt('Název importovaného modelu:', suggested);
+    if (!name) return;
+    const form = new FormData();
+    form.append('db_file', file);
+    form.append('name', name);
+    const res = await fetchJson(`${api}?action=upload_model`, { method: 'POST', body: form });
+    await reloadAfterModelChange(`Model importován: ${res.model}`);
+}
+
+
 function nodeLabel(n) {
     const type = meta.node_types[n.type] || n.type;
     const crit = n.criticality ? `\n${n.criticality}` : '';
@@ -816,6 +897,7 @@ async function copyWholeTable(tableId) {
 
 async function main() {
     await loadMeta();
+    await loadModels();
     await loadViews();
     initSnapControls();
     await loadGraph();
@@ -847,6 +929,13 @@ async function main() {
     $('#btnSaveView').addEventListener('click', openSaveViewModal);
     $('#btnCloneView').addEventListener('click', openCloneViewModal);
     $('#btnDeleteView').addEventListener('click', deleteCurrentView);
+    $('#modelSelect').addEventListener('change', switchModel);
+    $('#btnNewModel').addEventListener('click', createNewModel);
+    $('#btnCopyModel').addEventListener('click', copyCurrentModel);
+    $('#btnDeleteModel').addEventListener('click', deleteCurrentModel);
+    $('#btnDownloadModel').addEventListener('click', downloadCurrentModel);
+    $('#btnUploadModel').addEventListener('click', openUploadModelDialog);
+    $('#modelUploadInput').addEventListener('change', uploadModelFile);
     $('#btnClearFilter').addEventListener('click', () => { $('#searchBox').value=''; $('#typeFilter').value=''; $('#criticalityFilter').value=''; applyUiFilter(); });
     $('#searchBox').addEventListener('input', applyUiFilter);
     $('#typeFilter').addEventListener('change', applyUiFilter);

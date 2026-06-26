@@ -6,6 +6,34 @@ try {
     $action = $_GET['action'] ?? $_POST['action'] ?? 'get_graph';
 
     switch ($action) {
+        case 'get_models':
+            get_models_api();
+            break;
+
+        case 'create_model':
+            create_model_api();
+            break;
+
+        case 'copy_model':
+            copy_model_api($pdo);
+            break;
+
+        case 'switch_model':
+            switch_model_api();
+            break;
+
+        case 'delete_model':
+            delete_model_api();
+            break;
+
+        case 'upload_model':
+            upload_model_api();
+            break;
+
+        case 'download_model':
+            download_model_api($pdo);
+            break;
+
         case 'meta':
             json_response([
                 'ok' => true,
@@ -98,6 +126,132 @@ try {
     }
 } catch (Throwable $e) {
     json_response(['ok' => false, 'error' => $e->getMessage()], 500);
+}
+
+
+function get_models_api(): void
+{
+    json_response([
+        'ok' => true,
+        'current' => current_model_name(),
+        'default' => default_model_name(),
+        'models' => list_models(),
+    ]);
+}
+
+function create_model_api(): void
+{
+    $data = read_json_body();
+    $name = unique_model_name((string)($data['name'] ?? 'novy-model'));
+    $path = model_path($name);
+    init_sqlite_file($path);
+    set_current_model($name);
+    json_response(['ok' => true, 'model' => $name, 'current' => $name, 'models' => list_models()]);
+}
+
+function copy_model_api(PDO $pdo): void
+{
+    $data = read_json_body();
+    $source = current_model_name();
+    $base = preg_replace('/\.sqlite$/', '', $source);
+    $requested = trim((string)($data['name'] ?? ''));
+    if ($requested === '') {
+        $requested = $base . '-kopie-' . gmdate('Ymd-His');
+    }
+    $target = unique_model_name($requested);
+    $pdo->exec('PRAGMA wal_checkpoint(FULL)');
+    if (!copy(model_path($source), model_path($target))) {
+        json_response(['ok' => false, 'error' => 'Kopii modelu se nepodařilo vytvořit'], 500);
+    }
+    set_current_model($target);
+    json_response(['ok' => true, 'model' => $target, 'current' => $target, 'models' => list_models()]);
+}
+
+function switch_model_api(): void
+{
+    $data = read_json_body();
+    $name = validate_model_file_name((string)($data['name'] ?? ''));
+    set_current_model($name);
+    json_response(['ok' => true, 'current' => $name, 'models' => list_models()]);
+}
+
+function delete_model_api(): void
+{
+    $data = read_json_body();
+    $name = validate_model_file_name((string)($data['name'] ?? ''));
+    $models = list_models();
+    if ($name === default_model_name()) {
+        json_response(['ok' => false, 'error' => 'Defaultní model nelze smazat'], 400);
+    }
+    if (count($models) <= 1) {
+        json_response(['ok' => false, 'error' => 'Poslední model nelze smazat'], 400);
+    }
+    $path = model_path($name);
+    if (!file_exists($path)) {
+        json_response(['ok' => false, 'error' => 'Model neexistuje'], 404);
+    }
+    $deletedName = preg_replace('/\.sqlite$/', '', $name) . '.deleted-' . gmdate('Ymd-His') . '.sqlite';
+    $deletedPath = deleted_models_dir() . '/' . $deletedName;
+    if (!rename($path, $deletedPath)) {
+        json_response(['ok' => false, 'error' => 'Model se nepodařilo přesunout do koše'], 500);
+    }
+    foreach (['-wal', '-shm'] as $suffix) {
+        $extra = $path . $suffix;
+        if (file_exists($extra)) {
+            @rename($extra, $deletedPath . $suffix);
+        }
+    }
+    if (current_model_name() === $name) {
+        set_current_model(default_model_name());
+    }
+    json_response(['ok' => true, 'deleted' => $deletedName, 'current' => current_model_name(), 'models' => list_models()]);
+}
+
+function upload_model_api(): void
+{
+    if (!isset($_FILES['db_file']) || !is_uploaded_file($_FILES['db_file']['tmp_name'])) {
+        json_response(['ok' => false, 'error' => 'Nebyl nahrán žádný SQLite soubor'], 400);
+    }
+    $file = $_FILES['db_file'];
+    if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+        json_response(['ok' => false, 'error' => 'Upload selhal'], 400);
+    }
+    $tmp = $file['tmp_name'];
+    $fh = fopen($tmp, 'rb');
+    $header = $fh ? fread($fh, 16) : false;
+    if ($fh) fclose($fh);
+    if ($header !== "SQLite format 3\x00") {
+        json_response(['ok' => false, 'error' => 'Soubor nevypadá jako SQLite databáze'], 400);
+    }
+    $requested = trim((string)($_POST['name'] ?? ''));
+    if ($requested === '') {
+        $requested = (string)($file['name'] ?? 'import.sqlite');
+    }
+    $name = unique_model_name($requested);
+    $target = model_path($name);
+    if (!move_uploaded_file($tmp, $target)) {
+        json_response(['ok' => false, 'error' => 'Soubor se nepodařilo uložit'], 500);
+    }
+    init_sqlite_file($target);
+    set_current_model($name);
+    json_response(['ok' => true, 'model' => $name, 'current' => $name, 'models' => list_models()]);
+}
+
+function download_model_api(PDO $pdo): void
+{
+    $name = isset($_GET['name']) && $_GET['name'] !== '' ? validate_model_file_name((string)$_GET['name']) : current_model_name();
+    $path = model_path($name);
+    if (!file_exists($path)) {
+        json_response(['ok' => false, 'error' => 'Model neexistuje'], 404);
+    }
+    if ($name === current_model_name()) {
+        $pdo->exec('PRAGMA wal_checkpoint(FULL)');
+    }
+    header('Content-Type: application/vnd.sqlite3');
+    header('Content-Disposition: attachment; filename="' . addslashes($name) . '"');
+    header('Content-Length: ' . filesize($path));
+    readfile($path);
+    exit;
 }
 
 function node_types(): array

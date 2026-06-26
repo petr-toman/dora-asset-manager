@@ -92,6 +92,21 @@
                 <button id="btnSnapNow">Zarovnat aktuální view</button>
             </div>
         </section>
+
+        <section class="panel model-panel">
+            <h2>Model / projekt</h2>
+            <label>Aktuální model</label>
+            <select id="modelSelect"></select>
+            <div class="model-actions">
+                <button id="btnNewModel">Nový prázdný</button>
+                <button id="btnCopyModel">Kopie aktuálního</button>
+                <button id="btnDeleteModel" class="danger subtle-danger">Smazat model</button>
+                <button id="btnDownloadModel">Stáhnout DB</button>
+                <button id="btnUploadModel">Nahrát DB</button>
+                <input id="modelUploadInput" type="file" accept=".sqlite,.db,application/vnd.sqlite3,application/octet-stream" class="hidden">
+            </div>
+            <p class="hint">Každý model je samostatný SQLite soubor v <code>/data/models</code>. Smazání přesune soubor do <code>/data/deleted</code>.</p>
+        </section>
     </aside>
 
     <section class="canvas-wrap">
