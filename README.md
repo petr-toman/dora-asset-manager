@@ -47,3 +47,18 @@ V aplikaci klikni na **Report / PDF**. Otevře se HTML report. Tlačítko **Tisk
 ## Poznámka k SQLite
 
 Prototyp je navržený pro single-user režim. Pro víceuživatelský provoz bude vhodné migrovat SQLite na MariaDB/PostgreSQL, ale datový model je k tomu připravený.
+
+## v5 - tabulkový staging editor
+
+Tabulkové pohledy **Assety tabulka** a **Vazby tabulka** nyní fungují jako staging editor:
+
+- změny se neukládají po opuštění buňky,
+- nové řádky se přidávají tlačítkem `+ Řádek`,
+- řádky se mažou checkboxem vlevo a tlačítkem `Smazat řádku`,
+- změny se zapisují do SQLite až tlačítkem `Save`,
+- před uložením proběhne validace povinných polí a číselníků,
+- neplatné buňky se zvýrazní červeně,
+- asset musí mít vyplněný `type` a `name`,
+- vazba musí mít `source_node_id`, `target_node_id` a `type`,
+- vložení z Excelu funguje přes TSV/clipboard; pokud vložený blok přesahuje aktuální počet řádků, tabulka automaticky přidá nové řádky.
+

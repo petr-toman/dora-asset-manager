@@ -81,6 +81,14 @@ try {
             get_edges_table($pdo);
             break;
 
+        case 'batch_save_nodes':
+            batch_save_nodes($pdo);
+            break;
+
+        case 'batch_save_edges':
+            batch_save_edges($pdo);
+            break;
+
         case 'change_log':
             change_log($pdo);
             break;
@@ -245,9 +253,7 @@ function save_node(PDO $pdo): void
     $now = now_iso();
 
     $fields = ['type','name','description','owner','business_owner','technical_owner','criticality','confidentiality','integrity_level','availability','rto_hours','rpo_hours','mtd_hours','data_sensitivity','data_categories','environment','location','status','lifecycle_state','good_to_know','last_reviewed_at','review_frequency_months','threats','risk_scenarios','risk_likelihood','risk_impact','risk_controls','residual_risk'];
-    if (trim((string)($data['name'] ?? '')) === '') {
-        json_response(['ok' => false, 'error' => 'Name is required'], 400);
-    }
+    validate_node_payload($data);
 
     $before = null;
     if ($id) {
@@ -316,10 +322,8 @@ function save_edge(PDO $pdo): void
     $id = isset($data['id']) && $data['id'] !== '' ? (int)$data['id'] : null;
     $source = (int)($data['source_node_id'] ?? 0);
     $target = (int)($data['target_node_id'] ?? 0);
-    $type = trim((string)($data['type'] ?? 'depends_on'));
-    if (!$source || !$target || $source === $target) {
-        json_response(['ok' => false, 'error' => 'Source and target are required and must differ'], 400);
-    }
+    $type = trim((string)($data['type'] ?? ''));
+    validate_edge_payload($pdo, $data);
     $now = now_iso();
     $before = null;
 
@@ -494,6 +498,181 @@ function export_json(PDO $pdo): void
         'view_node_positions' => $pdo->query('SELECT * FROM view_node_positions ORDER BY view_id, node_id')->fetchAll(),
         'change_log' => $pdo->query('SELECT * FROM change_log ORDER BY id')->fetchAll(),
     ]);
+}
+
+
+function validate_node_payload(array $data): void
+{
+    $name = trim((string)($data['name'] ?? ''));
+    $type = trim((string)($data['type'] ?? ''));
+    if ($name === '') json_response(['ok' => false, 'error' => 'Název assetu je povinný'], 400);
+    if ($type === '') json_response(['ok' => false, 'error' => 'Typ assetu je povinný'], 400);
+    if (!array_key_exists($type, node_types())) json_response(['ok' => false, 'error' => 'Neplatný typ assetu: ' . $type], 400);
+    validate_choice($data, 'criticality', ['low','medium','high','critical']);
+    foreach (['confidentiality','integrity_level','availability'] as $f) validate_choice($data, $f, ['low','medium','high','critical']);
+    validate_choice($data, 'data_sensitivity', ['public','private','secret']);
+    validate_choice($data, 'environment', ['prod','test','dev','archive','unknown']);
+    validate_choice($data, 'status', ['active','planned','retired','unknown']);
+    validate_choice($data, 'lifecycle_state', ['production','test','development','archived','unknown']);
+    foreach (['rto_hours','rpo_hours','mtd_hours','review_frequency_months'] as $f) validate_non_negative_number($data, $f);
+    foreach (['risk_likelihood','risk_impact'] as $f) {
+        if (($data[$f] ?? '') === '' || $data[$f] === null) continue;
+        $v = (int)$data[$f];
+        if ($v < 1 || $v > 5) json_response(['ok' => false, 'error' => "$f musí být 1–5"], 400);
+    }
+}
+
+function validate_edge_payload(PDO $pdo, array $data): void
+{
+    $source = (int)($data['source_node_id'] ?? 0);
+    $target = (int)($data['target_node_id'] ?? 0);
+    $type = trim((string)($data['type'] ?? ''));
+    if (!$source) json_response(['ok' => false, 'error' => 'Zdroj ID je povinný'], 400);
+    if (!$target) json_response(['ok' => false, 'error' => 'Cíl ID je povinný'], 400);
+    if ($source === $target) json_response(['ok' => false, 'error' => 'Zdroj a cíl vazby se nesmí shodovat'], 400);
+    if ($type === '') json_response(['ok' => false, 'error' => 'Typ vazby je povinný'], 400);
+    if (!array_key_exists($type, edge_types())) json_response(['ok' => false, 'error' => 'Neplatný typ vazby: ' . $type], 400);
+    validate_choice($data, 'criticality', ['low','medium','high','critical']);
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM nodes WHERE id = ?');
+    $stmt->execute([$source]);
+    if ((int)$stmt->fetchColumn() === 0) json_response(['ok' => false, 'error' => 'Zdrojový uzel neexistuje: ' . $source], 400);
+    $stmt->execute([$target]);
+    if ((int)$stmt->fetchColumn() === 0) json_response(['ok' => false, 'error' => 'Cílový uzel neexistuje: ' . $target], 400);
+}
+
+function validate_choice(array $data, string $field, array $allowed): void
+{
+    $v = trim((string)($data[$field] ?? ''));
+    if ($v !== '' && !in_array($v, $allowed, true)) json_response(['ok' => false, 'error' => "Neplatná hodnota $field: $v"], 400);
+}
+
+function validate_non_negative_number(array $data, string $field): void
+{
+    $v = $data[$field] ?? '';
+    if ($v === '' || $v === null) return;
+    if (!is_numeric($v) || (float)$v < 0) json_response(['ok' => false, 'error' => "$field musí být nezáporné číslo"], 400);
+}
+
+function batch_save_nodes(PDO $pdo): void
+{
+    $data = read_json_body();
+    $rows = $data['rows'] ?? [];
+    $deleteIds = $data['delete_ids'] ?? [];
+    if (!is_array($rows) || !is_array($deleteIds)) json_response(['ok' => false, 'error' => 'Invalid batch payload'], 400);
+    $pdo->beginTransaction();
+    try {
+        foreach ($deleteIds as $id) {
+            $id = (int)$id;
+            if ($id > 0) {
+                $stmt = $pdo->prepare('SELECT * FROM nodes WHERE id = ?');
+                $stmt->execute([$id]);
+                $before = $stmt->fetch();
+                if ($before) {
+                    $pdo->prepare('DELETE FROM nodes WHERE id = ?')->execute([$id]);
+                    log_change($pdo, 'delete_node', 'node', $id, $before, null);
+                }
+            }
+        }
+        foreach ($rows as $row) upsert_node($pdo, is_array($row) ? $row : []);
+        $pdo->commit();
+        json_response(['ok' => true]);
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+}
+
+function batch_save_edges(PDO $pdo): void
+{
+    $data = read_json_body();
+    $rows = $data['rows'] ?? [];
+    $deleteIds = $data['delete_ids'] ?? [];
+    if (!is_array($rows) || !is_array($deleteIds)) json_response(['ok' => false, 'error' => 'Invalid batch payload'], 400);
+    $pdo->beginTransaction();
+    try {
+        foreach ($deleteIds as $id) {
+            $id = (int)$id;
+            if ($id > 0) {
+                $stmt = $pdo->prepare('SELECT * FROM edges WHERE id = ?');
+                $stmt->execute([$id]);
+                $before = $stmt->fetch();
+                if ($before) {
+                    $pdo->prepare('DELETE FROM edges WHERE id = ?')->execute([$id]);
+                    log_change($pdo, 'delete_edge', 'edge', $id, $before, null);
+                }
+            }
+        }
+        foreach ($rows as $row) upsert_edge($pdo, is_array($row) ? $row : []);
+        $pdo->commit();
+        json_response(['ok' => true]);
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+}
+
+function upsert_node(PDO $pdo, array $data): array
+{
+    validate_node_payload($data);
+    $id = isset($data['id']) && $data['id'] !== '' ? (int)$data['id'] : null;
+    $now = now_iso();
+    $fields = ['type','name','description','owner','business_owner','technical_owner','criticality','confidentiality','integrity_level','availability','rto_hours','rpo_hours','mtd_hours','data_sensitivity','data_categories','environment','location','status','lifecycle_state','good_to_know','last_reviewed_at','review_frequency_months','threats','risk_scenarios','risk_likelihood','risk_impact','risk_controls','residual_risk'];
+    $before = null;
+    if ($id) {
+        $stmt = $pdo->prepare('SELECT * FROM nodes WHERE id = ?');
+        $stmt->execute([$id]);
+        $before = $stmt->fetch();
+        if (!$before) json_response(['ok' => false, 'error' => 'Node not found: ' . $id], 404);
+        $sets = [];
+        $values = [];
+        foreach ($fields as $f) { $sets[] = "$f = ?"; $values[] = normalize_value($data[$f] ?? null); }
+        $sets[] = 'updated_at = ?'; $values[] = $now; $values[] = $id;
+        $pdo->prepare('UPDATE nodes SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($values);
+        $action = 'update_node';
+    } else {
+        $cols = $fields; $cols[] = 'created_at'; $cols[] = 'updated_at';
+        $values = [];
+        foreach ($fields as $f) $values[] = normalize_value($data[$f] ?? null);
+        $values[] = $now; $values[] = $now;
+        $pdo->prepare('INSERT INTO nodes (' . implode(',', $cols) . ') VALUES (' . implode(',', array_fill(0, count($cols), '?')) . ')')->execute($values);
+        $id = (int)$pdo->lastInsertId();
+        $action = 'create_node';
+    }
+    $stmt = $pdo->prepare('SELECT * FROM nodes WHERE id = ?');
+    $stmt->execute([$id]);
+    $after = $stmt->fetch();
+    log_change($pdo, $action, 'node', $id, $before, $after);
+    return $after;
+}
+
+function upsert_edge(PDO $pdo, array $data): array
+{
+    validate_edge_payload($pdo, $data);
+    $id = isset($data['id']) && $data['id'] !== '' ? (int)$data['id'] : null;
+    $source = (int)($data['source_node_id'] ?? 0);
+    $target = (int)($data['target_node_id'] ?? 0);
+    $type = trim((string)($data['type'] ?? ''));
+    $now = now_iso();
+    $before = null;
+    if ($id) {
+        $stmt = $pdo->prepare('SELECT * FROM edges WHERE id = ?');
+        $stmt->execute([$id]);
+        $before = $stmt->fetch();
+        if (!$before) json_response(['ok' => false, 'error' => 'Edge not found: ' . $id], 404);
+        $pdo->prepare('UPDATE edges SET source_node_id=?, target_node_id=?, type=?, description=?, criticality=?, updated_at=? WHERE id=?')
+            ->execute([$source, $target, $type, normalize_value($data['description'] ?? null), normalize_value($data['criticality'] ?? null), $now, $id]);
+        $action = 'update_edge';
+    } else {
+        $pdo->prepare('INSERT INTO edges (source_node_id, target_node_id, type, description, criticality, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+            ->execute([$source, $target, $type, normalize_value($data['description'] ?? null), normalize_value($data['criticality'] ?? null), $now, $now]);
+        $id = (int)$pdo->lastInsertId();
+        $action = 'create_edge';
+    }
+    $stmt = $pdo->prepare('SELECT * FROM edges WHERE id = ?');
+    $stmt->execute([$id]);
+    $after = $stmt->fetch();
+    log_change($pdo, $action, 'edge', $id, $before, $after);
+    return $after;
 }
 
 

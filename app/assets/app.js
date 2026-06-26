@@ -392,7 +392,7 @@ async function deleteCurrentView() {
 }
 
 const nodeColumns = [
-  ['id','ID', false], ['type','Typ', true], ['name','Název', true], ['description','Popis', true],
+  ['_sel','', false], ['id','ID', false], ['type','Typ', true], ['name','Název', true], ['description','Popis', true],
   ['owner','Owner', true], ['business_owner','Business owner', true], ['technical_owner','Technical owner', true],
   ['criticality','Kritičnost', true], ['confidentiality','Důvěrnost', true], ['integrity_level','Integrita', true], ['availability','Dostupnost', true],
   ['rto_hours','RTO h', true], ['rpo_hours','RPO h', true], ['mtd_hours','MTD h', true],
@@ -404,13 +404,36 @@ const nodeColumns = [
 ];
 
 const edgeColumns = [
-  ['id','ID', false], ['source_node_id','Zdroj ID', true], ['source_name','Zdroj název', false],
+  ['_sel','', false], ['id','ID', false], ['source_node_id','Zdroj ID', true], ['source_name','Zdroj název', false],
   ['target_node_id','Cíl ID', true], ['target_name','Cíl název', false], ['type','Typ vazby', true],
   ['criticality','Kritičnost', true], ['description','Popis', true]
 ];
 
 let tableSort = { assetsGrid: { field: 'id', dir: 1 }, edgesGrid: { field: 'id', dir: 1 } };
 let tableRows = { assetsGrid: [], edgesGrid: [] };
+let tableDeleted = { assetsGrid: [], edgesGrid: [] };
+let tempRowSeq = 1;
+
+const numberFields = new Set(['rto_hours','rpo_hours','mtd_hours','review_frequency_months','risk_likelihood','risk_impact','source_node_id','target_node_id']);
+const requiredNodeFields = new Set(['type','name']);
+const requiredEdgeFields = new Set(['source_node_id','target_node_id','type']);
+const choiceSets = {
+    node: {
+        type: () => Object.keys(meta.node_types || {}),
+        criticality: () => ['', ...(meta.criticalities || ['low','medium','high','critical'])],
+        confidentiality: () => ['', ...(meta.cia_levels || ['low','medium','high','critical'])],
+        integrity_level: () => ['', ...(meta.cia_levels || ['low','medium','high','critical'])],
+        availability: () => ['', ...(meta.cia_levels || ['low','medium','high','critical'])],
+        data_sensitivity: () => ['', ...(meta.data_sensitivities || ['public','private','secret'])],
+        environment: () => ['', ...(meta.environments || ['prod','test','dev','archive','unknown'])],
+        status: () => ['', ...(meta.statuses || ['active','planned','retired','unknown'])],
+        lifecycle_state: () => ['', ...(meta.lifecycle_states || ['production','test','development','archived','unknown'])]
+    },
+    edge: {
+        type: () => Object.keys(meta.edge_types || {}),
+        criticality: () => ['', ...(meta.criticalities || ['low','medium','high','critical'])]
+    }
+};
 
 function showView(view) {
     $('#graphView').classList.toggle('hidden', view !== 'graph');
@@ -423,14 +446,16 @@ function showView(view) {
 
 async function loadAssetsTable() {
     const data = await fetchJson(`${api}?action=get_nodes_table`);
-    tableRows.assetsGrid = data.nodes;
-    renderEditableTable('assetsGrid', nodeColumns, data.nodes, 'node');
+    tableRows.assetsGrid = data.nodes.map(r => ({...r, _rowid: 'db-' + r.id, _state: 'clean'}));
+    tableDeleted.assetsGrid = [];
+    renderEditableTable('assetsGrid', nodeColumns, tableRows.assetsGrid, 'node');
 }
 
 async function loadEdgesTable() {
     const data = await fetchJson(`${api}?action=get_edges_table`);
-    tableRows.edgesGrid = data.edges;
-    renderEditableTable('edgesGrid', edgeColumns, data.edges, 'edge');
+    tableRows.edgesGrid = data.edges.map(r => ({...r, _rowid: 'db-' + r.id, _state: 'clean'}));
+    tableDeleted.edgesGrid = [];
+    renderEditableTable('edgesGrid', edgeColumns, tableRows.edgesGrid, 'edge');
 }
 
 function renderEditableTable(tableId, columns, rows, kind) {
@@ -439,22 +464,27 @@ function renderEditableTable(tableId, columns, rows, kind) {
     const filter = ($(filterId)?.value || '').trim().toLowerCase();
     const sort = tableSort[tableId];
     let visibleRows = [...rows];
-    if (filter) {
-        visibleRows = visibleRows.filter(r => Object.values(r).join(' ').toLowerCase().includes(filter));
-    }
+    if (filter) visibleRows = visibleRows.filter(r => Object.entries(r).filter(([k]) => !k.startsWith('_')).map(([,v]) => v ?? '').join(' ').toLowerCase().includes(filter));
     visibleRows.sort((a,b) => compareValues(a[sort.field], b[sort.field]) * sort.dir);
 
     const thead = document.createElement('thead');
     const hr = document.createElement('tr');
     columns.forEach(([field, label]) => {
         const th = document.createElement('th');
-        th.textContent = label + (sort.field === field ? (sort.dir > 0 ? ' ▲' : ' ▼') : '');
-        th.dataset.field = field;
-        th.addEventListener('click', () => {
-            if (tableSort[tableId].field === field) tableSort[tableId].dir *= -1;
-            else tableSort[tableId] = { field, dir: 1 };
-            renderEditableTable(tableId, columns, tableRows[tableId], kind);
-        });
+        if (field === '_sel') {
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.addEventListener('change', () => table.querySelectorAll('tbody input.row-select').forEach(x => x.checked = cb.checked));
+            th.appendChild(cb);
+        } else {
+            th.textContent = label + (sort.field === field ? (sort.dir > 0 ? ' ▲' : ' ▼') : '');
+            th.dataset.field = field;
+            th.addEventListener('click', () => {
+                if (tableSort[tableId].field === field) tableSort[tableId].dir *= -1;
+                else tableSort[tableId] = { field, dir: 1 };
+                renderEditableTable(tableId, columns, tableRows[tableId], kind);
+            });
+        }
         hr.appendChild(th);
     });
     thead.appendChild(hr);
@@ -462,22 +492,32 @@ function renderEditableTable(tableId, columns, rows, kind) {
     const tbody = document.createElement('tbody');
     visibleRows.forEach(row => {
         const tr = document.createElement('tr');
-        tr.dataset.id = row.id;
+        tr.dataset.rowid = row._rowid;
+        if (row._state === 'new') tr.classList.add('new-row');
+        if (row._state === 'dirty') tr.classList.add('dirty-row');
         columns.forEach(([field, label, editable]) => {
             const td = document.createElement('td');
             td.dataset.field = field;
             td.dataset.kind = kind;
-            td.dataset.id = row.id;
-            td.textContent = row[field] ?? '';
-            if (editable) {
-                td.contentEditable = 'true';
-                td.classList.add('editable-cell');
-                td.addEventListener('focus', () => td.dataset.before = td.textContent);
-                td.addEventListener('blur', () => saveTableRowFromCell(td));
-                td.addEventListener('keydown', tableCellKeydown);
-                td.addEventListener('paste', tableCellPaste);
+            td.dataset.rowid = row._rowid;
+            if (field === '_sel') {
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.className = 'row-select';
+                td.appendChild(cb);
+                td.classList.add('selector-cell');
             } else {
-                td.classList.add('readonly-cell');
+                td.textContent = row[field] ?? '';
+                if (editable) {
+                    td.contentEditable = 'true';
+                    td.classList.add('editable-cell');
+                    td.addEventListener('focus', () => td.dataset.before = td.textContent);
+                    td.addEventListener('blur', () => updateRowFromCell(td));
+                    td.addEventListener('keydown', tableCellKeydown);
+                    td.addEventListener('paste', tableCellPaste);
+                } else {
+                    td.classList.add('readonly-cell');
+                }
             }
             tr.appendChild(td);
         });
@@ -498,12 +538,12 @@ function compareValues(a, b) {
 function tableCellKeydown(evt) {
     if (evt.key === 'Enter' && !evt.shiftKey) {
         evt.preventDefault();
-        evt.target.blur();
+        updateRowFromCell(evt.target);
         moveToCell(evt.target, 1, 0);
     }
     if (evt.key === 'Tab') {
         evt.preventDefault();
-        evt.target.blur();
+        updateRowFromCell(evt.target);
         moveToCell(evt.target, 0, evt.shiftKey ? -1 : 1);
     }
 }
@@ -523,10 +563,20 @@ function tableCellPaste(evt) {
     evt.preventDefault();
     const start = evt.target;
     const table = start.closest('table');
-    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    const tableId = table.id;
+    const kind = start.dataset.kind;
+    const columns = kind === 'node' ? nodeColumns : edgeColumns;
+    let rows = Array.from(table.querySelectorAll('tbody tr'));
     const startRow = rows.indexOf(start.parentElement);
     const startCol = Array.from(start.parentElement.children).indexOf(start);
     const matrix = text.replace(/\r/g, '').split('\n').filter((line, idx, arr) => !(idx === arr.length - 1 && line === '')).map(line => line.split('\t'));
+
+    while (startRow + matrix.length > rows.length) {
+        addTableRow(kind, false);
+        renderEditableTable(tableId, columns, tableRows[tableId], kind);
+        rows = Array.from(table.querySelectorAll('tbody tr'));
+    }
+
     matrix.forEach((line, rOff) => {
         const tr = rows[startRow + rOff];
         if (!tr) return;
@@ -534,48 +584,134 @@ function tableCellPaste(evt) {
             const cell = tr.children[startCol + cOff];
             if (cell && cell.isContentEditable) {
                 cell.textContent = value;
-                cell.classList.add('dirty-cell');
+                updateRowFromCell(cell, false);
             }
         });
     });
-    const changedRows = new Set();
-    matrix.forEach((line, rOff) => {
-        const tr = rows[startRow + rOff];
-        if (tr) changedRows.add(tr);
-    });
-    changedRows.forEach(tr => saveTableRow(tr));
+    renderEditableTable(tableId, columns, tableRows[tableId], kind);
+    toast('Data vložena do tabulky. Ulož je tlačítkem Save.');
 }
 
-async function saveTableRowFromCell(td) {
-    if (td.dataset.before === td.textContent) return;
-    td.classList.add('dirty-cell');
-    await saveTableRow(td.parentElement);
+function updateRowFromCell(td, repaint = true) {
+    const table = td.closest('table');
+    const tableId = table.id;
+    const row = tableRows[tableId].find(r => r._rowid === td.dataset.rowid);
+    if (!row) return;
+    const field = td.dataset.field;
+    row[field] = td.textContent.trim();
+    if (row._state !== 'new') row._state = 'dirty';
+    if (repaint) {
+        td.classList.add('dirty-cell');
+        td.parentElement.classList.add('dirty-row');
+    }
 }
 
-async function saveTableRow(tr) {
-    const table = tr.closest('table');
-    const kind = tr.querySelector('td[data-kind]')?.dataset.kind;
-    const payload = {};
-    tr.querySelectorAll('td[data-field]').forEach(td => {
-        const field = td.dataset.field;
-        if (td.isContentEditable || field === 'id') payload[field] = td.textContent.trim();
-    });
-    try {
-        if (kind === 'node') {
-            await postJson('save_node', payload);
-            await loadGraph();
-            await loadAssetsTable();
-        } else if (kind === 'edge') {
-            await postJson('save_edge', payload);
-            await loadGraph();
-            await loadEdgesTable();
+function addTableRow(kind, repaint = true) {
+    const tableId = kind === 'node' ? 'assetsGrid' : 'edgesGrid';
+    const row = kind === 'node'
+        ? { _rowid: 'new-' + tempRowSeq++, _state: 'new', id: '', type: 'software', name: '', criticality: 'medium' }
+        : { _rowid: 'new-' + tempRowSeq++, _state: 'new', id: '', source_node_id: '', source_name: '', target_node_id: '', target_name: '', type: 'depends_on', criticality: '' };
+    tableRows[tableId].push(row);
+    if (repaint) renderEditableTable(tableId, kind === 'node' ? nodeColumns : edgeColumns, tableRows[tableId], kind);
+}
+
+function deleteSelectedTableRows(kind) {
+    const tableId = kind === 'node' ? 'assetsGrid' : 'edgesGrid';
+    const table = $('#' + tableId);
+    const checked = Array.from(table.querySelectorAll('tbody input.row-select:checked')).map(cb => cb.closest('tr').dataset.rowid);
+    if (!checked.length) { toast('Nejdřív vyber řádku checkboxem vlevo.'); return; }
+    if (!confirm(`Označit ${checked.length} řádků ke smazání? Z DB se smažou až po Save.`)) return;
+    for (const rowid of checked) {
+        const idx = tableRows[tableId].findIndex(r => r._rowid === rowid);
+        if (idx >= 0) {
+            const row = tableRows[tableId][idx];
+            if (row.id) tableDeleted[tableId].push(Number(row.id));
+            tableRows[tableId].splice(idx, 1);
         }
-        tr.querySelectorAll('.dirty-cell').forEach(td => td.classList.remove('dirty-cell'));
-        tr.classList.add('saved-row');
-        setTimeout(() => tr.classList.remove('saved-row'), 700);
+    }
+    renderEditableTable(tableId, kind === 'node' ? nodeColumns : edgeColumns, tableRows[tableId], kind);
+    toast('Řádky jsou označené ke smazání. Potvrď tlačítkem Save.');
+}
+
+function rowPayload(row, columns) {
+    const payload = {};
+    columns.forEach(([field]) => {
+        if (field === '_sel') return;
+        payload[field] = row[field] ?? '';
+    });
+    return payload;
+}
+
+function validateTable(kind) {
+    const tableId = kind === 'node' ? 'assetsGrid' : 'edgesGrid';
+    const columns = kind === 'node' ? nodeColumns : edgeColumns;
+    const rows = tableRows[tableId];
+    const errors = [];
+    const nodeIds = new Set(graph.nodes.map(n => String(n.id)));
+    rows.forEach((row, index) => {
+        const required = kind === 'node' ? requiredNodeFields : requiredEdgeFields;
+        required.forEach(field => {
+            if (String(row[field] ?? '').trim() === '') errors.push({ rowid: row._rowid, field, message: `Řádek ${index + 1}: ${field} je povinné.` });
+        });
+        Object.entries(choiceSets[kind]).forEach(([field, getter]) => {
+            const val = String(row[field] ?? '').trim();
+            const allowed = getter().map(String);
+            if (val !== '' && !allowed.includes(val)) errors.push({ rowid: row._rowid, field, message: `Řádek ${index + 1}: neplatná hodnota ${field}: ${val}` });
+        });
+        numberFields.forEach(field => {
+            const val = String(row[field] ?? '').trim();
+            if (val !== '' && (Number.isNaN(Number(val)) || Number(val) < 0)) errors.push({ rowid: row._rowid, field, message: `Řádek ${index + 1}: ${field} musí být nezáporné číslo.` });
+        });
+        ['risk_likelihood','risk_impact'].forEach(field => {
+            const val = String(row[field] ?? '').trim();
+            if (val !== '' && (Number(val) < 1 || Number(val) > 5)) errors.push({ rowid: row._rowid, field, message: `Řádek ${index + 1}: ${field} musí být 1–5.` });
+        });
+        if (kind === 'edge') {
+            const s = String(row.source_node_id ?? '').trim();
+            const t = String(row.target_node_id ?? '').trim();
+            if (s && t && s === t) errors.push({ rowid: row._rowid, field: 'target_node_id', message: `Řádek ${index + 1}: zdroj a cíl nesmí být stejné.` });
+            if (s && !nodeIds.has(s)) errors.push({ rowid: row._rowid, field: 'source_node_id', message: `Řádek ${index + 1}: zdroj ID ${s} neexistuje.` });
+            if (t && !nodeIds.has(t)) errors.push({ rowid: row._rowid, field: 'target_node_id', message: `Řádek ${index + 1}: cíl ID ${t} neexistuje.` });
+        }
+    });
+    markTableValidation(tableId, errors);
+    return errors;
+}
+
+function markTableValidation(tableId, errors) {
+    const table = $('#' + tableId);
+    table.querySelectorAll('.invalid-cell').forEach(td => td.classList.remove('invalid-cell'));
+    table.querySelectorAll('tr').forEach(tr => tr.classList.remove('error-row'));
+    errors.forEach(err => {
+        const td = table.querySelector(`td[data-rowid="${CSS.escape(err.rowid)}"][data-field="${CSS.escape(err.field)}"]`);
+        if (td) {
+            td.classList.add('invalid-cell');
+            td.title = err.message;
+            td.parentElement.classList.add('error-row');
+        }
+    });
+}
+
+async function saveTable(kind) {
+    const tableId = kind === 'node' ? 'assetsGrid' : 'edgesGrid';
+    document.activeElement?.blur?.();
+    const errors = validateTable(kind);
+    if (errors.length) {
+        toast(`Validace selhala: ${errors[0].message}`);
+        return;
+    }
+    const columns = kind === 'node' ? nodeColumns : edgeColumns;
+    const changed = tableRows[tableId].filter(r => r._state === 'new' || r._state === 'dirty').map(r => rowPayload(r, columns));
+    const deleted = tableDeleted[tableId];
+    if (!changed.length && !deleted.length) { toast('Žádné změny k uložení.'); return; }
+    try {
+        if (kind === 'node') await postJson('batch_save_nodes', { rows: changed, delete_ids: deleted });
+        else await postJson('batch_save_edges', { rows: changed, delete_ids: deleted });
+        toast('Tabulka uložena');
+        await loadGraph();
+        if (kind === 'node') await loadAssetsTable(); else await loadEdgesTable();
     } catch (e) {
-        tr.classList.add('error-row');
-        toast('Tabulka: ' + e.message);
+        toast('Uložení selhalo: ' + e.message);
     }
 }
 
@@ -583,7 +719,8 @@ async function copyWholeTable(tableId) {
     const table = $('#' + tableId);
     const lines = [];
     table.querySelectorAll('tr').forEach(tr => {
-        lines.push(Array.from(tr.children).map(c => c.textContent.replace(/\n/g, ' ')).join('\t'));
+        const cells = Array.from(tr.children).filter(c => !c.querySelector?.('input.row-select'));
+        lines.push(cells.map(c => c.textContent.replace(/\n/g, ' ')).join('\t'));
     });
     await navigator.clipboard.writeText(lines.join('\n'));
     toast('Tabulka zkopírována do schránky');
@@ -599,6 +736,12 @@ async function main() {
     $('#btnShowEdgesTable').addEventListener('click', () => showView('edges'));
     $('#btnReloadAssetsTable').addEventListener('click', loadAssetsTable);
     $('#btnReloadEdgesTable').addEventListener('click', loadEdgesTable);
+    $('#btnAddAssetRow').addEventListener('click', () => addTableRow('node'));
+    $('#btnAddEdgeRow').addEventListener('click', () => addTableRow('edge'));
+    $('#btnDeleteAssetRows').addEventListener('click', () => deleteSelectedTableRows('node'));
+    $('#btnDeleteEdgeRows').addEventListener('click', () => deleteSelectedTableRows('edge'));
+    $('#btnSaveAssetsTable').addEventListener('click', () => saveTable('node'));
+    $('#btnSaveEdgesTable').addEventListener('click', () => saveTable('edge'));
     $('#assetsTableFilter').addEventListener('input', () => renderEditableTable('assetsGrid', nodeColumns, tableRows.assetsGrid, 'node'));
     $('#edgesTableFilter').addEventListener('input', () => renderEditableTable('edgesGrid', edgeColumns, tableRows.edgesGrid, 'edge'));
     $('#btnCopyAssetsTable').addEventListener('click', () => copyWholeTable('assetsGrid'));

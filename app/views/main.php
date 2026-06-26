@@ -94,10 +94,13 @@
     <div class="table-toolbar">
         <div>
             <h2>Assety jako tabulka</h2>
-            <p>Edituj přímo v buňkách. Tabulka podporuje filtrování, sortování a vložení TSV z Excelu.</p>
+            <p>Edituj přímo v buňkách. Změny se ukládají až tlačítkem Save. Podporuje filtrování, sortování a vložení TSV z Excelu.</p>
         </div>
         <div>
             <input id="assetsTableFilter" type="search" placeholder="Filtrovat assety...">
+            <button id="btnAddAssetRow">+ Řádek</button>
+            <button id="btnDeleteAssetRows" class="danger subtle-danger">Smazat řádku</button>
+            <button id="btnSaveAssetsTable" class="primary">Save</button>
             <button id="btnReloadAssetsTable">Reload</button>
             <button id="btnCopyAssetsTable">Kopírovat tabulku</button>
         </div>
@@ -111,10 +114,13 @@
     <div class="table-toolbar">
         <div>
             <h2>Vazby jako tabulka</h2>
-            <p>Edituj přímo v buňkách. Zdroj a cíl se editují přes ID uzlu; názvy jsou pomocné read-only sloupce.</p>
+            <p>Edituj přímo v buňkách. Zdroj a cíl se editují přes ID uzlu; názvy jsou pomocné read-only sloupce. Ukládá se až tlačítkem Save.</p>
         </div>
         <div>
             <input id="edgesTableFilter" type="search" placeholder="Filtrovat vazby...">
+            <button id="btnAddEdgeRow">+ Řádek</button>
+            <button id="btnDeleteEdgeRows" class="danger subtle-danger">Smazat řádku</button>
+            <button id="btnSaveEdgesTable" class="primary">Save</button>
             <button id="btnReloadEdgesTable">Reload</button>
             <button id="btnCopyEdgesTable">Kopírovat tabulku</button>
         </div>
