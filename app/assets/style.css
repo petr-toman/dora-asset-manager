@@ -52,6 +52,15 @@ button.icon { border: none; background: transparent; font-size: 26px; padding: 0
 .small-actions { display: flex; gap: 8px; margin-top: 10px; }
 .small-actions button { flex: 1; }
 
+.view-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 10px;
+}
+.view-actions button { width: 100%; }
+
+
 .canvas-wrap { position: relative; background: #fbfdff; }
 #cy { position: absolute; inset: 0; }
 

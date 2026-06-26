@@ -62,3 +62,9 @@ Tabulkové pohledy **Assety tabulka** a **Vazby tabulka** nyní fungují jako st
 - vazba musí mít `source_node_id`, `target_node_id` a `type`,
 - vložení z Excelu funguje přes TSV/clipboard; pokud vložený blok přesahuje aktuální počet řádků, tabulka automaticky přidá nové řádky.
 
+
+
+## Změny v6
+
+- Tlačítka `Uložit view`, `Nový view z aktuálního` a `Smazat view` jsou přesunuta z hlavní lišty do panelu `Pohled`.
+- Hlavní lišta obsahuje jen globální navigaci a akce aplikace.

@@ -19,9 +19,6 @@
         <button id="btnShowEdgesTable">Vazby tabulka</button>
         <button id="btnAddNode">+ Uzel</button>
         <button id="btnAddEdge">+ Vazba</button>
-        <button id="btnSaveView">Uložit view</button>
-        <button id="btnCloneView">Nový view z aktuálního</button>
-        <button id="btnDeleteView" class="danger subtle-danger">Smazat view</button>
         <button id="btnExport">Export JSON</button>
         <a class="button" href="/report.php" target="_blank">Report / PDF</a>
     </div>
@@ -33,6 +30,11 @@
             <h2>Pohled</h2>
             <label>Uložený view</label>
             <select id="viewSelect"></select>
+            <div class="view-actions">
+                <button id="btnSaveView">Uložit view</button>
+                <button id="btnCloneView">Nový view z aktuálního</button>
+                <button id="btnDeleteView" class="danger subtle-danger">Smazat view</button>
+            </div>
 
             <label>Dynamický režim</label>
             <select id="modeSelect">
