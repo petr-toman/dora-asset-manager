@@ -32,6 +32,13 @@ CREATE TABLE IF NOT EXISTS nodes (
     last_reviewed_at TEXT,
     review_frequency_months INTEGER,
 
+    threats TEXT,
+    risk_scenarios TEXT,
+    risk_likelihood INTEGER,
+    risk_impact INTEGER,
+    risk_controls TEXT,
+    residual_risk TEXT,
+
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );

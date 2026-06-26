@@ -1,6 +1,6 @@
 # Evidence IT aktiv / DORA asset map
 
-Jednoduchá webová aplikace v PHP + SQLite pro grafovou evidenci ICT/informačních aktiv, vazeb a pohledů.
+PHP + SQLite webová aplikace pro jednoduchou grafovou evidenci ICT a informačních aktiv, vazeb, DORA atributů a základního rizikového hodnocení.
 
 ## Spuštění
 
@@ -8,33 +8,38 @@ Jednoduchá webová aplikace v PHP + SQLite pro grafovou evidenci ICT/informačn
 docker compose up --build
 ```
 
-Pak otevři:
+Aplikace poběží na:
 
 ```text
 http://localhost:8080
 ```
 
-SQLite databáze bude uložena v:
+SQLite databáze je uložená v persistentním adresáři:
 
 ```text
 ./data/assets.sqlite
 ```
 
-## Funkce první verze
+## Funkce prototypu
 
-- uzly: hardware, software, data, procesy, business funkce, dodavatelé, poskytovatelé, výrobci, síť, lokalita, dokumentace, ICT služba
-- hrany/vazby: contains, hosts, processes_data, supports_process, depends_on atd.
-- graf v Cytoscape.js
-- drag & drop uzlů
-- uložení pozic
-- doubleclick na uzel otevře detail
-- editace atributů uzlu
-- vytváření vazeb mezi vybranými uzly
-- uložené views
-- dynamické views: hardware, data, process, supplier, impact
+- evidence uzlů: hardware, software, data, procesy, business funkce, dodavatelé, poskytovatelé, výrobci, sítě, lokality, dokumentace, ICT služby
+- evidence vazeb: contains, hosts, processes_data, supports_process, depends_on atd.
+- hierarchie aktiv přes vazbu `contains`
+- drag & drop graf v Cytoscape.js
+- uložení pozic uzlů per view
+- detail uzlu po doubleclick
+- editace DORA atributů: kritičnost, CIA, RTO/RPO/MTD, citlivost dat, kategorie dat, revize
+- základní rizikové atributy: hrozby, scénáře, pravděpodobnost, dopad, kontroly, reziduální riziko
+- views a dynamické pohledy
 - export JSON
-- change_log jako auditní stopa a základ pro undo/redo
+- tisknutelný report: `/report.php`
+- heatmapa rizik v reportu
+- change log pro auditní stopu a budoucí undo/redo
 
-## Poznámka
+## Report / PDF
 
-Login a multiuser režim záměrně nejsou implementovány. Aplikace je navržena jako single-user dokumentový nástroj se SQLite databází.
+V aplikaci klikni na **Report / PDF**. Otevře se HTML report. Tlačítko **Tisk / uložit jako PDF** použije tiskovou funkci prohlížeče, kde lze zvolit „Save as PDF“ / „Uložit jako PDF“.
+
+## Poznámka k SQLite
+
+Prototyp je navržený pro single-user režim. Pro víceuživatelský provoz bude vhodné migrovat SQLite na MariaDB/PostgreSQL, ale datový model je k tomu připravený.

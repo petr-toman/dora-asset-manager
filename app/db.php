@@ -38,7 +38,31 @@ function init_db(PDO $pdo): void
 {
     $schema = file_get_contents(__DIR__ . '/schema.sql');
     $pdo->exec($schema);
+    ensure_schema_upgrades($pdo);
     seed_demo_data($pdo);
+}
+
+
+function ensure_schema_upgrades(PDO $pdo): void
+{
+    $columns = [];
+    foreach ($pdo->query('PRAGMA table_info(nodes)')->fetchAll() as $col) {
+        $columns[$col['name']] = true;
+    }
+
+    $missing = [
+        'threats' => 'TEXT',
+        'risk_scenarios' => 'TEXT',
+        'risk_likelihood' => 'INTEGER',
+        'risk_impact' => 'INTEGER',
+        'risk_controls' => 'TEXT',
+        'residual_risk' => 'TEXT',
+    ];
+    foreach ($missing as $name => $type) {
+        if (!isset($columns[$name])) {
+            $pdo->exec('ALTER TABLE nodes ADD COLUMN ' . $name . ' ' . $type);
+        }
+    }
 }
 
 function seed_demo_data(PDO $pdo): void
@@ -58,9 +82,9 @@ function seed_demo_data(PDO $pdo): void
         ['supplier', 'SV Informatik', 'Poskytovatel ICT služeb', 'high', 'prod'],
     ];
 
-    $stmt = $pdo->prepare('INSERT INTO nodes (type, name, description, criticality, environment, confidentiality, integrity_level, availability, data_sensitivity, status, lifecycle_state, rto_hours, rpo_hours, mtd_hours, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $stmt = $pdo->prepare('INSERT INTO nodes (type, name, description, criticality, environment, confidentiality, integrity_level, availability, data_sensitivity, status, lifecycle_state, rto_hours, rpo_hours, mtd_hours, threats, risk_scenarios, risk_likelihood, risk_impact, risk_controls, residual_risk, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     foreach ($nodes as $n) {
-        $stmt->execute([$n[0], $n[1], $n[2], $n[3], $n[4], 'high', 'high', 'high', $n[0] === 'data' ? 'private' : null, 'active', 'production', $n[3] === 'critical' ? 8 : 24, $n[3] === 'critical' ? 24 : 48, $n[3] === 'critical' ? 48 : 72, $now, $now]);
+        $stmt->execute([$n[0], $n[1], $n[2], $n[3], $n[4], 'high', 'high', 'high', $n[0] === 'data' ? 'private' : null, 'active', 'production', $n[3] === 'critical' ? 8 : 24, $n[3] === 'critical' ? 24 : 48, $n[3] === 'critical' ? 48 : 72, 'Výpadek, nedostupnost, ztráta nebo kompromitace služby/dat', 'Narušení podpůrného ICT aktiva může omezit dostupnost procesu nebo zpracování dat.', $n[3] === 'critical' ? 3 : 2, $n[3] === 'critical' ? 4 : 3, 'Zálohování, monitoring, provozní dohled, řízení změn', 'medium', $now, $now]);
     }
 
     $edges = [

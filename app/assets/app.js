@@ -240,18 +240,31 @@ function formData(form) {
 async function submitNode(evt) {
     evt.preventDefault();
     const data = formData(evt.target);
-    await postJson('save_node', data);
+    const saved = await postJson('save_node', data);
     closeModal('nodeModal');
+    selected = null;
     await loadGraph();
+    if (saved.node && cy) {
+        const node = cy.$(`#n${saved.node.id}`);
+        if (node && node.length) {
+            node.select();
+            cy.animate({ center: { eles: node }, zoom: Math.max(cy.zoom(), 1) }, { duration: 250 });
+        }
+    }
     toast('Uzel uložen');
 }
 
 async function submitEdge(evt) {
     evt.preventDefault();
     const data = formData(evt.target);
-    await postJson('save_edge', data);
+    const saved = await postJson('save_edge', data);
     closeModal('edgeModal');
+    selected = null;
     await loadGraph();
+    if (saved.edge && cy) {
+        const edge = cy.$(`#e${saved.edge.id}`);
+        if (edge && edge.length) edge.select();
+    }
     toast('Vazba uložena');
 }
 

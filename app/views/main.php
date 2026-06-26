@@ -18,6 +18,7 @@
         <button id="btnAddEdge">+ Vazba</button>
         <button id="btnSaveView">Uložit view</button>
         <button id="btnExport">Export JSON</button>
+        <a class="button" href="/report.php" target="_blank">Report / PDF</a>
     </div>
 </header>
 
@@ -121,6 +122,14 @@
             <label>Poslední revize<input name="last_reviewed_at" type="date"></label>
 
             <label class="span4">Good-to-know poznámky<textarea name="good_to_know" rows="4"></textarea></label>
+
+            <h3 class="span4 section-title">Hrozby a rizika</h3>
+            <label class="span2">Hrozby<textarea name="threats" rows="3" placeholder="např. výpadek infrastruktury, ransomware, chyba dodavatele..."></textarea></label>
+            <label class="span2">Rizikové scénáře<textarea name="risk_scenarios" rows="3" placeholder="co se může stát a jaký bude dopad..."></textarea></label>
+            <label>Pravděpodobnost 1–5<input name="risk_likelihood" type="number" min="1" max="5"></label>
+            <label>Dopad 1–5<input name="risk_impact" type="number" min="1" max="5"></label>
+            <label class="span2">Opatření / kontroly<input name="risk_controls" placeholder="backup, monitoring, DR plán..."></label>
+            <label class="span4">Reziduální riziko<textarea name="residual_risk" rows="2"></textarea></label>
 
             <div class="form-actions span4">
                 <button type="button" data-close="nodeModal">Zavřít</button>

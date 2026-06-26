@@ -18,6 +18,7 @@ try {
                 'environments' => ['prod', 'test', 'dev', 'archive', 'unknown'],
                 'statuses' => ['active', 'planned', 'retired', 'unknown'],
                 'lifecycle_states' => ['production', 'test', 'development', 'archived', 'unknown'],
+                'risk_levels' => [1, 2, 3, 4, 5],
             ]);
 
         case 'get_graph':
@@ -58,6 +59,10 @@ try {
 
         case 'export_json':
             export_json($pdo);
+            break;
+
+        case 'risk_summary':
+            risk_summary($pdo);
             break;
 
         case 'change_log':
@@ -223,7 +228,7 @@ function save_node(PDO $pdo): void
     $id = isset($data['id']) && $data['id'] !== '' ? (int)$data['id'] : null;
     $now = now_iso();
 
-    $fields = ['type','name','description','owner','business_owner','technical_owner','criticality','confidentiality','integrity_level','availability','rto_hours','rpo_hours','mtd_hours','data_sensitivity','data_categories','environment','location','status','lifecycle_state','good_to_know','last_reviewed_at','review_frequency_months'];
+    $fields = ['type','name','description','owner','business_owner','technical_owner','criticality','confidentiality','integrity_level','availability','rto_hours','rpo_hours','mtd_hours','data_sensitivity','data_categories','environment','location','status','lifecycle_state','good_to_know','last_reviewed_at','review_frequency_months','threats','risk_scenarios','risk_likelihood','risk_impact','risk_controls','residual_risk'];
     if (trim((string)($data['name'] ?? '')) === '') {
         json_response(['ok' => false, 'error' => 'Name is required'], 400);
     }
@@ -394,6 +399,7 @@ function export_json(PDO $pdo): void
         'edges' => $pdo->query('SELECT * FROM edges ORDER BY id')->fetchAll(),
         'views' => $pdo->query('SELECT * FROM views ORDER BY id')->fetchAll(),
         'view_node_positions' => $pdo->query('SELECT * FROM view_node_positions ORDER BY view_id, node_id')->fetchAll(),
+        'change_log' => $pdo->query('SELECT * FROM change_log ORDER BY id')->fetchAll(),
     ]);
 }
 
@@ -401,4 +407,80 @@ function change_log(PDO $pdo): void
 {
     $rows = $pdo->query('SELECT * FROM change_log ORDER BY id DESC LIMIT 100')->fetchAll();
     json_response(['ok' => true, 'changes' => $rows]);
+}
+
+
+function risk_summary(PDO $pdo): void
+{
+    $nodes = $pdo->query('SELECT * FROM nodes ORDER BY name')->fetchAll();
+    $items = [];
+    $heatmap = [];
+    for ($l = 1; $l <= 5; $l++) {
+        for ($i = 1; $i <= 5; $i++) {
+            $heatmap[$l][$i] = 0;
+        }
+    }
+    foreach ($nodes as $n) {
+        $likelihood = (int)($n['risk_likelihood'] ?? 0);
+        $impact = (int)($n['risk_impact'] ?? 0);
+        if ($likelihood < 1 || $likelihood > 5) $likelihood = 1;
+        if ($impact < 1 || $impact > 5) $impact = 1;
+        $score = asset_risk_score($n);
+        $level = score_level($score);
+        $heatmap[$likelihood][$impact]++;
+        $items[] = [
+            'id' => (int)$n['id'],
+            'name' => $n['name'],
+            'type' => $n['type'],
+            'criticality' => $n['criticality'],
+            'rto_hours' => $n['rto_hours'],
+            'risk_likelihood' => $likelihood,
+            'risk_impact' => $impact,
+            'score' => $score,
+            'level' => $level,
+        ];
+    }
+    usort($items, fn($a, $b) => $b['score'] <=> $a['score']);
+    json_response(['ok' => true, 'items' => $items, 'heatmap' => $heatmap]);
+}
+
+function asset_risk_score(array $n): int
+{
+    $likelihood = max(1, min(5, (int)($n['risk_likelihood'] ?? 1)));
+    $impact = max(1, min(5, (int)($n['risk_impact'] ?? 1)));
+    $base = $likelihood * $impact;
+    $crit = level_num($n['criticality'] ?? null);
+    $cia = max(level_num($n['confidentiality'] ?? null), level_num($n['integrity_level'] ?? null), level_num($n['availability'] ?? null));
+    $rto = rto_factor($n['rto_hours'] ?? null);
+    return $base + ($crit * 2) + ($cia * 2) + ($rto * 2);
+}
+
+function level_num($v): int
+{
+    return match ((string)$v) {
+        'critical' => 4,
+        'high' => 3,
+        'medium' => 2,
+        'low' => 1,
+        default => 1,
+    };
+}
+
+function rto_factor($hours): int
+{
+    if ($hours === null || $hours === '') return 1;
+    $h = (float)$hours;
+    if ($h <= 4) return 5;
+    if ($h <= 8) return 4;
+    if ($h <= 24) return 3;
+    if ($h <= 72) return 2;
+    return 1;
+}
+
+function score_level(int $score): string
+{
+    if ($score >= 35) return 'critical';
+    if ($score >= 27) return 'high';
+    if ($score >= 18) return 'medium';
+    return 'low';
 }
