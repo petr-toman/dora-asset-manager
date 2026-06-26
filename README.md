@@ -68,3 +68,10 @@ Tabulkové pohledy **Assety tabulka** a **Vazby tabulka** nyní fungují jako st
 
 - Tlačítka `Uložit view`, `Nový view z aktuálního` a `Smazat view` jsou přesunuta z hlavní lišty do panelu `Pohled`.
 - Hlavní lišta obsahuje jen globální navigaci a akce aplikace.
+
+
+## Verze v10
+
+- Upravený layout detailní karty assetu.
+- Přidáno pole Vendor / manufacturer.
+- Přidány tooltipy k CIA, RTO, RPO, MTD a dalším metodickým polím.

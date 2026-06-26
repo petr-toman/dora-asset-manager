@@ -138,36 +138,40 @@
             <h2 id="nodeModalTitle">Uzel</h2>
             <button class="icon" data-close="nodeModal">×</button>
         </div>
-        <form id="nodeForm" class="form-grid">
+        <form id="nodeForm" class="form-grid asset-form">
             <input type="hidden" name="id">
 
+            <h3 class="span4 section-title first">Základní informace</h3>
             <label>Název<input name="name" required></label>
             <label>Typ<select name="type" id="nodeTypeSelect"></select></label>
-            <label>Kritičnost<select name="criticality"><option></option><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label>
-            <label>Prostředí<select name="environment"><option></option><option>prod</option><option>test</option><option>dev</option><option>archive</option><option>unknown</option></select></label>
+            <label>Kritičnost <span class="help" title="Celkový význam aktiva pro provoz, procesy a zpracování dat.">ⓘ</span><select name="criticality"><option></option><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label>
+            <label>Prostředí <span class="help" title="Provozní prostředí aktiva, například prod, test, dev nebo archiv.">ⓘ</span><select name="environment"><option></option><option>prod</option><option>test</option><option>dev</option><option>archive</option><option>unknown</option></select></label>
 
-            <label class="span2">Popis<textarea name="description" rows="3"></textarea></label>
+            <label class="span2 desc-field">Popis<textarea name="description" rows="4"></textarea></label>
+            <label>Owner <span class="help" title="Vlastník aktiva z hlediska odpovědnosti za evidenci a rozhodování.">ⓘ</span><input name="owner"></label>
+            <label>Business owner <span class="help" title="Business vlastník procesu/služby, který aktivum používá nebo za něj věcně odpovídá.">ⓘ</span><input name="business_owner"></label>
+            <label class="span2 spacer"></label>
+            <label>Technical owner <span class="help" title="Technický vlastník nebo tým odpovědný za provoz a technickou správu aktiva.">ⓘ</span><input name="technical_owner"></label>
+            <label>Vendor / manufacturer <span class="help" title="Výrobce nebo vendor produktu či technologie. Například Microsoft u M365, SAP u SAP ECC.">ⓘ</span><input name="vendor_manufacturer"></label>
 
-            <label>Owner<input name="owner"></label>
-            <label>Business owner<input name="business_owner"></label>
-            <label>Technical owner<input name="technical_owner"></label>
+            <h3 class="span4 section-title compact">Klasifikace a odolnost</h3>
             <label>Stav<select name="status"><option></option><option>active</option><option>planned</option><option>retired</option><option>unknown</option></select></label>
+            <label>Důvěrnost (CIA) <span class="help" title="Confidentiality — jak závažné by bylo neoprávněné zpřístupnění informací.">ⓘ</span><select name="confidentiality"><option></option><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label>
+            <label>Integrita (CIA) <span class="help" title="Integrity — jak závažné by bylo neoprávněné nebo chybné pozměnění dat.">ⓘ</span><select name="integrity_level"><option></option><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label>
+            <label>Dostupnost (CIA) <span class="help" title="Availability — jak závažná by byla nedostupnost aktiva nebo služby.">ⓘ</span><select name="availability"><option></option><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label>
 
-            <label>Důvěrnost<select name="confidentiality"><option></option><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label>
-            <label>Integrita<select name="integrity_level"><option></option><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label>
-            <label>Dostupnost<select name="availability"><option></option><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label>
-            <label>Lifecycle<select name="lifecycle_state"><option></option><option>production</option><option>test</option><option>development</option><option>archived</option><option>unknown</option></select></label>
+            <label>Lifecycle <span class="help" title="Fáze životního cyklu aktiva, například production, test, development nebo archived.">ⓘ</span><select name="lifecycle_state"><option></option><option>production</option><option>test</option><option>development</option><option>archived</option><option>unknown</option></select></label>
+            <label>RTO [h] <span class="help" title="Recovery Time Objective — cílová doba obnovy. Do kolika hodin musí být aktivum nebo služba obnovena.">ⓘ</span><input name="rto_hours" type="number" min="0"></label>
+            <label>RPO [h] <span class="help" title="Recovery Point Objective — přípustná ztráta dat. O kolik hodin dat maximálně smíme přijít.">ⓘ</span><input name="rpo_hours" type="number" min="0"></label>
+            <label>MTD [h] <span class="help" title="Maximum Tolerable Downtime — maximálně tolerovatelná doba výpadku. Delší výpadek je už nepřijatelný.">ⓘ</span><input name="mtd_hours" type="number" min="0"></label>
 
-            <label>RTO [h]<input name="rto_hours" type="number" min="0"></label>
-            <label>RPO [h]<input name="rpo_hours" type="number" min="0"></label>
-            <label>MTD [h]<input name="mtd_hours" type="number" min="0"></label>
+            <h3 class="span4 section-title compact">Data, lokalita a revize</h3>
             <label>Lokalita<input name="location"></label>
+            <label>Citlivost dat <span class="help" title="Klasifikace citlivosti dat z pohledu přístupu a ochrany.">ⓘ</span><select name="data_sensitivity"><option></option><option value="public">veřejná</option><option value="private">soukromá</option><option value="secret">tajná</option></select></label>
+            <label>Revize po měsících <span class="help" title="Interval pravidelného přezkumu údajů o aktivu.">ⓘ</span><input name="review_frequency_months" type="number" min="0"></label>
+            <label>Poslední revize <span class="help" title="Datum posledního přezkumu správnosti a úplnosti údajů o aktivu.">ⓘ</span><input name="last_reviewed_at" type="date"></label>
 
-            <label>Citlivost dat<select name="data_sensitivity"><option></option><option value="public">veřejná</option><option value="private">soukromá</option><option value="secret">tajná</option></select></label>
-            <label class="span2">Kategorie dat<input name="data_categories" placeholder="personal, financial, business..."></label>
-            <label>Revize po měsících<input name="review_frequency_months" type="number" min="0"></label>
-            <label>Poslední revize<input name="last_reviewed_at" type="date"></label>
-
+            <label class="span4">Kategorie dat<input name="data_categories" placeholder="personal, financial, business..."></label>
             <label class="span4">Good-to-know poznámky<textarea name="good_to_know" rows="4"></textarea></label>
 
             <h3 class="span4 section-title">Hrozby a rizika</h3>

@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS nodes (
     owner TEXT,
     business_owner TEXT,
     technical_owner TEXT,
+    vendor_manufacturer TEXT,
 
     criticality TEXT,
     confidentiality TEXT,

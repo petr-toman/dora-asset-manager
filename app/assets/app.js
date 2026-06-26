@@ -432,7 +432,7 @@ async function deleteCurrentView() {
 
 const nodeColumns = [
   ['_sel','', false], ['id','ID', false], ['type','Typ', true], ['name','Název', true], ['description','Popis', true],
-  ['owner','Owner', true], ['business_owner','Business owner', true], ['technical_owner','Technical owner', true],
+  ['owner','Owner', true], ['business_owner','Business owner', true], ['technical_owner','Technical owner', true], ['vendor_manufacturer','Vendor/manufacturer', true],
   ['criticality','Kritičnost', true], ['confidentiality','Důvěrnost', true], ['integrity_level','Integrita', true], ['availability','Dostupnost', true],
   ['rto_hours','RTO h', true], ['rpo_hours','RPO h', true], ['mtd_hours','MTD h', true],
   ['data_sensitivity','Citlivost dat', true], ['data_categories','Kategorie dat', true],

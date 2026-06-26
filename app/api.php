@@ -252,7 +252,7 @@ function save_node(PDO $pdo): void
     $id = isset($data['id']) && $data['id'] !== '' ? (int)$data['id'] : null;
     $now = now_iso();
 
-    $fields = ['type','name','description','owner','business_owner','technical_owner','criticality','confidentiality','integrity_level','availability','rto_hours','rpo_hours','mtd_hours','data_sensitivity','data_categories','environment','location','status','lifecycle_state','good_to_know','last_reviewed_at','review_frequency_months','threats','risk_scenarios','risk_likelihood','risk_impact','risk_controls','residual_risk'];
+    $fields = ['type','name','description','owner','business_owner','technical_owner','vendor_manufacturer','criticality','confidentiality','integrity_level','availability','rto_hours','rpo_hours','mtd_hours','data_sensitivity','data_categories','environment','location','status','lifecycle_state','good_to_know','last_reviewed_at','review_frequency_months','threats','risk_scenarios','risk_likelihood','risk_impact','risk_controls','residual_risk'];
     validate_node_payload($data);
 
     $before = null;
@@ -616,7 +616,7 @@ function upsert_node(PDO $pdo, array $data): array
     validate_node_payload($data);
     $id = isset($data['id']) && $data['id'] !== '' ? (int)$data['id'] : null;
     $now = now_iso();
-    $fields = ['type','name','description','owner','business_owner','technical_owner','criticality','confidentiality','integrity_level','availability','rto_hours','rpo_hours','mtd_hours','data_sensitivity','data_categories','environment','location','status','lifecycle_state','good_to_know','last_reviewed_at','review_frequency_months','threats','risk_scenarios','risk_likelihood','risk_impact','risk_controls','residual_risk'];
+    $fields = ['type','name','description','owner','business_owner','technical_owner','vendor_manufacturer','criticality','confidentiality','integrity_level','availability','rto_hours','rpo_hours','mtd_hours','data_sensitivity','data_categories','environment','location','status','lifecycle_state','good_to_know','last_reviewed_at','review_frequency_months','threats','risk_scenarios','risk_likelihood','risk_impact','risk_controls','residual_risk'];
     $before = null;
     if ($id) {
         $stmt = $pdo->prepare('SELECT * FROM nodes WHERE id = ?');
