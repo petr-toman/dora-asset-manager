@@ -75,3 +75,7 @@ Tabulkové pohledy **Assety tabulka** a **Vazby tabulka** nyní fungují jako st
 - Upravený layout detailní karty assetu.
 - Přidáno pole Vendor / manufacturer.
 - Přidány tooltipy k CIA, RTO, RPO, MTD a dalším metodickým polím.
+
+## v12 poznámka
+
+Grafové view obsahuje volbu **Snap to grid** v panelu Pohled. Při zapnutí se uzly po puštění myši zarovnají na nastavenou mřížku. Tlačítko **Zarovnat aktuální view** zarovná všechny viditelné uzly aktuálního pohledu a pozice uloží.

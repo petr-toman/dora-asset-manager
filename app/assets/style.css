@@ -450,3 +450,30 @@ select option { color: #0f172a; background: #f8fafc; }
 @media (max-width: 980px) {
     .asset-form .spacer { display: none; }
 }
+
+.snap-box {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(148, 163, 184, .32);
+    display: grid;
+    gap: 8px;
+}
+
+.snap-box .checkline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-weight: 800;
+    color: #334155;
+}
+
+.snap-box input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #2563eb;
+}
+
+.snap-box input[type="number"] {
+    margin-top: 5px;
+}

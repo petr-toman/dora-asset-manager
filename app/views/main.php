@@ -84,6 +84,12 @@
                 <option value="impact">Impact vybraného uzlu</option>
             </select>
             <button id="btnReload">Načíst graf</button>
+
+            <div class="snap-box">
+                <label class="checkline"><input id="snapToGrid" type="checkbox"> Snap to grid</label>
+                <label>Velikost mřížky [px]<input id="gridSize" type="number" min="10" max="200" step="5" value="40"></label>
+                <button id="btnSnapNow">Zarovnat aktuální view</button>
+            </div>
         </section>
     </aside>
 

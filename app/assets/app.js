@@ -217,8 +217,57 @@ function escapeHtml(s) {
     return String(s).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 }
 
+function gridSize() {
+    const val = Number($('#gridSize')?.value || localStorage.getItem('doraGridSize') || 40);
+    if (!Number.isFinite(val) || val < 10) return 40;
+    return Math.min(200, Math.max(10, val));
+}
+
+function isSnapToGridEnabled() {
+    return !!$('#snapToGrid')?.checked;
+}
+
+function snapValue(value, size = gridSize()) {
+    return Math.round(Number(value || 0) / size) * size;
+}
+
+function snappedPosition(pos) {
+    const size = gridSize();
+    return { x: snapValue(pos.x, size), y: snapValue(pos.y, size) };
+}
+
+async function snapCurrentViewToGrid() {
+    if (!cy) return;
+    const nodes = cy.nodes().filter(n => n.data('dbid') && !n.hasClass('hiddenByFilter'));
+    nodes.forEach(node => node.position(snappedPosition(node.position())));
+    await saveVisiblePositions();
+    toast(`Aktuální view zarovnáno na mřížku ${gridSize()} px`);
+}
+
+function initSnapControls() {
+    const snap = $('#snapToGrid');
+    const size = $('#gridSize');
+    if (!snap || !size) return;
+    snap.checked = localStorage.getItem('doraSnapToGrid') === '1';
+    size.value = localStorage.getItem('doraGridSize') || size.value || '40';
+    snap.addEventListener('change', () => {
+        localStorage.setItem('doraSnapToGrid', snap.checked ? '1' : '0');
+        toast(snap.checked ? 'Snap to grid zapnutý' : 'Snap to grid vypnutý');
+    });
+    size.addEventListener('change', () => {
+        const normalized = gridSize();
+        size.value = normalized;
+        localStorage.setItem('doraGridSize', String(normalized));
+        toast(`Velikost mřížky: ${normalized} px`);
+    });
+    $('#btnSnapNow')?.addEventListener('click', snapCurrentViewToGrid);
+}
+
 async function saveNodePosition(node) {
     try {
+        if (isSnapToGridEnabled()) {
+            node.position(snappedPosition(node.position()));
+        }
         await postJson('save_position', { view_id: currentViewId, node_id: node.data('dbid'), x: node.position('x'), y: node.position('y') });
     } catch (e) {
         toast('Pozice se neuložila: ' + e.message);
@@ -382,8 +431,8 @@ async function saveVisiblePositions() {
         await postJson('save_position', {
             view_id: currentViewId,
             node_id: node.data('dbid'),
-            x: node.position('x'),
-            y: node.position('y')
+            x: isSnapToGridEnabled() ? snappedPosition(node.position()).x : node.position('x'),
+            y: isSnapToGridEnabled() ? snappedPosition(node.position()).y : node.position('y')
         });
     }
 }
@@ -768,6 +817,7 @@ async function copyWholeTable(tableId) {
 async function main() {
     await loadMeta();
     await loadViews();
+    initSnapControls();
     await loadGraph();
 
     $('#btnShowGraph').addEventListener('click', () => showView('graph'));
