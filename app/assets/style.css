@@ -1,0 +1,126 @@
+:root {
+    --bg: #f4f6f8;
+    --panel: #ffffff;
+    --text: #17202a;
+    --muted: #607080;
+    --line: #d8dee6;
+    --accent: #2563eb;
+    --danger: #b42318;
+    --shadow: 0 10px 30px rgba(15, 23, 42, .12);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: var(--text); background: var(--bg); }
+body { overflow: hidden; }
+
+.topbar {
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    background: #111827;
+    color: white;
+    border-bottom: 1px solid #0b1220;
+}
+.topbar h1 { font-size: 22px; margin: 0; line-height: 1.1; }
+.topbar span { color: #cbd5e1; font-size: 13px; }
+.top-actions { display: flex; gap: 8px; align-items: center; }
+
+button {
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--text);
+    padding: 8px 11px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-weight: 600;
+}
+button:hover { filter: brightness(.98); }
+button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+button.danger { color: white; background: var(--danger); border-color: var(--danger); }
+button.icon { border: none; background: transparent; font-size: 26px; padding: 0 4px; }
+
+.layout { display: grid; grid-template-columns: 320px 1fr; height: calc(100vh - 72px); }
+.sidebar { overflow: auto; padding: 14px; border-right: 1px solid var(--line); background: #eef2f7; }
+.panel { background: var(--panel); padding: 13px; border-radius: 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(15, 23, 42, .06); }
+.panel h2 { margin: 0 0 10px; font-size: 15px; }
+.panel label { display: block; color: var(--muted); font-size: 12px; margin: 9px 0 4px; }
+.panel input, .panel select { width: 100%; }
+.selected-panel { min-height: 120px; }
+#selectedInfo { font-size: 13px; line-height: 1.4; color: #334155; }
+.small-actions { display: flex; gap: 8px; margin-top: 10px; }
+.small-actions button { flex: 1; }
+
+.canvas-wrap { position: relative; background: #fbfdff; }
+#cy { position: absolute; inset: 0; }
+
+input, select, textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 8px 10px;
+    font: inherit;
+    background: white;
+}
+textarea { resize: vertical; }
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .48);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.modal.hidden, .hidden { display: none; }
+.modal-content {
+    width: min(760px, 94vw);
+    max-height: 90vh;
+    overflow: auto;
+    background: white;
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    padding: 16px;
+}
+.modal-content.large { width: min(1080px, 96vw); }
+.modal-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); margin-bottom: 12px; padding-bottom: 8px; }
+.modal-header h2 { margin: 0; font-size: 20px; }
+
+.form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.form-grid.small { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.form-grid label { font-size: 12px; color: var(--muted); font-weight: 600; }
+.form-grid label input, .form-grid label select, .form-grid label textarea { margin-top: 4px; color: var(--text); font-weight: 400; }
+.span2 { grid-column: span 2; }
+.span4 { grid-column: span 4; }
+.form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+
+.toast {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    background: #111827;
+    color: white;
+    padding: 12px 15px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    z-index: 2000;
+}
+
+.legend div { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 5px 0; }
+.dot { width: 12px; height: 12px; display: inline-block; border-radius: 50%; background: #94a3b8; }
+.dot.hardware { background: #64748b; }
+.dot.software { background: #2563eb; }
+.dot.data { background: #16a34a; }
+.dot.process { background: #f59e0b; }
+.dot.supplier { background: #9333ea; }
+
+@media (max-width: 900px) {
+    body { overflow: auto; }
+    .layout { grid-template-columns: 1fr; height: auto; }
+    .sidebar { height: auto; }
+    .canvas-wrap { height: 70vh; }
+    .form-grid, .form-grid.small { grid-template-columns: 1fr; }
+    .span2, .span4 { grid-column: span 1; }
+}

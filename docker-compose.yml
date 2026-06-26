@@ -1,0 +1,11 @@
+services:
+  dora-assets:
+    build: .
+    container_name: dora-assets
+    ports:
+      - "8080:80"
+    volumes:
+      - ./data:/data
+    environment:
+      DORA_DB_PATH: /data/assets.sqlite
+    restart: unless-stopped
