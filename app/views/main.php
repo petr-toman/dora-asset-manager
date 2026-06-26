@@ -147,12 +147,13 @@
             <label>Kritičnost <span class="help" title="Celkový význam aktiva pro provoz, procesy a zpracování dat.">ⓘ</span><select name="criticality"><option></option><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label>
             <label>Prostředí <span class="help" title="Provozní prostředí aktiva, například prod, test, dev nebo archiv.">ⓘ</span><select name="environment"><option></option><option>prod</option><option>test</option><option>dev</option><option>archive</option><option>unknown</option></select></label>
 
-            <label class="span2 desc-field">Popis<textarea name="description" rows="4"></textarea></label>
-            <label>Owner <span class="help" title="Vlastník aktiva z hlediska odpovědnosti za evidenci a rozhodování.">ⓘ</span><input name="owner"></label>
-            <label>Business owner <span class="help" title="Business vlastník procesu/služby, který aktivum používá nebo za něj věcně odpovídá.">ⓘ</span><input name="business_owner"></label>
-            <label class="span2 spacer"></label>
-            <label>Technical owner <span class="help" title="Technický vlastník nebo tým odpovědný za provoz a technickou správu aktiva.">ⓘ</span><input name="technical_owner"></label>
-            <label>Vendor / manufacturer <span class="help" title="Výrobce nebo vendor produktu či technologie. Například Microsoft u M365, SAP u SAP ECC.">ⓘ</span><input name="vendor_manufacturer"></label>
+            <label class="span2 desc-field">Popis<textarea name="description" rows="3"></textarea></label>
+            <div class="span2 owner-grid">
+                <label>Owner <span class="help" title="Vlastník aktiva z hlediska odpovědnosti za evidenci a rozhodování.">ⓘ</span><input name="owner"></label>
+                <label>Business owner <span class="help" title="Business vlastník procesu/služby, který aktivum používá nebo za něj věcně odpovídá.">ⓘ</span><input name="business_owner"></label>
+                <label>Technical owner <span class="help" title="Technický vlastník nebo tým odpovědný za provoz a technickou správu aktiva.">ⓘ</span><input name="technical_owner"></label>
+                <label>Vendor / manufacturer <span class="help" title="Výrobce nebo vendor produktu či technologie. Například Microsoft u M365, SAP u SAP ECC.">ⓘ</span><input name="vendor_manufacturer"></label>
+            </div>
 
             <h3 class="span4 section-title compact">Klasifikace a odolnost</h3>
             <label>Stav<select name="status"><option></option><option>active</option><option>planned</option><option>retired</option><option>unknown</option></select></label>

@@ -405,10 +405,11 @@ select option { color: #0f172a; background: #f8fafc; }
     .canvas-wrap { height: 70vh; }
     .form-grid, .form-grid.small { grid-template-columns: 1fr; }
     .span2, .span4 { grid-column: span 1; }
+    .asset-form .owner-grid { grid-template-columns: 1fr; }
     .table-toolbar { flex-direction: column; }
 }
 
-/* v10 asset detail card layout */
+/* v11 asset detail card layout */
 .asset-form .section-title.first {
     margin-top: -2px;
     border-top: 0;
@@ -419,11 +420,13 @@ select option { color: #0f172a; background: #f8fafc; }
     padding-top: 12px;
 }
 .asset-form .desc-field textarea {
-    min-height: 108px;
+    min-height: 92px;
 }
-.asset-form .spacer {
-    visibility: hidden;
-    pointer-events: none;
+.asset-form .owner-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 13px;
+    align-self: start;
 }
 .help {
     display: inline-flex;
