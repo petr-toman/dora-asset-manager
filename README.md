@@ -115,3 +115,13 @@ Tento režim je záměrně podobný práci s dokumentem ve Wordu/Excelu: aplikac
 - Pokud `current_model.txt` chybí nebo odkazuje na neexistující soubor, aplikace vybere nejmladší model kromě `demo.sqlite`; pokud jiný model není k dispozici, otevře `demo.sqlite`.
 - Přepnutí modelu provede reload celé stránky, aby se bezpečně překreslil graf, tabulky, views i reportové zdroje.
 - Levý panel lze zasunout tlačítkem `‹/›`; stav se ukládá do `localStorage`.
+
+## v16 - Projektová dokumentace
+
+Verze v16 doplňuje soubory:
+
+- `PROJECT_STATE.md` — aktuální stav architektury a funkcí,
+- `CHANGELOG.md` — zpětný changelog iterací,
+- `AI-PROMPT.md` — prompt/specifikace pro znovuvytvoření aplikace od začátku.
+
+Funkční kód aplikace vychází z verze v15.

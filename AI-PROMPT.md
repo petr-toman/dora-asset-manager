@@ -1,0 +1,661 @@
+# AI-PROMPT.md
+
+## Prompt pro znovuvytvoření aktuální aplikace od začátku
+
+Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v16.
+
+---
+
+Jsi seniorní full-stack vývojář. Vytvoř kompletní spustitelnou webovou aplikaci **Evidence IT aktiv / DORA Asset Map** jako ZIP projekt. Aplikace má sloužit jako single-user editor/modelář ICT a informačních aktiv podle metodiky DORA. Má se chovat podobně jako Word/Excel dokumentový editor: aplikace běží v Dockeru a jednotlivé modely/projekty jsou samostatné SQLite soubory.
+
+## 1. Technický stack
+
+Použij:
+
+- PHP 8.3
+- Apache
+- SQLite přes PDO
+- HTML5
+- CSS
+- vanilla JavaScript
+- Cytoscape.js z CDN
+- Docker
+- docker compose
+
+Nepoužívej:
+
+- Composer
+- framework typu Laravel/Symfony
+- databázový server
+- login/autentizaci
+- multiuser režim
+- React/Vue/Angular
+
+Aplikace má být jednoduchá, samostatná, přenositelná a spustitelná pomocí:
+
+```bash
+docker compose up --build
+```
+
+A má běžet na:
+
+```text
+http://localhost:8888
+```
+
+## 2. Struktura projektu
+
+Vytvoř projektovou strukturu:
+
+```text
+dora-assets/
+├── Dockerfile
+├── docker-compose.yml
+├── README.md
+├── PROJECT_STATE.md
+├── CHANGELOG.md
+├── AI-PROMPT.md
+├── app/
+│   ├── index.php
+│   ├── api.php
+│   ├── db.php
+│   ├── config.php
+│   ├── schema.sql
+│   ├── report.php
+│   ├── report_docx.php
+│   ├── views/
+│   │   └── main.php
+│   └── assets/
+│       ├── app.js
+│       └── style.css
+└── data/
+```
+
+`docker-compose.yml` musí mapovat:
+
+```yaml
+ports:
+  - "8888:80"
+volumes:
+  - ./data:/data
+```
+
+`Dockerfile` musí instalovat podporu pro SQLite a ZIP:
+
+- `libsqlite3-dev`
+- `sqlite3`
+- `libzip-dev`
+- PHP rozšíření `pdo`, `pdo_sqlite`, `zip`
+
+## 3. Koncept aplikace
+
+Aplikace eviduje graf DORA aktiv:
+
+- uzly = assety/entity,
+- hrany = orientované typované vazby,
+- views = různé uložené mapy/rozložení nad stejnými daty,
+- model/projekt = samostatný SQLite soubor.
+
+Nepoužívej samostatnou tabulku `asset_components`. Hierarchii aktiv modeluj jako hranu typu `contains`.
+
+## 4. Modely/projekty jako SQLite dokumenty
+
+Aplikace musí podporovat více modelů/projektů jako samostatné SQLite soubory.
+
+Runtime adresáře:
+
+```text
+/data/
+  current_model.txt
+  models/
+    demo.sqlite
+    *.sqlite
+  deleted/
+    *.sqlite
+```
+
+### Inicializace modelů
+
+Při startu:
+
+1. vytvoř `/data`, `/data/models` a `/data/deleted`, pokud neexistují,
+2. pokud existuje legacy `/data/assets.sqlite` a `/data/models` je prázdný, zkopíruj jej do `/data/models/assets.sqlite`,
+3. pokud je `/data/models` prázdný, vytvoř `demo.sqlite`,
+4. `demo.sqlite` musí obsahovat ukázková data podobná původnímu prototypu:
+   - SAP ECC,
+   - ALICE,
+   - server,
+   - pojistné smlouvy,
+   - proces správy smluv,
+   - dodavatel,
+   - vazby mezi nimi,
+5. nový model vytvořený přes UI musí být prázdný, bez demo/template dat,
+6. pokud `current_model.txt` obsahuje platný existující model, otevři jej,
+7. jinak otevři nejmladší model kromě `demo.sqlite`,
+8. pokud jiný model není, otevři `demo.sqlite`.
+
+### UI sekce Model / projekt
+
+V levém sidebaru přidej sekci **Model / projekt** s prvky:
+
+- select aktuálního modelu,
+- tlačítko `Nový prázdný`,
+- tlačítko `Kopie aktuálního`,
+- tlačítko `Smazat model`,
+- tlačítko/odkaz `Stáhnout DB`,
+- input file + tlačítko `Nahrát DB`.
+
+### Modelové operace
+
+Implementuj API akce:
+
+- `get_models`,
+- `create_model`,
+- `copy_model`,
+- `switch_model`,
+- `delete_model`,
+- `upload_model`,
+- `download_model`.
+
+Pravidla:
+
+- názvy SQLite souborů validuj, aby neumožňovaly path traversal,
+- povol pouze bezpečné názvy končící `.sqlite`,
+- při duplicitě názvu vytvoř unikátní variantu,
+- `Kopie aktuálního` vytvoří název podle originálu + `kopie` + timestamp,
+- po vytvoření/přepnutí/importu modelu udělej reload celé stránky,
+- `Smazat model` nepálí soubor fyzicky, ale přesune ho do `/data/deleted`,
+- poslední existující model nesmí jít smazat,
+- `demo.sqlite` lze smazat, pokud existuje jiný model.
+
+## 5. SQLite schéma
+
+Vytvoř `schema.sql` s tabulkami:
+
+### `nodes`
+
+Pole:
+
+- `id INTEGER PRIMARY KEY AUTOINCREMENT`
+- `type TEXT NOT NULL DEFAULT 'software'`
+- `name TEXT NOT NULL`
+- `description TEXT`
+- `owner TEXT`
+- `business_owner TEXT`
+- `technical_owner TEXT`
+- `vendor_manufacturer TEXT`
+- `criticality TEXT`
+- `confidentiality TEXT`
+- `integrity_level TEXT`
+- `availability TEXT`
+- `rto_hours INTEGER`
+- `rpo_hours INTEGER`
+- `mtd_hours INTEGER`
+- `data_sensitivity TEXT`
+- `data_categories TEXT`
+- `environment TEXT`
+- `location TEXT`
+- `status TEXT`
+- `lifecycle_state TEXT`
+- `good_to_know TEXT`
+- `last_reviewed_at TEXT`
+- `review_frequency_months INTEGER`
+- `threats TEXT`
+- `risk_scenarios TEXT`
+- `risk_likelihood INTEGER`
+- `risk_impact INTEGER`
+- `risk_controls TEXT`
+- `residual_risk TEXT`
+- `created_at TEXT NOT NULL`
+- `updated_at TEXT NOT NULL`
+
+### `edges`
+
+Pole:
+
+- `id INTEGER PRIMARY KEY AUTOINCREMENT`
+- `source_node_id INTEGER NOT NULL`
+- `target_node_id INTEGER NOT NULL`
+- `type TEXT NOT NULL`
+- `description TEXT`
+- `criticality TEXT`
+- `created_at TEXT NOT NULL`
+- `updated_at TEXT NOT NULL`
+
+Hrany mají foreign key na `nodes` a `ON DELETE CASCADE`.
+
+### `views`
+
+Pole:
+
+- `id INTEGER PRIMARY KEY AUTOINCREMENT`
+- `name TEXT NOT NULL UNIQUE`
+- `description TEXT`
+- `filter_json TEXT`
+- `created_at TEXT NOT NULL`
+- `updated_at TEXT NOT NULL`
+
+Default view:
+
+```text
+id = 1
+name = Celková mapa
+```
+
+Tento view nesmí jít smazat.
+
+### `view_node_positions`
+
+Pole:
+
+- `id INTEGER PRIMARY KEY AUTOINCREMENT`
+- `view_id INTEGER NOT NULL`
+- `node_id INTEGER NOT NULL`
+- `x REAL NOT NULL`
+- `y REAL NOT NULL`
+- `width REAL`
+- `height REAL`
+- `visible INTEGER DEFAULT 1`
+- `collapsed INTEGER DEFAULT 0`
+
+Unikátní klíč:
+
+```text
+UNIQUE(view_id, node_id)
+```
+
+### `change_log`
+
+Pole:
+
+- `id INTEGER PRIMARY KEY AUTOINCREMENT`
+- `action TEXT NOT NULL`
+- `entity_type TEXT NOT NULL`
+- `entity_id INTEGER`
+- `before_json TEXT`
+- `after_json TEXT`
+- `created_at TEXT NOT NULL`
+- `created_by TEXT`
+
+Použij jej jako auditní stopu a základ pro budoucí undo/redo.
+
+## 6. Číselníky
+
+Typy uzlů:
+
+- `hardware`
+- `software`
+- `data`
+- `process`
+- `business_function`
+- `supplier`
+- `provider`
+- `manufacturer`
+- `network`
+- `location`
+- `documentation`
+- `ict_service`
+
+Typy vazeb:
+
+- `contains`
+- `hosts`
+- `runs_on`
+- `stores`
+- `processes_data`
+- `uses_data`
+- `supports_process`
+- `supports_function`
+- `depends_on`
+- `provided_by`
+- `supplied_by`
+- `manufactured_by`
+- `connected_to`
+- `backed_up_by`
+- `monitored_by`
+- `administered_by`
+- `integrates_with`
+- `authenticates_via`
+
+Kritičnost/CIA hodnoty:
+
+- `low`
+- `medium`
+- `high`
+- `critical`
+
+Citlivost dat:
+
+- `public`
+- `private`
+- `secret`
+
+Kategorie dat:
+
+- osobní,
+- firemní-interní,
+- obecná,
+- finanční,
+- obchodní,
+- správní,
+- technologická.
+
+Prostředí:
+
+- `prod`
+- `test`
+- `dev`
+- `archive`
+
+Stav:
+
+- `active`
+- `planned`
+- `retired`
+- `unknown`
+
+Lifecycle:
+
+- `production`
+- `test`
+- `development`
+- `archived`
+- `retired`
+
+## 7. API
+
+Implementuj `api.php` s JSON odpověďmi.
+
+Minimální akce:
+
+- `get_graph`
+- `get_node`
+- `save_node`
+- `delete_node`
+- `save_edge`
+- `delete_edge`
+- `save_position`
+- `get_views`
+- `save_view`
+- `copy_view`
+- `delete_view`
+- `export_json`
+- `get_table_assets`
+- `save_table_assets`
+- `get_table_edges`
+- `save_table_edges`
+- `get_models`
+- `create_model`
+- `copy_model`
+- `switch_model`
+- `delete_model`
+- `upload_model`
+- `download_model`
+
+Všechny akce musí pracovat nad aktuálně vybraným SQLite modelem.
+
+## 8. Grafové UI
+
+V `main.php` vytvoř aplikaci se:
+
+- horní lištou,
+- levým sidebarem,
+- hlavní grafovou plochou,
+- detailním modalem/drawerem assetu,
+- modalem/formulářem vazby,
+- tabulkovými pohledy.
+
+Horní lišta:
+
+- `Graf`
+- `Assety tabulka`
+- `Vazby tabulka`
+- `+ Uzel`
+- `+ Vazba`
+- `Export JSON`
+- `Report / PDF`
+- `Report DOCX`
+
+Levý sidebar obsahuje sekce:
+
+1. Filtr v UI
+2. Výběr
+3. Legenda
+4. Pohled
+5. Model / projekt
+
+Sidebar má být zasouvací tlačítkem `‹ / ›`; stav ukládej do `localStorage`.
+
+Graf:
+
+- použij Cytoscape.js,
+- uzly zobraz jako obdélníkové technické karty,
+- hrany jako směrové čáry s popisky,
+- doubleclick na uzel otevře detail,
+- drag & drop ukládá pozice,
+- click vybírá uzel/hranu.
+
+Podporuj dynamické režimy grafu:
+
+- all,
+- hardware,
+- data,
+- process,
+- supplier,
+- critical,
+- personal_data,
+- impact.
+
+## 9. Views
+
+V sekci **Pohled**:
+
+- select uložených views,
+- `Uložit view`,
+- `Nový view z aktuálního`,
+- `Smazat view`,
+- `Snap to grid`,
+- velikost gridu,
+- `Zarovnat aktuální view`.
+
+`Nový view z aktuálního` zkopíruje aktuální view včetně pozic.
+
+`Smazat view` nesmí smazat view s ID 1.
+
+Snap to grid:
+
+- nastavení ukládej do `localStorage`,
+- při zapnutí zarovnej uzel po puštění myši na mřížku,
+- tlačítko `Zarovnat aktuální view` zarovná všechny viditelné uzly a uloží pozice.
+
+## 10. Detailní karta assetu
+
+Detailní karta má být světlá technická karta/modal. Sekce:
+
+1. Základní informace
+2. Klasifikace a odolnost
+3. Data, lokalita a revize
+4. Hrozby a rizika
+
+Layout:
+
+- `Popis` jako textarea s rozumnou výškou.
+- Vpravo od popisu:
+  - `Owner`, `Business owner`,
+  - pod nimi `Technical owner`, `Vendor / manufacturer`.
+- `Důvěrnost (CIA)`, `Integrita (CIA)`, `Dostupnost (CIA)` vedle sebe.
+- `RTO [h]`, `RPO [h]`, `MTD [h]` vedle sebe.
+
+Tooltipy `ⓘ` doplň k:
+
+- Kritičnost,
+- Prostředí,
+- Owner,
+- Business owner,
+- Technical owner,
+- Vendor / manufacturer,
+- CIA,
+- RTO,
+- RPO,
+- MTD,
+- Citlivost dat,
+- Revize.
+
+Vysvětlení:
+
+- RTO = Recovery Time Objective, cílová doba obnovy.
+- RPO = Recovery Point Objective, přípustná ztráta dat v hodinách.
+- MTD = Maximum Tolerable Downtime, maximálně tolerovatelný výpadek.
+- CIA = Confidentiality, Integrity, Availability.
+
+## 11. Excel-like tabulky
+
+Přidej dva pohledy:
+
+- `Assety tabulka`,
+- `Vazby tabulka`.
+
+Vlastnosti:
+
+- zobrazit všechna hlavní pole,
+- editace v buňkách,
+- přidat řádek,
+- označit řádky checkboxem,
+- smazat označené řádky,
+- změny ukládat až tlačítkem `Save`,
+- validovat až při `Save`,
+- neplatné buňky zvýraznit červeně,
+- sortování klikem na hlavičku,
+- filtrování,
+- Ctrl+C/Ctrl+V přes TSV kompatibilní s Excelem.
+
+Povinná pole assetu:
+
+- `type`,
+- `name`.
+
+Povinná pole vazby:
+
+- `source_node_id`,
+- `target_node_id`,
+- `type`.
+
+U vazeb zobraz read-only názvy zdrojového a cílového uzlu, ale editovat se mají ID.
+
+## 12. Report / PDF
+
+Vytvoř `/report.php` jako tisknutelný HTML report.
+
+Obsah:
+
+- manažerské shrnutí,
+- počty assetů podle typu,
+- heatmapa rizik,
+- nejkritičtější assety,
+- detailní seznam assetů,
+- atributy assetů,
+- odchozí vazby,
+- příchozí vazby,
+- metodická poznámka.
+
+V HTML reportu přidej tlačítka:
+
+- `Tisk / uložit jako PDF`,
+- `Export DOCX / Word`.
+
+## 13. DOCX report
+
+Vytvoř `/report_docx.php`, který vygeneruje `.docx` soubor.
+
+Nepoužívej Composer ani PHPWord. Vygeneruj minimální validní DOCX jako ZIP s částmi:
+
+- `[Content_Types].xml`,
+- `_rels/.rels`,
+- `word/document.xml`,
+- případně `word/styles.xml`.
+
+DOCX obsahuje podobné sekce jako HTML report:
+
+- manažerské shrnutí,
+- počty assetů podle typů,
+- heatmapu rizik jako Word tabulku,
+- top kritická aktiva,
+- detailní seznam assetů,
+- vazby,
+- metodickou poznámku.
+
+## 14. Risk scoring
+
+U assetu eviduj:
+
+- hrozby,
+- rizikové scénáře,
+- pravděpodobnost 1–5,
+- dopad 1–5,
+- opatření/kontroly,
+- reziduální riziko.
+
+Použij jednoduché pracovní skóre:
+
+```text
+risk_likelihood × risk_impact
++ váha criticality
++ váha nejvyšší hodnoty CIA
++ váha RTO
+```
+
+RTO váha má zvýšit skóre, pokud je RTO krátké.
+
+## 15. Design
+
+Použij světlejší technický design:
+
+- čistý CMDB/architecture styl,
+- světlé panely,
+- jemná technická mřížka v grafu,
+- uzly jako technické karty,
+- barevné akcenty podle typu uzlu,
+- decentní hrany podle typu vazby,
+- dobře čitelný sidebar,
+- moderní modal detailu,
+- tabulky podobné Excelu.
+
+Barvy uzlů podle typu:
+
+- hardware: šedá/modrošedá,
+- software: modrá,
+- data: zelená,
+- process: oranžová,
+- supplier/provider/manufacturer: fialová,
+- ostatní: neutrální.
+
+Hrany:
+
+- `contains` čárkovaně,
+- data vazby zeleně,
+- hosting modře,
+- procesní vazby oranžově,
+- dodavatelské vazby fialově,
+- ostatní neutrálně.
+
+## 16. Dokumentace
+
+Do ZIPu přidej:
+
+- `README.md` s návodem ke spuštění a shrnutím funkcí,
+- `PROJECT_STATE.md` s popisem aktuální architektury a stavu,
+- `CHANGELOG.md` se seznamem iterací,
+- `AI-PROMPT.md` s tímto promptem.
+
+## 17. Kvalita a kontroly
+
+- PHP soubory musí projít `php -l`.
+- JavaScript musí být syntakticky validní.
+- Aplikace má fungovat bez internetu kromě načtení Cytoscape.js z CDN; pro offline variantu lze později přibalit lokální soubor.
+- Aplikace je určena pro single-user provoz.
+- Přechod na MariaDB/PostgreSQL není součástí této verze.
+- Nepřidávej login.
+- Nepřidávej merge modelů.
+- Nepřidávej porovnání modelů.
+
+Výstupem má být ZIP s celým projektem.
