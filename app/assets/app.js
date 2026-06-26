@@ -58,7 +58,7 @@ async function loadModels() {
     if (!select) return data;
     select.innerHTML = '';
     data.models.forEach(name => {
-        const label = name === data.default ? `${name} (default)` : name;
+        const label = name === data.demo ? `${name} (demo)` : name;
         select.append(new Option(label, name));
     });
     select.value = data.current;
@@ -66,16 +66,35 @@ async function loadModels() {
 }
 
 async function reloadAfterModelChange(message) {
-    selected = null;
-    currentViewId = 1;
-    await loadModels();
-    await loadViews();
-    $('#viewSelect').value = currentViewId;
-    await loadGraph();
-    if (!$('#assetsTableView').classList.contains('hidden')) await loadAssetsTable();
-    if (!$('#edgesTableView').classList.contains('hidden')) await loadEdgesTable();
-    updateSelectedInfo();
-    toast(message);
+    sessionStorage.setItem('doraPendingToast', message || 'Model změněn');
+    window.location.reload();
+}
+
+function showPendingToast() {
+    const msg = sessionStorage.getItem('doraPendingToast');
+    if (msg) {
+        sessionStorage.removeItem('doraPendingToast');
+        toast(msg);
+    }
+}
+
+function initSidebarToggle() {
+    const collapsed = localStorage.getItem('doraSidebarCollapsed') === '1';
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+    const btn = $('#btnToggleSidebar');
+    if (!btn) return;
+    const update = () => {
+        const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+        btn.textContent = isCollapsed ? '›' : '‹';
+        btn.title = isCollapsed ? 'Rozbalit levý panel' : 'Skrýt levý panel';
+        localStorage.setItem('doraSidebarCollapsed', isCollapsed ? '1' : '0');
+        setTimeout(() => { if (cy) cy.resize(); }, 180);
+    };
+    update();
+    btn.addEventListener('click', () => {
+        document.body.classList.toggle('sidebar-collapsed');
+        update();
+    });
 }
 
 async function switchModel() {
@@ -896,6 +915,8 @@ async function copyWholeTable(tableId) {
 }
 
 async function main() {
+    initSidebarToggle();
+    showPendingToast();
     await loadMeta();
     await loadModels();
     await loadViews();

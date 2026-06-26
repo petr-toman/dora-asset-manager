@@ -22,7 +22,7 @@ SQLite modely/databáze jsou uložené v persistentním adresáři:
 ./data/deleted/*.sqlite
 ```
 
-Při prvním spuštění se vytvoří `default.sqlite`. Pokud aplikace najde starší `./data/assets.sqlite`, zkopíruje jej do `./data/models/default.sqlite` jako výchozí model.
+Při prvním spuštění prázdné datové složky se vytvoří ukázkový model `demo.sqlite` se stejnými demo daty jako starší prototyp. Pokud aplikace najde starší `./data/assets.sqlite` a adresář modelů je prázdný, zkopíruje jej do `./data/models/assets.sqlite` jako běžný model a zároveň vytvoří `demo.sqlite`.
 
 ## Funkce prototypu
 
@@ -95,14 +95,23 @@ HTML/PDF report otevřeš tlačítkem `Report / PDF`. V reportu je tlačítko `E
 
 ## v14 - Modely / projekty jako SQLite dokumenty
 
-Aplikace nyní podporuje více samostatných modelů/projektů. Každý model je jeden SQLite soubor v `./data/models`. Aktuální model je uložen v `./data/current_model.txt`.
+Aplikace nyní podporuje více samostatných modelů/projektů. Každý model je jeden SQLite soubor v `./data/models`. Aktuální model je uložen v `./data/current_model.txt`. Pokud tento soubor chybí nebo obsahuje neplatný/neexistující model, aplikace otevře nejmladší model, který se nejmenuje `demo.sqlite`; pokud žádný takový neexistuje, otevře `demo.sqlite`.
 
 V levém panelu je sekce **Model / projekt**:
 
 - `Nový prázdný` vytvoří nový prázdný SQLite model bez demo dat.
 - `Kopie aktuálního` vytvoří kopii aktuálního modelu a přepne se na ni. Defaultní název je původní název + `kopie` + časové razítko.
-- `Smazat model` přesune model do `./data/deleted`, fyzicky jej okamžitě nemaže. `default.sqlite` nelze smazat.
+- `Smazat model` přesune model do `./data/deleted`, fyzicky jej okamžitě nemaže. Nelze smazat poslední existující model; `demo.sqlite` lze smazat, pokud existuje jiný model.
 - `Stáhnout DB` stáhne aktuální SQLite soubor.
 - `Nahrát DB` nahraje SQLite soubor do `./data/models`, zkontroluje duplicitu názvu a přepne se na importovaný model.
 
 Tento režim je záměrně podobný práci s dokumentem ve Wordu/Excelu: aplikace je editor, SQLite soubor je dokument.
+
+
+## v15 - Modely jako dokumenty + sklápěcí panel
+
+- Při prvním spuštění prázdné složky `./data/models` se vytvoří `demo.sqlite` s ukázkovými daty.
+- Nový model vytvořený z UI je prázdný, bez template/demo záznamů.
+- Pokud `current_model.txt` chybí nebo odkazuje na neexistující soubor, aplikace vybere nejmladší model kromě `demo.sqlite`; pokud jiný model není k dispozici, otevře `demo.sqlite`.
+- Přepnutí modelu provede reload celé stránky, aby se bezpečně překreslil graf, tabulky, views i reportové zdroje.
+- Levý panel lze zasunout tlačítkem `‹/›`; stav se ukládá do `localStorage`.

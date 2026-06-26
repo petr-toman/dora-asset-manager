@@ -134,7 +134,7 @@ function get_models_api(): void
     json_response([
         'ok' => true,
         'current' => current_model_name(),
-        'default' => default_model_name(),
+        'demo' => demo_model_name(),
         'models' => list_models(),
     ]);
 }
@@ -180,9 +180,6 @@ function delete_model_api(): void
     $data = read_json_body();
     $name = validate_model_file_name((string)($data['name'] ?? ''));
     $models = list_models();
-    if ($name === default_model_name()) {
-        json_response(['ok' => false, 'error' => 'Defaultní model nelze smazat'], 400);
-    }
     if (count($models) <= 1) {
         json_response(['ok' => false, 'error' => 'Poslední model nelze smazat'], 400);
     }
@@ -202,7 +199,9 @@ function delete_model_api(): void
         }
     }
     if (current_model_name() === $name) {
-        set_current_model(default_model_name());
+        $fallback = choose_fallback_model();
+        if ($fallback === $name) { $fallback = demo_model_name(); }
+        set_current_model($fallback);
     }
     json_response(['ok' => true, 'deleted' => $deletedName, 'current' => current_model_name(), 'models' => list_models()]);
 }

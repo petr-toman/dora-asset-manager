@@ -26,7 +26,8 @@
 </header>
 
 <main id="graphView" class="layout">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
+        <button id="btnToggleSidebar" class="sidebar-toggle" type="button" title="Skrýt levý panel">‹</button>
         <section class="panel">
             <h2>Filtr v UI</h2>
             <input id="searchBox" type="search" placeholder="Hledat název / popis...">
@@ -105,7 +106,7 @@
                 <button id="btnUploadModel">Nahrát DB</button>
                 <input id="modelUploadInput" type="file" accept=".sqlite,.db,application/vnd.sqlite3,application/octet-stream" class="hidden">
             </div>
-            <p class="hint">Každý model je samostatný SQLite soubor v <code>/data/models</code>. Smazání přesune soubor do <code>/data/deleted</code>.</p>
+            <p class="hint">Každý model je samostatný SQLite soubor v <code>/data/models</code>. <code>demo.sqlite</code> je ukázkový model; lze jej zkopírovat, použít jako inspiraci nebo smazat, pokud existuje jiný model. Smazání přesune soubor do <code>/data/deleted</code>.</p>
         </section>
     </aside>
 
