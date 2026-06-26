@@ -3,7 +3,7 @@ services:
     build: .
     container_name: dora-assets
     ports:
-      - "8080:80"
+      - "8888:80"
     volumes:
       - ./data:/data
     environment:

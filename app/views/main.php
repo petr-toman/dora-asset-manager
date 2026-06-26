@@ -14,7 +14,10 @@
         <span>DORA ICT / information asset map</span>
     </div>
     <div class="top-actions">
-        <button id="btnAddNode" class="primary">+ Uzel</button>
+        <button id="btnShowGraph" class="primary">Graf</button>
+        <button id="btnShowAssetsTable">Assety tabulka</button>
+        <button id="btnShowEdgesTable">Vazby tabulka</button>
+        <button id="btnAddNode">+ Uzel</button>
         <button id="btnAddEdge">+ Vazba</button>
         <button id="btnSaveView">Uložit view</button>
         <button id="btnExport">Export JSON</button>
@@ -22,7 +25,7 @@
     </div>
 </header>
 
-<main class="layout">
+<main id="graphView" class="layout">
     <aside class="sidebar">
         <section class="panel">
             <h2>Pohled</h2>
@@ -84,6 +87,40 @@
         <div id="cy"></div>
     </section>
 </main>
+
+<section id="assetsTableView" class="table-view hidden">
+    <div class="table-toolbar">
+        <div>
+            <h2>Assety jako tabulka</h2>
+            <p>Edituj přímo v buňkách. Tabulka podporuje filtrování, sortování a vložení TSV z Excelu.</p>
+        </div>
+        <div>
+            <input id="assetsTableFilter" type="search" placeholder="Filtrovat assety...">
+            <button id="btnReloadAssetsTable">Reload</button>
+            <button id="btnCopyAssetsTable">Kopírovat tabulku</button>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table id="assetsGrid" class="data-grid"></table>
+    </div>
+</section>
+
+<section id="edgesTableView" class="table-view hidden">
+    <div class="table-toolbar">
+        <div>
+            <h2>Vazby jako tabulka</h2>
+            <p>Edituj přímo v buňkách. Zdroj a cíl se editují přes ID uzlu; názvy jsou pomocné read-only sloupce.</p>
+        </div>
+        <div>
+            <input id="edgesTableFilter" type="search" placeholder="Filtrovat vazby...">
+            <button id="btnReloadEdgesTable">Reload</button>
+            <button id="btnCopyEdgesTable">Kopírovat tabulku</button>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table id="edgesGrid" class="data-grid"></table>
+    </div>
+</section>
 
 <div id="nodeModal" class="modal hidden">
     <div class="modal-content large">

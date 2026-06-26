@@ -11,7 +11,7 @@ docker compose up --build
 Aplikace poběží na:
 
 ```text
-http://localhost:8080
+http://localhost:8888
 ```
 
 SQLite databáze je uložená v persistentním adresáři:
@@ -32,6 +32,8 @@ SQLite databáze je uložená v persistentním adresáři:
 - základní rizikové atributy: hrozby, scénáře, pravděpodobnost, dopad, kontroly, reziduální riziko
 - views a dynamické pohledy
 - export JSON
+- excel-like tabulka assetů s editací buněk, filtrováním, sortováním a copy/paste přes TSV
+- excel-like tabulka vazeb s editací buněk, filtrováním, sortováním a copy/paste přes TSV
 - tisknutelný report: `/report.php`
 - heatmapa rizik v reportu
 - change log pro auditní stopu a budoucí undo/redo

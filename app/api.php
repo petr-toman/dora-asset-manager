@@ -65,6 +65,14 @@ try {
             risk_summary($pdo);
             break;
 
+        case 'get_nodes_table':
+            get_nodes_table($pdo);
+            break;
+
+        case 'get_edges_table':
+            get_edges_table($pdo);
+            break;
+
         case 'change_log':
             change_log($pdo);
             break;
@@ -401,6 +409,24 @@ function export_json(PDO $pdo): void
         'view_node_positions' => $pdo->query('SELECT * FROM view_node_positions ORDER BY view_id, node_id')->fetchAll(),
         'change_log' => $pdo->query('SELECT * FROM change_log ORDER BY id')->fetchAll(),
     ]);
+}
+
+
+function get_nodes_table(PDO $pdo): void
+{
+    $rows = $pdo->query('SELECT * FROM nodes ORDER BY id')->fetchAll();
+    json_response(['ok' => true, 'nodes' => $rows]);
+}
+
+function get_edges_table(PDO $pdo): void
+{
+    $sql = 'SELECT e.*, s.name AS source_name, t.name AS target_name
+            FROM edges e
+            LEFT JOIN nodes s ON s.id = e.source_node_id
+            LEFT JOIN nodes t ON t.id = e.target_node_id
+            ORDER BY e.id';
+    $rows = $pdo->query($sql)->fetchAll();
+    json_response(['ok' => true, 'edges' => $rows]);
 }
 
 function change_log(PDO $pdo): void

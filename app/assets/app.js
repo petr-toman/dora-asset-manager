@@ -333,10 +333,218 @@ function openSaveViewModal() {
     openModal('viewModal');
 }
 
+const nodeColumns = [
+  ['id','ID', false], ['type','Typ', true], ['name','Název', true], ['description','Popis', true],
+  ['owner','Owner', true], ['business_owner','Business owner', true], ['technical_owner','Technical owner', true],
+  ['criticality','Kritičnost', true], ['confidentiality','Důvěrnost', true], ['integrity_level','Integrita', true], ['availability','Dostupnost', true],
+  ['rto_hours','RTO h', true], ['rpo_hours','RPO h', true], ['mtd_hours','MTD h', true],
+  ['data_sensitivity','Citlivost dat', true], ['data_categories','Kategorie dat', true],
+  ['environment','Prostředí', true], ['location','Lokalita', true], ['status','Stav', true], ['lifecycle_state','Lifecycle', true],
+  ['last_reviewed_at','Poslední revize', true], ['review_frequency_months','Revize měs.', true],
+  ['threats','Hrozby', true], ['risk_scenarios','Rizikové scénáře', true], ['risk_likelihood','Pravděp. 1-5', true], ['risk_impact','Dopad 1-5', true],
+  ['risk_controls','Kontroly', true], ['residual_risk','Reziduální riziko', true], ['good_to_know','Good-to-know', true]
+];
+
+const edgeColumns = [
+  ['id','ID', false], ['source_node_id','Zdroj ID', true], ['source_name','Zdroj název', false],
+  ['target_node_id','Cíl ID', true], ['target_name','Cíl název', false], ['type','Typ vazby', true],
+  ['criticality','Kritičnost', true], ['description','Popis', true]
+];
+
+let tableSort = { assetsGrid: { field: 'id', dir: 1 }, edgesGrid: { field: 'id', dir: 1 } };
+let tableRows = { assetsGrid: [], edgesGrid: [] };
+
+function showView(view) {
+    $('#graphView').classList.toggle('hidden', view !== 'graph');
+    $('#assetsTableView').classList.toggle('hidden', view !== 'assets');
+    $('#edgesTableView').classList.toggle('hidden', view !== 'edges');
+    if (view === 'graph' && cy) setTimeout(() => cy.resize(), 50);
+    if (view === 'assets') loadAssetsTable();
+    if (view === 'edges') loadEdgesTable();
+}
+
+async function loadAssetsTable() {
+    const data = await fetchJson(`${api}?action=get_nodes_table`);
+    tableRows.assetsGrid = data.nodes;
+    renderEditableTable('assetsGrid', nodeColumns, data.nodes, 'node');
+}
+
+async function loadEdgesTable() {
+    const data = await fetchJson(`${api}?action=get_edges_table`);
+    tableRows.edgesGrid = data.edges;
+    renderEditableTable('edgesGrid', edgeColumns, data.edges, 'edge');
+}
+
+function renderEditableTable(tableId, columns, rows, kind) {
+    const table = $('#' + tableId);
+    const filterId = tableId === 'assetsGrid' ? '#assetsTableFilter' : '#edgesTableFilter';
+    const filter = ($(filterId)?.value || '').trim().toLowerCase();
+    const sort = tableSort[tableId];
+    let visibleRows = [...rows];
+    if (filter) {
+        visibleRows = visibleRows.filter(r => Object.values(r).join(' ').toLowerCase().includes(filter));
+    }
+    visibleRows.sort((a,b) => compareValues(a[sort.field], b[sort.field]) * sort.dir);
+
+    const thead = document.createElement('thead');
+    const hr = document.createElement('tr');
+    columns.forEach(([field, label]) => {
+        const th = document.createElement('th');
+        th.textContent = label + (sort.field === field ? (sort.dir > 0 ? ' ▲' : ' ▼') : '');
+        th.dataset.field = field;
+        th.addEventListener('click', () => {
+            if (tableSort[tableId].field === field) tableSort[tableId].dir *= -1;
+            else tableSort[tableId] = { field, dir: 1 };
+            renderEditableTable(tableId, columns, tableRows[tableId], kind);
+        });
+        hr.appendChild(th);
+    });
+    thead.appendChild(hr);
+
+    const tbody = document.createElement('tbody');
+    visibleRows.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.dataset.id = row.id;
+        columns.forEach(([field, label, editable]) => {
+            const td = document.createElement('td');
+            td.dataset.field = field;
+            td.dataset.kind = kind;
+            td.dataset.id = row.id;
+            td.textContent = row[field] ?? '';
+            if (editable) {
+                td.contentEditable = 'true';
+                td.classList.add('editable-cell');
+                td.addEventListener('focus', () => td.dataset.before = td.textContent);
+                td.addEventListener('blur', () => saveTableRowFromCell(td));
+                td.addEventListener('keydown', tableCellKeydown);
+                td.addEventListener('paste', tableCellPaste);
+            } else {
+                td.classList.add('readonly-cell');
+            }
+            tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+    });
+
+    table.innerHTML = '';
+    table.appendChild(thead);
+    table.appendChild(tbody);
+}
+
+function compareValues(a, b) {
+    const na = Number(a), nb = Number(b);
+    if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+    return String(a ?? '').localeCompare(String(b ?? ''), 'cs', { numeric: true, sensitivity: 'base' });
+}
+
+function tableCellKeydown(evt) {
+    if (evt.key === 'Enter' && !evt.shiftKey) {
+        evt.preventDefault();
+        evt.target.blur();
+        moveToCell(evt.target, 1, 0);
+    }
+    if (evt.key === 'Tab') {
+        evt.preventDefault();
+        evt.target.blur();
+        moveToCell(evt.target, 0, evt.shiftKey ? -1 : 1);
+    }
+}
+
+function moveToCell(td, rowDelta, colDelta) {
+    const tr = td.parentElement;
+    const rows = Array.from(tr.parentElement.querySelectorAll('tr'));
+    const r = rows.indexOf(tr);
+    const c = Array.from(tr.children).indexOf(td);
+    const next = rows[r + rowDelta]?.children[c + colDelta] || rows[r + rowDelta]?.children[c] || tr.children[c + colDelta];
+    if (next && next.isContentEditable) next.focus();
+}
+
+function tableCellPaste(evt) {
+    const text = evt.clipboardData?.getData('text/plain') || '';
+    if (!text.includes('\t') && !text.includes('\n')) return;
+    evt.preventDefault();
+    const start = evt.target;
+    const table = start.closest('table');
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    const startRow = rows.indexOf(start.parentElement);
+    const startCol = Array.from(start.parentElement.children).indexOf(start);
+    const matrix = text.replace(/\r/g, '').split('\n').filter((line, idx, arr) => !(idx === arr.length - 1 && line === '')).map(line => line.split('\t'));
+    matrix.forEach((line, rOff) => {
+        const tr = rows[startRow + rOff];
+        if (!tr) return;
+        line.forEach((value, cOff) => {
+            const cell = tr.children[startCol + cOff];
+            if (cell && cell.isContentEditable) {
+                cell.textContent = value;
+                cell.classList.add('dirty-cell');
+            }
+        });
+    });
+    const changedRows = new Set();
+    matrix.forEach((line, rOff) => {
+        const tr = rows[startRow + rOff];
+        if (tr) changedRows.add(tr);
+    });
+    changedRows.forEach(tr => saveTableRow(tr));
+}
+
+async function saveTableRowFromCell(td) {
+    if (td.dataset.before === td.textContent) return;
+    td.classList.add('dirty-cell');
+    await saveTableRow(td.parentElement);
+}
+
+async function saveTableRow(tr) {
+    const table = tr.closest('table');
+    const kind = tr.querySelector('td[data-kind]')?.dataset.kind;
+    const payload = {};
+    tr.querySelectorAll('td[data-field]').forEach(td => {
+        const field = td.dataset.field;
+        if (td.isContentEditable || field === 'id') payload[field] = td.textContent.trim();
+    });
+    try {
+        if (kind === 'node') {
+            await postJson('save_node', payload);
+            await loadGraph();
+            await loadAssetsTable();
+        } else if (kind === 'edge') {
+            await postJson('save_edge', payload);
+            await loadGraph();
+            await loadEdgesTable();
+        }
+        tr.querySelectorAll('.dirty-cell').forEach(td => td.classList.remove('dirty-cell'));
+        tr.classList.add('saved-row');
+        setTimeout(() => tr.classList.remove('saved-row'), 700);
+    } catch (e) {
+        tr.classList.add('error-row');
+        toast('Tabulka: ' + e.message);
+    }
+}
+
+async function copyWholeTable(tableId) {
+    const table = $('#' + tableId);
+    const lines = [];
+    table.querySelectorAll('tr').forEach(tr => {
+        lines.push(Array.from(tr.children).map(c => c.textContent.replace(/\n/g, ' ')).join('\t'));
+    });
+    await navigator.clipboard.writeText(lines.join('\n'));
+    toast('Tabulka zkopírována do schránky');
+}
+
 async function main() {
     await loadMeta();
     await loadViews();
     await loadGraph();
+
+    $('#btnShowGraph').addEventListener('click', () => showView('graph'));
+    $('#btnShowAssetsTable').addEventListener('click', () => showView('assets'));
+    $('#btnShowEdgesTable').addEventListener('click', () => showView('edges'));
+    $('#btnReloadAssetsTable').addEventListener('click', loadAssetsTable);
+    $('#btnReloadEdgesTable').addEventListener('click', loadEdgesTable);
+    $('#assetsTableFilter').addEventListener('input', () => renderEditableTable('assetsGrid', nodeColumns, tableRows.assetsGrid, 'node'));
+    $('#edgesTableFilter').addEventListener('input', () => renderEditableTable('edgesGrid', edgeColumns, tableRows.edgesGrid, 'edge'));
+    $('#btnCopyAssetsTable').addEventListener('click', () => copyWholeTable('assetsGrid'));
+    $('#btnCopyEdgesTable').addEventListener('click', () => copyWholeTable('edgesGrid'));
 
     $('#btnAddNode').addEventListener('click', () => openNodeModalById(null));
     $('#btnAddEdge').addEventListener('click', () => openEdgeModalById(null));

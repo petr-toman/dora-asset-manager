@@ -144,3 +144,63 @@ a.button {
     border-top: 1px solid #e5e7eb;
     color: #334155;
 }
+
+.table-view {
+    height: calc(100vh - 74px);
+    padding: 16px;
+    background: #f1f5f9;
+    overflow: hidden;
+}
+.table-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+.table-toolbar h2 { margin: 0 0 4px; font-size: 20px; }
+.table-toolbar p { margin: 0; color: var(--muted); font-size: 13px; }
+.table-toolbar input { width: 260px; }
+.table-wrap {
+    height: calc(100% - 72px);
+    overflow: auto;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+}
+.data-grid {
+    border-collapse: collapse;
+    min-width: 1800px;
+    width: max-content;
+    font-size: 12px;
+}
+.data-grid th,
+.data-grid td {
+    border: 1px solid #dbe3ef;
+    padding: 5px 7px;
+    max-width: 320px;
+    min-width: 80px;
+    white-space: pre-wrap;
+    vertical-align: top;
+}
+.data-grid th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #e2e8f0;
+    color: #0f172a;
+    cursor: pointer;
+    user-select: none;
+    text-align: left;
+}
+.data-grid td:focus {
+    outline: 2px solid #2563eb;
+    outline-offset: -2px;
+    background: #eff6ff;
+}
+.data-grid .editable-cell { background: #ffffff; }
+.data-grid .readonly-cell { background: #f8fafc; color: #64748b; }
+.data-grid .dirty-cell { background: #fef9c3; }
+.data-grid .saved-row td { box-shadow: inset 0 0 0 9999px rgba(34,197,94,.09); }
+.data-grid .error-row td { box-shadow: inset 0 0 0 9999px rgba(239,68,68,.12); }
