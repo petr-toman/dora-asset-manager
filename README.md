@@ -79,3 +79,8 @@ Tabulkové pohledy **Assety tabulka** a **Vazby tabulka** nyní fungují jako st
 ## v12 poznámka
 
 Grafové view obsahuje volbu **Snap to grid** v panelu Pohled. Při zapnutí se uzly po puštění myši zarovnají na nastavenou mřížku. Tlačítko **Zarovnat aktuální view** zarovná všechny viditelné uzly aktuálního pohledu a pozice uloží.
+
+
+## Reporty
+
+HTML/PDF report otevřeš tlačítkem `Report / PDF`. V reportu je tlačítko `Export DOCX / Word`, případně lze přímo použít `/report_docx.php`. DOCX export vyžaduje PHP rozšíření `zip`, které Dockerfile v této verzi instaluje.

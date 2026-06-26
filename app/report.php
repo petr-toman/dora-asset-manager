@@ -71,7 +71,7 @@ foreach ($nodes as $n) $countsByType[$n['type']] = ($countsByType[$n['type']] ??
     h3 { margin-bottom: 4px; }
     .muted { color: #6b7280; }
     .toolbar { position: sticky; top: 0; background: white; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
-    button { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; cursor: pointer; }
+    button, .button { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; cursor: pointer; text-decoration: none; color: #111827; display: inline-block; }
     table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
     th, td { border: 1px solid #e5e7eb; padding: 6px 8px; vertical-align: top; }
     th { background: #f8fafc; text-align: left; }
@@ -90,9 +90,9 @@ foreach ($nodes as $n) $countsByType[$n['type']] = ($countsByType[$n['type']] ??
 </style>
 </head>
 <body>
-<div class="toolbar"><button onclick="window.print()">Tisk / uložit jako PDF</button> <button onclick="location.href='/'">Zpět do aplikace</button></div>
+<div class="toolbar"><button onclick="window.print()">Tisk / uložit jako PDF</button> <a class="button" href="/report_docx.php">Export DOCX / Word</a> <button onclick="location.href='/'">Zpět do aplikace</button></div>
 <h1>DORA evidence IT aktiv - report</h1>
-<p class="muted">Vygenerováno: <?= h(date('Y-m-d H:i')) ?>. Report je tisknutelný do PDF přes prohlížeč.</p>
+<p class="muted">Vygenerováno: <?= h(date('Y-m-d H:i')) ?>. Report je tisknutelný do PDF přes prohlížeč nebo exportovatelný do DOCX pro Microsoft Word.</p>
 
 <h2>1. Manažerské shrnutí</h2>
 <p>Evidence obsahuje <?= count($nodes) ?> uzlů a <?= count($edges) ?> vazeb. Graf zachycuje ICT a informační aktiva, procesy, dodavatele a jejich závislosti. Kritičnost je odvozena z evidované kritičnosti aktiva, CIA hodnocení, RTO a základního rizikového hodnocení pravděpodobnost × dopad.</p>

@@ -21,6 +21,7 @@
         <button id="btnAddEdge">+ Vazba</button>
         <button id="btnExport">Export JSON</button>
         <a class="button" href="/report.php" target="_blank">Report / PDF</a>
+        <a class="button" href="/report_docx.php">Report DOCX</a>
     </div>
 </header>
 
