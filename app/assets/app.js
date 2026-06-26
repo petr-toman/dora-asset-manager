@@ -271,10 +271,21 @@ async function submitEdge(evt) {
 async function submitView(evt) {
     evt.preventDefault();
     const data = formData(evt.target);
-    await postJson('save_view', data);
+    let saved;
+    if (data.mode === 'clone') {
+        await saveVisiblePositions();
+        saved = await postJson('clone_view', data);
+        currentViewId = Number(saved.id);
+        toast('Nový view vytvořen z aktuálního');
+    } else {
+        saved = await postJson('save_view', data);
+        currentViewId = Number(saved.id || currentViewId);
+        toast('View uloženo');
+    }
     closeModal('viewModal');
     await loadViews();
-    toast('View uloženo');
+    $('#viewSelect').value = currentViewId;
+    await loadGraph();
 }
 
 async function deleteSelected() {
@@ -325,12 +336,59 @@ async function exportJson() {
     URL.revokeObjectURL(a.href);
 }
 
+async function saveVisiblePositions() {
+    if (!cy) return;
+    const nodes = cy.nodes().filter(n => n.data('dbid'));
+    for (const node of nodes) {
+        await postJson('save_position', {
+            view_id: currentViewId,
+            node_id: node.data('dbid'),
+            x: node.position('x'),
+            y: node.position('y')
+        });
+    }
+}
+
 function openSaveViewModal() {
     clearForm($('#viewForm'));
     const selectedOption = $('#viewSelect').selectedOptions[0];
+    $('#viewModalTitle').textContent = 'Uložit aktuální view';
+    $('#viewForm').elements.mode.value = 'save';
     $('#viewForm').elements.id.value = $('#viewSelect').value || '';
-    $('#viewForm').elements.name.value = selectedOption ? selectedOption.textContent : 'Nový view';
+    $('#viewForm').elements.source_view_id.value = '';
+    $('#viewForm').elements.name.value = selectedOption ? selectedOption.textContent : 'Celková mapa';
+    $('#viewForm').elements.description.value = '';
     openModal('viewModal');
+}
+
+function openCloneViewModal() {
+    clearForm($('#viewForm'));
+    const selectedOption = $('#viewSelect').selectedOptions[0];
+    const baseName = selectedOption ? selectedOption.textContent : 'Celková mapa';
+    $('#viewModalTitle').textContent = 'Nový view z aktuálního';
+    $('#viewForm').elements.mode.value = 'clone';
+    $('#viewForm').elements.id.value = '';
+    $('#viewForm').elements.source_view_id.value = $('#viewSelect').value || currentViewId || 1;
+    $('#viewForm').elements.name.value = baseName + ' - kopie';
+    $('#viewForm').elements.description.value = 'Kopie view: ' + baseName;
+    openModal('viewModal');
+}
+
+async function deleteCurrentView() {
+    const id = Number($('#viewSelect').value || 1);
+    const selectedOption = $('#viewSelect').selectedOptions[0];
+    const name = selectedOption ? selectedOption.textContent : 'aktuální view';
+    if (id === 1) {
+        toast('Výchozí view Celková mapa nelze smazat');
+        return;
+    }
+    if (!confirm(`Smazat view „${name}“? Assety ani vazby se nesmažou, smaže se jen uložený pohled a pozice.`)) return;
+    await postJson('delete_view', { id });
+    currentViewId = 1;
+    await loadViews();
+    $('#viewSelect').value = currentViewId;
+    await loadGraph();
+    toast('View smazáno');
 }
 
 const nodeColumns = [
@@ -555,6 +613,8 @@ async function main() {
     $('#btnDeleteSelected').addEventListener('click', deleteSelected);
     $('#btnExport').addEventListener('click', exportJson);
     $('#btnSaveView').addEventListener('click', openSaveViewModal);
+    $('#btnCloneView').addEventListener('click', openCloneViewModal);
+    $('#btnDeleteView').addEventListener('click', deleteCurrentView);
     $('#btnClearFilter').addEventListener('click', () => { $('#searchBox').value=''; $('#typeFilter').value=''; $('#criticalityFilter').value=''; applyUiFilter(); });
     $('#searchBox').addEventListener('input', applyUiFilter);
     $('#typeFilter').addEventListener('change', applyUiFilter);

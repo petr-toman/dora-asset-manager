@@ -57,6 +57,14 @@ try {
             save_view($pdo);
             break;
 
+        case 'clone_view':
+            clone_view($pdo);
+            break;
+
+        case 'delete_view':
+            delete_view($pdo);
+            break;
+
         case 'export_json':
             export_json($pdo);
             break;
@@ -387,15 +395,92 @@ function save_view(PDO $pdo): void
     $filter = $data['filter_json'] ?? '{}';
     if (is_array($filter)) $filter = json_encode($filter, JSON_UNESCAPED_UNICODE);
 
+    $before = null;
     if ($id) {
+        $stmt = $pdo->prepare('SELECT * FROM views WHERE id = ?');
+        $stmt->execute([$id]);
+        $before = $stmt->fetch();
+        if (!$before) json_response(['ok' => false, 'error' => 'View not found'], 404);
         $pdo->prepare('UPDATE views SET name=?, description=?, filter_json=?, updated_at=? WHERE id=?')
             ->execute([$name, normalize_value($data['description'] ?? null), $filter, $now, $id]);
+        $action = 'update_view';
     } else {
         $pdo->prepare('INSERT INTO views (name, description, filter_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
             ->execute([$name, normalize_value($data['description'] ?? null), $filter, $now, $now]);
         $id = (int)$pdo->lastInsertId();
+        $action = 'create_view';
     }
-    json_response(['ok' => true, 'id' => $id]);
+
+    $stmt = $pdo->prepare('SELECT * FROM views WHERE id = ?');
+    $stmt->execute([$id]);
+    $after = $stmt->fetch();
+    log_change($pdo, $action, 'view', $id, $before, $after);
+    json_response(['ok' => true, 'id' => $id, 'view' => $after]);
+}
+
+function clone_view(PDO $pdo): void
+{
+    $data = read_json_body();
+    $sourceId = (int)($data['source_view_id'] ?? 0);
+    if ($sourceId <= 0) json_response(['ok' => false, 'error' => 'Source view is required'], 400);
+
+    $stmt = $pdo->prepare('SELECT * FROM views WHERE id = ?');
+    $stmt->execute([$sourceId]);
+    $source = $stmt->fetch();
+    if (!$source) json_response(['ok' => false, 'error' => 'Source view not found'], 404);
+
+    $name = trim((string)($data['name'] ?? ''));
+    if ($name === '') json_response(['ok' => false, 'error' => 'View name is required'], 400);
+    $description = normalize_value($data['description'] ?? $source['description'] ?? null);
+    $filter = $data['filter_json'] ?? $source['filter_json'] ?? '{}';
+    if (is_array($filter)) $filter = json_encode($filter, JSON_UNESCAPED_UNICODE);
+    $now = now_iso();
+
+    $pdo->beginTransaction();
+    try {
+        $pdo->prepare('INSERT INTO views (name, description, filter_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
+            ->execute([$name, $description, $filter, $now, $now]);
+        $newId = (int)$pdo->lastInsertId();
+
+        $copy = $pdo->prepare('INSERT INTO view_node_positions (view_id, node_id, x, y, width, height, visible, collapsed)
+            SELECT ?, node_id, x, y, width, height, visible, collapsed FROM view_node_positions WHERE view_id = ?');
+        $copy->execute([$newId, $sourceId]);
+
+        $stmt = $pdo->prepare('SELECT * FROM views WHERE id = ?');
+        $stmt->execute([$newId]);
+        $after = $stmt->fetch();
+        log_change($pdo, 'clone_view', 'view', $newId, $source, $after);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+
+    json_response(['ok' => true, 'id' => $newId, 'view' => $after]);
+}
+
+function delete_view(PDO $pdo): void
+{
+    $data = read_json_body();
+    $id = (int)($data['id'] ?? 0);
+    if ($id === 1) {
+        json_response(['ok' => false, 'error' => 'Výchozí view Celková mapa nelze smazat.'], 400);
+    }
+    if ($id <= 0) json_response(['ok' => false, 'error' => 'View id is required'], 400);
+
+    $count = (int)$pdo->query('SELECT COUNT(*) FROM views')->fetchColumn();
+    if ($count <= 1) {
+        json_response(['ok' => false, 'error' => 'Nelze smazat poslední view.'], 400);
+    }
+
+    $stmt = $pdo->prepare('SELECT * FROM views WHERE id = ?');
+    $stmt->execute([$id]);
+    $before = $stmt->fetch();
+    if (!$before) json_response(['ok' => false, 'error' => 'View not found'], 404);
+
+    $pdo->prepare('DELETE FROM views WHERE id = ?')->execute([$id]);
+    log_change($pdo, 'delete_view', 'view', $id, $before, null);
+    json_response(['ok' => true]);
 }
 
 function export_json(PDO $pdo): void

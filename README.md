@@ -31,6 +31,8 @@ SQLite databáze je uložená v persistentním adresáři:
 - editace DORA atributů: kritičnost, CIA, RTO/RPO/MTD, citlivost dat, kategorie dat, revize
 - základní rizikové atributy: hrozby, scénáře, pravděpodobnost, dopad, kontroly, reziduální riziko
 - views a dynamické pohledy
+- nový view z aktuálního včetně zkopírování pozic
+- smazání view s ochranou výchozího view `Celková mapa`
 - export JSON
 - excel-like tabulka assetů s editací buněk, filtrováním, sortováním a copy/paste přes TSV
 - excel-like tabulka vazeb s editací buněk, filtrováním, sortováním a copy/paste přes TSV

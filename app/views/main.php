@@ -20,6 +20,8 @@
         <button id="btnAddNode">+ Uzel</button>
         <button id="btnAddEdge">+ Vazba</button>
         <button id="btnSaveView">Uložit view</button>
+        <button id="btnCloneView">Nový view z aktuálního</button>
+        <button id="btnDeleteView" class="danger subtle-danger">Smazat view</button>
         <button id="btnExport">Export JSON</button>
         <a class="button" href="/report.php" target="_blank">Report / PDF</a>
     </div>
@@ -200,11 +202,13 @@
 <div id="viewModal" class="modal hidden">
     <div class="modal-content">
         <div class="modal-header">
-            <h2>Uložit view</h2>
+            <h2 id="viewModalTitle">Uložit view</h2>
             <button class="icon" data-close="viewModal">×</button>
         </div>
         <form id="viewForm" class="form-grid small">
             <input type="hidden" name="id">
+            <input type="hidden" name="source_view_id">
+            <input type="hidden" name="mode" value="save">
             <label class="span2">Název<input name="name" required></label>
             <label class="span2">Popis<textarea name="description" rows="3"></textarea></label>
             <div class="form-actions span2">
