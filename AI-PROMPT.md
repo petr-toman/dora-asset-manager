@@ -659,3 +659,54 @@ Do ZIPu přidej:
 - Nepřidávej porovnání modelů.
 
 Výstupem má být ZIP s celým projektem.
+
+---
+
+## Dodatek pro verzi v17 — technická a výkonová vylepšení
+
+Při implementaci musí být součástí aplikace také následující technické požadavky:
+
+### Dynamické pohledy
+
+Dynamické grafové views (`hardware`, `data`, `process`, `supplier`, `critical`, `personal_data`, `impact`) nesmí pouze rozšířit okolí vybraných uzlů libovolnými hranami. Každý režim musí mít explicitní seznam povolených typů hran. Při průchodu grafem se smí zahrnout pouze hrany z tohoto seznamu a finální filtrování hran musí používat vypočtený seznam `keepEdgeIds`.
+
+### Validace tabulky vazeb
+
+Excel-like tabulka vazeb musí validovat `source_node_id` a `target_node_id` proti kompletnímu seznamu uzlů v aktuální SQLite databázi, nikoli proti uzlům právě viditelným v grafu. Pro tento účel má existovat endpoint například:
+
+```text
+/api.php?action=get_node_lookup
+```
+
+### Ukládání pozic
+
+Kromě single endpointu `save_position` musí existovat batch endpoint:
+
+```text
+/api.php?action=save_positions
+```
+
+Frontend ho použije pro hromadné uložení pozic, například při `Zarovnat aktuální view`. Backend musí ověřit existenci `view_id` i všech `node_id`, zapisovat pouze reálně změněné pozice a v audit logu hromadnou změnu uložit agregovaně jako `move_nodes_batch`.
+
+### Validace API
+
+Endpointy pro ukládání pozic musí vracet řízené JSON chyby 400/404, pokud `view_id` nebo `node_id` neexistují. Nemají spoléhat na SQLite foreign key exception a HTTP 500.
+
+### Change log retention
+
+Change log se nesmí neomezeně nafukovat. Aplikace má mít konfigurovatelnou retenci:
+
+```text
+DORA_CHANGE_LOG_RETENTION_DAYS = 90
+DORA_CHANGE_LOG_MAX_RECORDS = 5000
+```
+
+Po zápisu do change logu se má provádět lehké čištění podle stáří a maximálního počtu záznamů.
+
+### Rizikové skóre
+
+Nevyplněná pravděpodobnost nebo dopad se nesmí interpretovat jako `1 × 1`. Pokud `risk_likelihood` nebo `risk_impact` chybí, asset má mít stav `unrated` / nehodnoceno, jeho skóre má být `null` a v reportech se má zobrazit zvlášť mimo heatmapu.
+
+### SQLite kopie modelu
+
+Před kopírováním nebo stažením aktuálního SQLite modelu má aplikace zavolat `PRAGMA wal_checkpoint(FULL)` a zkontrolovat návratový stav. Pokud je checkpoint `busy`, operace má vrátit řízenou chybu a nemá kopírovat pouze hlavní `.sqlite` soubor.

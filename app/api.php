@@ -77,6 +77,14 @@ try {
             save_position($pdo);
             break;
 
+        case 'save_positions':
+            save_positions($pdo);
+            break;
+
+        case 'get_node_lookup':
+            get_node_lookup($pdo);
+            break;
+
         case 'get_views':
             get_views($pdo);
             break;
@@ -159,7 +167,7 @@ function copy_model_api(PDO $pdo): void
         $requested = $base . '-kopie-' . gmdate('Ymd-His');
     }
     $target = unique_model_name($requested);
-    $pdo->exec('PRAGMA wal_checkpoint(FULL)');
+    ensure_current_db_checkpoint($pdo);
     if (!copy(model_path($source), model_path($target))) {
         json_response(['ok' => false, 'error' => 'Kopii modelu se nepodařilo vytvořit'], 500);
     }
@@ -244,13 +252,27 @@ function download_model_api(PDO $pdo): void
         json_response(['ok' => false, 'error' => 'Model neexistuje'], 404);
     }
     if ($name === current_model_name()) {
-        $pdo->exec('PRAGMA wal_checkpoint(FULL)');
+        ensure_current_db_checkpoint($pdo);
     }
     header('Content-Type: application/vnd.sqlite3');
     header('Content-Disposition: attachment; filename="' . addslashes($name) . '"');
     header('Content-Length: ' . filesize($path));
     readfile($path);
     exit;
+}
+
+function ensure_current_db_checkpoint(PDO $pdo): void
+{
+    $rows = $pdo->query('PRAGMA wal_checkpoint(FULL)')->fetchAll(PDO::FETCH_NUM);
+    if (!$rows || count($rows[0]) < 3) {
+        json_response(['ok' => false, 'error' => 'SQLite WAL checkpoint nevrátil očekávaný výsledek'], 500);
+    }
+    // SQLite returns [busy, log, checkpointed]. A busy value > 0 means the checkpoint
+    // could not complete fully, so copying only the main .sqlite file would be unsafe.
+    $busy = (int)$rows[0][0];
+    if ($busy > 0) {
+        json_response(['ok' => false, 'error' => 'Model nelze bezpečně zkopírovat/stáhnout: SQLite WAL checkpoint je busy. Zavři ostatní operace a zkus to znovu.'], 409);
+    }
 }
 
 function node_types(): array
@@ -334,11 +356,13 @@ function filter_dynamic_graph(array $nodes, array $edges, string $mode, ?int $no
     $keepNodeIds = [];
     $keepEdgeIds = [];
 
-    $addNode = function ($id) use (&$keepNodeIds, $nodeById) {
+    $addNode = function ($id) use (&$keepNodeIds, $nodeById): bool {
         $id = (int)$id;
-        if (isset($nodeById[$id])) {
+        if (isset($nodeById[$id]) && !isset($keepNodeIds[$id])) {
             $keepNodeIds[$id] = true;
+            return true;
         }
+        return false;
     };
 
     foreach ($nodes as $n) {
@@ -356,35 +380,39 @@ function filter_dynamic_graph(array $nodes, array $edges, string $mode, ?int $no
         $addNode($nodeId);
     }
 
-    $changed = true;
+    $allowedByMode = [
+        'hardware' => ['hosts', 'runs_on', 'contains', 'processes_data', 'stores', 'supports_process', 'supports_function', 'depends_on'],
+        'data' => ['processes_data', 'uses_data', 'stores', 'supports_process', 'supports_function', 'provided_by', 'depends_on'],
+        'process' => ['supports_process', 'supports_function', 'processes_data', 'uses_data', 'contains', 'depends_on', 'provided_by'],
+        'supplier' => ['provided_by', 'supplied_by', 'manufactured_by', 'administered_by', 'monitored_by', 'backed_up_by', 'depends_on'],
+        'critical' => ['contains', 'hosts', 'runs_on', 'stores', 'processes_data', 'uses_data', 'supports_process', 'supports_function', 'depends_on', 'provided_by', 'supplied_by', 'manufactured_by', 'connected_to', 'backed_up_by', 'monitored_by', 'administered_by', 'integrates_with', 'authenticates_via'],
+        'personal_data' => ['processes_data', 'uses_data', 'stores', 'supports_process', 'supports_function', 'provided_by', 'depends_on'],
+        'impact' => ['contains', 'hosts', 'runs_on', 'stores', 'processes_data', 'uses_data', 'supports_process', 'supports_function', 'depends_on', 'provided_by', 'supplied_by', 'manufactured_by', 'connected_to', 'backed_up_by', 'monitored_by', 'administered_by', 'integrates_with', 'authenticates_via'],
+    ];
+    $allowed = $allowedByMode[$mode] ?? null;
+
     $depth = in_array($mode, ['hardware', 'data', 'process', 'supplier', 'impact'], true) ? 3 : 1;
+    $changed = true;
     for ($i = 0; $i < $depth && $changed; $i++) {
         $changed = false;
         foreach ($edges as $e) {
+            $type = (string)$e['type'];
+            if ($allowed !== null && !in_array($type, $allowed, true)) {
+                continue;
+            }
             $s = (int)$e['source_node_id'];
             $t = (int)$e['target_node_id'];
-            $type = $e['type'];
-            $relevant = false;
-
-            if (isset($keepNodeIds[$s]) || isset($keepNodeIds[$t])) {
-                $relevant = true;
+            if (!isset($keepNodeIds[$s]) && !isset($keepNodeIds[$t])) {
+                continue;
             }
-            if ($mode === 'hardware' && in_array($type, ['hosts', 'runs_on', 'processes_data', 'supports_process', 'contains'], true)) $relevant = $relevant && true;
-            if ($mode === 'data' && in_array($type, ['processes_data', 'uses_data', 'stores', 'hosts', 'provided_by', 'supports_process'], true)) $relevant = $relevant && true;
-            if ($mode === 'process' && in_array($type, ['supports_process', 'supports_function', 'processes_data', 'uses_data', 'hosts', 'contains'], true)) $relevant = $relevant && true;
-            if ($mode === 'supplier' && in_array($type, ['provided_by', 'supplied_by', 'manufactured_by', 'depends_on', 'supports_process', 'processes_data'], true)) $relevant = $relevant && true;
-
-            if ($relevant) {
-                if (!isset($keepNodeIds[$s]) || !isset($keepNodeIds[$t])) $changed = true;
-                $addNode($s);
-                $addNode($t);
-                $keepEdgeIds[(int)$e['id']] = true;
-            }
+            $keepEdgeIds[(int)$e['id']] = true;
+            if ($addNode($s)) $changed = true;
+            if ($addNode($t)) $changed = true;
         }
     }
 
     $nodes = array_values(array_filter($nodes, fn($n) => isset($keepNodeIds[(int)$n['id']])));
-    $edges = array_values(array_filter($edges, fn($e) => isset($keepNodeIds[(int)$e['source_node_id']]) && isset($keepNodeIds[(int)$e['target_node_id']])));
+    $edges = array_values(array_filter($edges, fn($e) => isset($keepEdgeIds[(int)$e['id']])));
 
     return [$nodes, $edges];
 }
@@ -522,18 +550,92 @@ function save_position(PDO $pdo): void
     $nodeId = (int)($data['node_id'] ?? 0);
     $x = (float)($data['x'] ?? 0);
     $y = (float)($data['y'] ?? 0);
+    validate_view_and_node($pdo, $viewId, $nodeId);
+    $changed = upsert_position_if_changed($pdo, $viewId, $nodeId, $x, $y);
+    json_response(['ok' => true, 'changed' => $changed]);
+}
 
+function save_positions(PDO $pdo): void
+{
+    $data = read_json_body();
+    $viewId = (int)($data['view_id'] ?? 1);
+    $positions = $data['positions'] ?? [];
+    if (!is_array($positions)) json_response(['ok' => false, 'error' => 'Invalid positions payload'], 400);
+    if (!view_exists($pdo, $viewId)) json_response(['ok' => false, 'error' => 'View neexistuje: ' . $viewId], 404);
+
+    $clean = [];
+    foreach ($positions as $p) {
+        if (!is_array($p)) continue;
+        $nodeId = (int)($p['node_id'] ?? 0);
+        if (!node_exists($pdo, $nodeId)) json_response(['ok' => false, 'error' => 'Uzel neexistuje: ' . $nodeId], 404);
+        $clean[] = ['node_id' => $nodeId, 'x' => (float)($p['x'] ?? 0), 'y' => (float)($p['y'] ?? 0)];
+    }
+
+    $changed = [];
+    $pdo->beginTransaction();
+    try {
+        foreach ($clean as $p) {
+            if (upsert_position_if_changed($pdo, $viewId, (int)$p['node_id'], (float)$p['x'], (float)$p['y'], false)) {
+                $changed[] = $p;
+            }
+        }
+        if ($changed) {
+            log_change($pdo, 'move_nodes_batch', 'view_positions', $viewId, null, ['view_id' => $viewId, 'positions' => $changed, 'count' => count($changed)]);
+        }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+    json_response(['ok' => true, 'changed_count' => count($changed)]);
+}
+
+function validate_view_and_node(PDO $pdo, int $viewId, int $nodeId): void
+{
+    if (!view_exists($pdo, $viewId)) json_response(['ok' => false, 'error' => 'View neexistuje: ' . $viewId], 404);
+    if (!node_exists($pdo, $nodeId)) json_response(['ok' => false, 'error' => 'Uzel neexistuje: ' . $nodeId], 404);
+}
+
+function view_exists(PDO $pdo, int $viewId): bool
+{
+    if ($viewId <= 0) return false;
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM views WHERE id = ?');
+    $stmt->execute([$viewId]);
+    return (int)$stmt->fetchColumn() > 0;
+}
+
+function node_exists(PDO $pdo, int $nodeId): bool
+{
+    if ($nodeId <= 0) return false;
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM nodes WHERE id = ?');
+    $stmt->execute([$nodeId]);
+    return (int)$stmt->fetchColumn() > 0;
+}
+
+function upsert_position_if_changed(PDO $pdo, int $viewId, int $nodeId, float $x, float $y, bool $logSingle = true): bool
+{
     $stmt = $pdo->prepare('SELECT * FROM view_node_positions WHERE view_id = ? AND node_id = ?');
     $stmt->execute([$viewId, $nodeId]);
     $before = $stmt->fetch();
+    if ($before && abs((float)$before['x'] - $x) < 0.01 && abs((float)$before['y'] - $y) < 0.01) {
+        return false;
+    }
 
     $pdo->prepare('INSERT INTO view_node_positions (view_id, node_id, x, y) VALUES (?, ?, ?, ?) ON CONFLICT(view_id, node_id) DO UPDATE SET x=excluded.x, y=excluded.y')
         ->execute([$viewId, $nodeId, $x, $y]);
 
-    $stmt->execute([$viewId, $nodeId]);
-    $after = $stmt->fetch();
-    log_change($pdo, 'move_node', 'position', $nodeId, $before, $after);
-    json_response(['ok' => true]);
+    if ($logSingle) {
+        $stmt->execute([$viewId, $nodeId]);
+        $after = $stmt->fetch();
+        log_change($pdo, 'move_node', 'position', $nodeId, $before, $after);
+    }
+    return true;
+}
+
+function get_node_lookup(PDO $pdo): void
+{
+    $rows = $pdo->query('SELECT id, name, type FROM nodes ORDER BY id')->fetchAll();
+    json_response(['ok' => true, 'nodes' => $rows]);
 }
 
 function get_views(PDO $pdo): void
@@ -863,14 +965,17 @@ function risk_summary(PDO $pdo): void
             $heatmap[$l][$i] = 0;
         }
     }
+    $unrated = 0;
     foreach ($nodes as $n) {
-        $likelihood = (int)($n['risk_likelihood'] ?? 0);
-        $impact = (int)($n['risk_impact'] ?? 0);
-        if ($likelihood < 1 || $likelihood > 5) $likelihood = 1;
-        if ($impact < 1 || $impact > 5) $impact = 1;
+        $likelihood = valid_risk_level($n['risk_likelihood'] ?? null);
+        $impact = valid_risk_level($n['risk_impact'] ?? null);
         $score = asset_risk_score($n);
         $level = score_level($score);
-        $heatmap[$likelihood][$impact]++;
+        if ($likelihood === null || $impact === null) {
+            $unrated++;
+        } else {
+            $heatmap[$likelihood][$impact]++;
+        }
         $items[] = [
             'id' => (int)$n['id'],
             'name' => $n['name'],
@@ -881,16 +986,28 @@ function risk_summary(PDO $pdo): void
             'risk_impact' => $impact,
             'score' => $score,
             'level' => $level,
+            'is_unrated' => $score === null,
         ];
     }
-    usort($items, fn($a, $b) => $b['score'] <=> $a['score']);
-    json_response(['ok' => true, 'items' => $items, 'heatmap' => $heatmap]);
+    usort($items, fn($a, $b) => ($b['score'] ?? -1) <=> ($a['score'] ?? -1));
+    json_response(['ok' => true, 'items' => $items, 'heatmap' => $heatmap, 'unrated' => $unrated]);
 }
 
-function asset_risk_score(array $n): int
+function valid_risk_level($v): ?int
 {
-    $likelihood = max(1, min(5, (int)($n['risk_likelihood'] ?? 1)));
-    $impact = max(1, min(5, (int)($n['risk_impact'] ?? 1)));
+    if ($v === null || $v === '') return null;
+    if (!is_numeric($v)) return null;
+    $i = (int)$v;
+    return ($i >= 1 && $i <= 5) ? $i : null;
+}
+
+function asset_risk_score(array $n): ?int
+{
+    $likelihood = valid_risk_level($n['risk_likelihood'] ?? null);
+    $impact = valid_risk_level($n['risk_impact'] ?? null);
+    if ($likelihood === null || $impact === null) {
+        return null;
+    }
     $base = $likelihood * $impact;
     $crit = level_num($n['criticality'] ?? null);
     $cia = max(level_num($n['confidentiality'] ?? null), level_num($n['integrity_level'] ?? null), level_num($n['availability'] ?? null));
@@ -920,8 +1037,9 @@ function rto_factor($hours): int
     return 1;
 }
 
-function score_level(int $score): string
+function score_level(?int $score): string
 {
+    if ($score === null) return 'unrated';
     if ($score >= 35) return 'critical';
     if ($score >= 27) return 'high';
     if ($score >= 18) return 'medium';

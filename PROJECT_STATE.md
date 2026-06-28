@@ -1,8 +1,8 @@
 # PROJECT_STATE.md
 
-## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v16
+## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v17
 
-Tento dokument zachycuje aktuální stav aplikace po 15 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
+Tento dokument zachycuje aktuální stav aplikace po 17 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
 
 ## 1. Účel aplikace
 
@@ -19,8 +19,8 @@ Mentální model aplikace je: **webová aplikace jako editor, SQLite soubor jako
 
 ## 2. Aktuální verze
 
-- Aktuální iterace: `v16-changelog`
-- Poslední funkční základ: `v15-models-sidebar`
+- Aktuální iterace: `v17-tech-performance`
+- Poslední funkční základ: `v16-changelog` + technické a výkonové opravy v17
 - Aplikace běží na portu: `8888`
 - URL: `http://localhost:8888`
 
@@ -445,3 +445,38 @@ Možné budoucí funkce:
 - rozšířené risk registry,
 - šablony reportů,
 - volitelný přechod na MariaDB/PostgreSQL pro multiuser provoz.
+
+## 14. Technické a výkonové zpevnění ve v17
+
+Verze v17 zapracovává code review zaměřené na správnost dynamických pohledů, validaci a výkon.
+
+### Dynamické views
+
+Dynamické grafové režimy mají explicitní politiku povolených typů vazeb. Například hardware/data/process/supplier pohled už netahá libovolné okolní vazby, ale pouze vazby relevantní pro daný režim. Finální seznam hran je filtrován podle vypočteného `keepEdgeIds`.
+
+### Tabulka vazeb
+
+Editor vazeb validuje zdrojový a cílový uzel proti kompletnímu seznamu uzlů v aktuální SQLite DB, nikoli proti aktuálně zobrazenému grafu. To je důležité, protože graf může být omezen dynamickým view nebo filtrem.
+
+### Pozice uzlů
+
+Pozice uzlů lze ukládat dávkově přes endpoint `save_positions`. Hromadné zarovnání view nebo uložení většího počtu pozic tak neposílá jeden HTTP request na každý uzel. Pozice se zapisují jen při reálné změně a audit se ukládá agregovaně jako `move_nodes_batch`.
+
+### Change log
+
+Change log je automaticky udržovaný podle konfigurace:
+
+```text
+DORA_CHANGE_LOG_RETENTION_DAYS = 90
+DORA_CHANGE_LOG_MAX_RECORDS = 5000
+```
+
+Tím se zabraňuje nekontrolovanému růstu SQLite souboru kvůli velkému počtu technických změn.
+
+### Rizika
+
+Prázdná pravděpodobnost nebo dopad už neznamená nízké riziko `1 × 1`. Takový asset je označen jako `unrated` / nehodnoceno a reporty ho uvádějí zvlášť mimo heatmapu.
+
+### SQLite model copy/download
+
+Před kopírováním nebo stažením aktuálního SQLite modelu se kontroluje výsledek WAL checkpointu. Pokud je checkpoint busy, aplikace vrátí řízenou chybu, protože kopírovat jen hlavní `.sqlite` soubor by nemuselo být bezpečné.

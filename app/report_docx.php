@@ -24,16 +24,24 @@ function docx_rto_factor($hours): int {
     if ($h <= 72) return 2;
     return 1;
 }
-function docx_asset_score(array $n): int {
-    $likelihood = max(1, min(5, (int)($n['risk_likelihood'] ?? 1)));
-    $impact = max(1, min(5, (int)($n['risk_impact'] ?? 1)));
+function docx_valid_risk_level($v): ?int {
+    if ($v === null || $v === '') return null;
+    if (!is_numeric($v)) return null;
+    $i = (int)$v;
+    return ($i >= 1 && $i <= 5) ? $i : null;
+}
+function docx_asset_score(array $n): ?int {
+    $likelihood = docx_valid_risk_level($n['risk_likelihood'] ?? null);
+    $impact = docx_valid_risk_level($n['risk_impact'] ?? null);
+    if ($likelihood === null || $impact === null) return null;
     $base = $likelihood * $impact;
     $crit = docx_level_num($n['criticality'] ?? null);
     $cia = max(docx_level_num($n['confidentiality'] ?? null), docx_level_num($n['integrity_level'] ?? null), docx_level_num($n['availability'] ?? null));
     $rto = docx_rto_factor($n['rto_hours'] ?? null);
     return $base + ($crit * 2) + ($cia * 2) + ($rto * 2);
 }
-function docx_score_level(int $score): string {
+function docx_score_level(?int $score): string {
+    if ($score === null) return 'unrated';
     if ($score >= 35) return 'critical';
     if ($score >= 27) return 'high';
     if ($score >= 18) return 'medium';
@@ -46,6 +54,7 @@ function shade_for_level(string $level): string {
         'critical' => 'FECACA',
         'high' => 'FED7AA',
         'medium' => 'FEF3C7',
+        'unrated' => 'E5E7EB',
         default => 'DCFCE7',
     };
 }
@@ -106,16 +115,17 @@ foreach ($edges as $e) {
 $heat = [];
 for ($l=1;$l<=5;$l++) for ($i=1;$i<=5;$i++) $heat[$l][$i] = [];
 $ranked = [];
+$unrated = [];
 foreach ($nodes as $n) {
-    $l = max(1, min(5, (int)($n['risk_likelihood'] ?? 1)));
-    $i = max(1, min(5, (int)($n['risk_impact'] ?? 1)));
+    $l = docx_valid_risk_level($n['risk_likelihood'] ?? null);
+    $i = docx_valid_risk_level($n['risk_impact'] ?? null);
     $score = docx_asset_score($n);
     $n['_score'] = $score;
     $n['_level'] = docx_score_level($score);
-    $heat[$l][$i][] = $n;
+    if ($l === null || $i === null) $unrated[] = $n; else $heat[$l][$i][] = $n;
     $ranked[] = $n;
 }
-usort($ranked, fn($a,$b) => $b['_score'] <=> $a['_score']);
+usort($ranked, fn($a,$b) => ($b['_score'] ?? -1) <=> ($a['_score'] ?? -1));
 $countsByType = [];
 foreach ($nodes as $n) $countsByType[$n['type']] = ($countsByType[$n['type']] ?? 0) + 1;
 
@@ -124,13 +134,13 @@ $body .= paragraph('DORA evidence IT aktiv - report', 'Title');
 $body .= paragraph('Vygenerováno: '.date('Y-m-d H:i').'. Tento dokument byl vytvořen z aplikace Evidence IT aktiv.', 'Subtitle');
 
 $body .= paragraph('1. Manažerské shrnutí', 'Heading1');
-$body .= paragraph('Evidence obsahuje '.count($nodes).' uzlů a '.count($edges).' vazeb. Graf zachycuje ICT a informační aktiva, procesy, dodavatele a jejich závislosti. Kritičnost je odvozena z evidované kritičnosti aktiva, CIA hodnocení, RTO a základního rizikového hodnocení pravděpodobnost × dopad.');
+$body .= paragraph('Evidence obsahuje '.count($nodes).' uzlů a '.count($edges).' vazeb. Graf zachycuje ICT a informační aktiva, procesy, dodavatele a jejich závislosti. Kritičnost je odvozena z evidované kritičnosti aktiva, CIA hodnocení, RTO a základního rizikového hodnocení pravděpodobnost × dopad. Aktiva bez vyplněné pravděpodobnosti nebo dopadu jsou označena jako nehodnocená, nikoli jako nízké riziko.');
 $typeRows = [[['Typ uzlu', ['bold'=>true, 'shade'=>'E2E8F0']], ['Počet', ['bold'=>true, 'shade'=>'E2E8F0']]]];
 foreach ($countsByType as $type => $cnt) $typeRows[] = [$type, (string)$cnt];
 $body .= table($typeRows, ['header'=>true]);
 
 $body .= paragraph('2. Heatmapa rizik', 'Heading1');
-$body .= paragraph('Svisle pravděpodobnost, vodorovně dopad. Číslo v buňce znamená počet assetů v dané kombinaci. V buňkách jsou uvedeny maximálně tři příklady assetů.');
+$body .= paragraph('Svisle pravděpodobnost, vodorovně dopad. Číslo v buňce znamená počet assetů v dané kombinaci. V buňkách jsou uvedeny maximálně tři příklady assetů. Nehodnoceno: '.count($unrated).' assetů.');
 $heatRows = [[['Pravd. \ Dopad', ['bold'=>true, 'shade'=>'E2E8F0']]]];
 for ($i=1;$i<=5;$i++) $heatRows[0][] = [(string)$i, ['bold'=>true, 'shade'=>'E2E8F0']];
 for ($l=5;$l>=1;$l--) {
@@ -144,17 +154,24 @@ for ($l=5;$l>=1;$l--) {
     $heatRows[] = $r;
 }
 $body .= table($heatRows, ['header'=>true]);
+if (count($unrated)) {
+    $body .= paragraph('Nehodnocená aktiva', 'Heading2');
+    $body .= paragraph('Tato aktiva nemají vyplněnou pravděpodobnost nebo dopad a nejsou proto zařazena do heatmapy jako nízké riziko.');
+    $rows = [[['Asset', ['bold'=>true, 'shade'=>'E2E8F0']], ['Typ', ['bold'=>true, 'shade'=>'E2E8F0']]]];
+    foreach (array_slice($unrated, 0, 30) as $n) $rows[] = [$n['name'], $n['type']];
+    $body .= table($rows, ['header'=>true]);
+}
 
 $body .= paragraph('3. Nejkritičtější aktiva podle kombinovaného skóre', 'Heading1');
 $topRows = [[['Asset', ['bold'=>true, 'shade'=>'E2E8F0']], ['Typ', ['bold'=>true, 'shade'=>'E2E8F0']], ['Kritičnost', ['bold'=>true, 'shade'=>'E2E8F0']], ['RTO', ['bold'=>true, 'shade'=>'E2E8F0']], ['Pravd.', ['bold'=>true, 'shade'=>'E2E8F0']], ['Dopad', ['bold'=>true, 'shade'=>'E2E8F0']], ['Skóre', ['bold'=>true, 'shade'=>'E2E8F0']], ['Úroveň', ['bold'=>true, 'shade'=>'E2E8F0']]]];
 foreach (array_slice($ranked,0,20) as $n) {
-    $topRows[] = [val($n['name']), val($n['type']), val($n['criticality']), val($n['rto_hours']), val($n['risk_likelihood']), val($n['risk_impact']), (string)$n['_score'], [$n['_level'], ['shade'=>shade_for_level($n['_level'])]]];
+    $topRows[] = [val($n['name']), val($n['type']), val($n['criticality']), val($n['rto_hours']), val($n['risk_likelihood']), val($n['risk_impact']), $n['_score'] === null ? '—' : (string)$n['_score'], [$n['_level'], ['shade'=>shade_for_level($n['_level'])]]];
 }
 $body .= table($topRows, ['header'=>true]);
 
 $body .= paragraph('4. Seznam aktiv, atributy a vazby', 'Heading1');
 foreach ($ranked as $n) {
-    $body .= paragraph($n['name'].' — '.$n['_level'].' / '.$n['_score'], 'Heading2');
+    $body .= paragraph($n['name'].' — '.$n['_level'].' / '.($n['_score'] === null ? '—' : $n['_score']), 'Heading2');
     if (trim((string)$n['description']) !== '') $body .= paragraph($n['description']);
     $body .= kv_table([
         ['Typ', $n['type']], ['Kritičnost', $n['criticality']], ['Owner', $n['owner']], ['Business owner', $n['business_owner']], ['Technical owner', $n['technical_owner']], ['Vendor / manufacturer', $n['vendor_manufacturer']], ['Prostředí', $n['environment']], ['Stav', $n['status']], ['Lifecycle', $n['lifecycle_state']], ['C/I/A', val($n['confidentiality']).' / '.val($n['integrity_level']).' / '.val($n['availability'])], ['RTO/RPO/MTD', val($n['rto_hours']).' / '.val($n['rpo_hours']).' / '.val($n['mtd_hours']).' h'], ['Citlivost dat', $n['data_sensitivity']], ['Kategorie dat', $n['data_categories']], ['Lokalita', $n['location']], ['Poslední revize', $n['last_reviewed_at']], ['Hrozby', $n['threats']], ['Rizikové scénáře', $n['risk_scenarios']], ['Opatření / kontroly', $n['risk_controls']], ['Reziduální riziko', $n['residual_risk']], ['Good-to-know poznámky', $n['good_to_know']],
@@ -174,7 +191,7 @@ foreach ($ranked as $n) {
 }
 
 $body .= paragraph('5. Metodická poznámka ke skóre', 'Heading1');
-$body .= paragraph('První verze skóre je záměrně jednoduchá: základ tvoří pravděpodobnost × dopad. K tomu se přičítá váha deklarované kritičnosti, nejvyšší hodnota CIA a faktor RTO. Krátké RTO zvyšuje skóre, protože signalizuje nízkou toleranci výpadku. Skóre je podpůrné a nenahrazuje formální risk assessment.');
+$body .= paragraph('První verze skóre je záměrně jednoduchá: základ tvoří pravděpodobnost × dopad. K tomu se přičítá váha deklarované kritičnosti, nejvyšší hodnota CIA a faktor RTO. Krátké RTO zvyšuje skóre, protože signalizuje nízkou toleranci výpadku. Pokud pravděpodobnost nebo dopad nejsou vyplněny, asset je označen jako nehodnocený a není zařazen do heatmapy jako nízké riziko. Skóre je podpůrné a nenahrazuje formální risk assessment.');
 
 $documentXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" mc:Ignorable="w14 w15 wp14"><w:body>'.$body.'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="850" w:bottom="1134" w:left="850" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>';

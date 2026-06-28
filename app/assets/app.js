@@ -2,6 +2,7 @@ const api = 'api.php';
 let cy;
 let meta = { node_types: {}, edge_types: {} };
 let graph = { nodes: [], edges: [] };
+let allNodeLookup = new Map();
 let selected = null;
 let currentViewId = 1;
 
@@ -50,6 +51,12 @@ async function loadViews() {
     data.views.forEach(v => select.append(new Option(v.name, v.id)));
     if (![...select.options].some(o => o.value == currentViewId)) currentViewId = data.views[0]?.id || 1;
     select.value = currentViewId;
+}
+
+async function loadNodeLookup() {
+    const data = await fetchJson(`${api}?action=get_node_lookup`);
+    allNodeLookup = new Map((data.nodes || []).map(n => [String(n.id), n]));
+    return allNodeLookup;
 }
 
 async function loadModels() {
@@ -526,15 +533,12 @@ async function exportJson() {
 
 async function saveVisiblePositions() {
     if (!cy) return;
-    const nodes = cy.nodes().filter(n => n.data('dbid'));
-    for (const node of nodes) {
-        await postJson('save_position', {
-            view_id: currentViewId,
-            node_id: node.data('dbid'),
-            x: isSnapToGridEnabled() ? snappedPosition(node.position()).x : node.position('x'),
-            y: isSnapToGridEnabled() ? snappedPosition(node.position()).y : node.position('y')
-        });
-    }
+    const positions = cy.nodes().filter(n => n.data('dbid')).map(node => {
+        const pos = isSnapToGridEnabled() ? snappedPosition(node.position()) : node.position();
+        return { view_id: currentViewId, node_id: node.data('dbid'), x: pos.x, y: pos.y };
+    });
+    if (!positions.length) return;
+    await postJson('save_positions', { view_id: currentViewId, positions });
 }
 
 function openSaveViewModal() {
@@ -640,6 +644,7 @@ async function loadAssetsTable() {
 }
 
 async function loadEdgesTable() {
+    await loadNodeLookup();
     const data = await fetchJson(`${api}?action=get_edges_table`);
     tableRows.edgesGrid = data.edges.map(r => ({...r, _rowid: 'db-' + r.id, _state: 'clean'}));
     tableDeleted.edgesGrid = [];
@@ -835,7 +840,7 @@ function validateTable(kind) {
     const columns = kind === 'node' ? nodeColumns : edgeColumns;
     const rows = tableRows[tableId];
     const errors = [];
-    const nodeIds = new Set(graph.nodes.map(n => String(n.id)));
+    const nodeIds = allNodeLookup.size ? allNodeLookup : new Map(graph.nodes.map(n => [String(n.id), n]));
     rows.forEach((row, index) => {
         const required = kind === 'node' ? requiredNodeFields : requiredEdgeFields;
         required.forEach(field => {
@@ -883,6 +888,7 @@ function markTableValidation(tableId, errors) {
 async function saveTable(kind) {
     const tableId = kind === 'node' ? 'assetsGrid' : 'edgesGrid';
     document.activeElement?.blur?.();
+    if (kind === 'edge') await loadNodeLookup();
     const errors = validateTable(kind);
     if (errors.length) {
         toast(`Validace selhala: ${errors[0].message}`);

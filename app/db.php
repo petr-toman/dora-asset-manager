@@ -346,4 +346,25 @@ function log_change(PDO $pdo, string $action, string $entityType, ?int $entityId
         now_iso(),
         'local-user',
     ]);
+    prune_change_log($pdo);
+}
+
+function prune_change_log(PDO $pdo): void
+{
+    static $lastRun = 0;
+    // Avoid running cleanup on every single log insert in larger batch saves.
+    if (time() - $lastRun < 30) {
+        return;
+    }
+    $lastRun = time();
+
+    $config = app_config();
+    $retentionDays = max(1, (int)($config['change_log_retention_days'] ?? 90));
+    $maxRecords = max(100, (int)($config['change_log_max_records'] ?? 5000));
+
+    $cutoff = gmdate('c', time() - ($retentionDays * 86400));
+    $stmt = $pdo->prepare('DELETE FROM change_log WHERE created_at < ?');
+    $stmt->execute([$cutoff]);
+
+    $pdo->exec('DELETE FROM change_log WHERE id NOT IN (SELECT id FROM change_log ORDER BY id DESC LIMIT ' . $maxRecords . ')');
 }

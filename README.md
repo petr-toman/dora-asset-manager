@@ -125,3 +125,25 @@ Verze v16 doplňuje soubory:
 - `AI-PROMPT.md` — prompt/specifikace pro znovuvytvoření aplikace od začátku.
 
 Funkční kód aplikace vychází z verze v15.
+
+## Verze v17 - technická a výkonová vylepšení
+
+Verze v17 zapracovává code review zaměřené na správnost a výkon:
+
+- dynamické grafové pohledy filtrují vazby podle explicitně povolených typů hran,
+- tabulka vazeb validuje uzly proti celé DB, ne proti aktuálně viditelnému grafu,
+- hromadné ukládání pozic používá endpoint `save_positions`,
+- pozice se zapisují a logují jen při skutečné změně,
+- hromadné změny pozic se logují agregovaně jako `move_nodes_batch`,
+- `save_position` / `save_positions` validují existenci view a uzlů,
+- nevyplněná pravděpodobnost nebo dopad rizika se označí jako `Nehodnoceno`, nikoli jako nízké riziko,
+- HTML i DOCX reporty zobrazují nehodnocená aktiva zvlášť mimo heatmapu,
+- kopie/download aktuálního SQLite modelu kontroluje výsledek WAL checkpointu,
+- change log se automaticky čistí podle retence.
+
+Konfigurace retence change logu přes environment variables:
+
+```text
+DORA_CHANGE_LOG_RETENTION_DAYS=90
+DORA_CHANGE_LOG_MAX_RECORDS=5000
+```

@@ -22,16 +22,24 @@ function rto_factor_report($hours): int {
     if ($h <= 72) return 2;
     return 1;
 }
-function asset_score_report(array $n): int {
-    $likelihood = max(1, min(5, (int)($n['risk_likelihood'] ?? 1)));
-    $impact = max(1, min(5, (int)($n['risk_impact'] ?? 1)));
+function valid_risk_level_report($v): ?int {
+    if ($v === null || $v === '') return null;
+    if (!is_numeric($v)) return null;
+    $i = (int)$v;
+    return ($i >= 1 && $i <= 5) ? $i : null;
+}
+function asset_score_report(array $n): ?int {
+    $likelihood = valid_risk_level_report($n['risk_likelihood'] ?? null);
+    $impact = valid_risk_level_report($n['risk_impact'] ?? null);
+    if ($likelihood === null || $impact === null) return null;
     $base = $likelihood * $impact;
     $crit = level_num_report($n['criticality'] ?? null);
     $cia = max(level_num_report($n['confidentiality'] ?? null), level_num_report($n['integrity_level'] ?? null), level_num_report($n['availability'] ?? null));
     $rto = rto_factor_report($n['rto_hours'] ?? null);
     return $base + ($crit * 2) + ($cia * 2) + ($rto * 2);
 }
-function score_level_report(int $score): string {
+function score_level_report(?int $score): string {
+    if ($score === null) return 'unrated';
     if ($score >= 35) return 'critical';
     if ($score >= 27) return 'high';
     if ($score >= 18) return 'medium';
@@ -46,16 +54,17 @@ foreach ($edges as $e) {
 $heat = [];
 for ($l=1;$l<=5;$l++) for ($i=1;$i<=5;$i++) $heat[$l][$i] = [];
 $ranked = [];
+$unrated = [];
 foreach ($nodes as $n) {
-    $l = max(1, min(5, (int)($n['risk_likelihood'] ?? 1)));
-    $i = max(1, min(5, (int)($n['risk_impact'] ?? 1)));
+    $l = valid_risk_level_report($n['risk_likelihood'] ?? null);
+    $i = valid_risk_level_report($n['risk_impact'] ?? null);
     $score = asset_score_report($n);
     $n['_score'] = $score;
     $n['_level'] = score_level_report($score);
-    $heat[$l][$i][] = $n;
+    if ($l === null || $i === null) $unrated[] = $n; else $heat[$l][$i][] = $n;
     $ranked[] = $n;
 }
-usort($ranked, fn($a,$b) => $b['_score'] <=> $a['_score']);
+usort($ranked, fn($a,$b) => ($b['_score'] ?? -1) <=> ($a['_score'] ?? -1));
 $countsByType = [];
 foreach ($nodes as $n) $countsByType[$n['type']] = ($countsByType[$n['type']] ?? 0) + 1;
 ?>
@@ -82,6 +91,7 @@ foreach ($nodes as $n) $countsByType[$n['type']] = ($countsByType[$n['type']] ??
     .medium { background: #fef3c7; }
     .high { background: #fed7aa; }
     .critical { background: #fecaca; font-weight: bold; }
+    .unrated { background: #e5e7eb; color: #374151; }
     .heatmap td { width: 16%; height: 72px; text-align: center; }
     .heatmap .count { font-size: 20px; font-weight: bold; }
     .asset-block { break-inside: avoid; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; margin: 14px 0; }
@@ -95,32 +105,37 @@ foreach ($nodes as $n) $countsByType[$n['type']] = ($countsByType[$n['type']] ??
 <p class="muted">Vygenerováno: <?= h(date('Y-m-d H:i')) ?>. Report je tisknutelný do PDF přes prohlížeč nebo exportovatelný do DOCX pro Microsoft Word.</p>
 
 <h2>1. Manažerské shrnutí</h2>
-<p>Evidence obsahuje <?= count($nodes) ?> uzlů a <?= count($edges) ?> vazeb. Graf zachycuje ICT a informační aktiva, procesy, dodavatele a jejich závislosti. Kritičnost je odvozena z evidované kritičnosti aktiva, CIA hodnocení, RTO a základního rizikového hodnocení pravděpodobnost × dopad.</p>
+<p>Evidence obsahuje <?= count($nodes) ?> uzlů a <?= count($edges) ?> vazeb. Graf zachycuje ICT a informační aktiva, procesy, dodavatele a jejich závislosti. Kritičnost je odvozena z evidované kritičnosti aktiva, CIA hodnocení, RTO a základního rizikového hodnocení pravděpodobnost × dopad. Aktiva bez vyplněné pravděpodobnosti nebo dopadu jsou označena jako nehodnocená, nikoli jako nízké riziko.</p>
 <div class="kpi">
 <?php foreach ($countsByType as $type => $cnt): ?><div class="card"><strong><?= h($cnt) ?></strong><br><?= h($type) ?></div><?php endforeach; ?>
 </div>
 
 <h2>2. Heatmapa rizik</h2>
-<p class="muted">Svisle pravděpodobnost, vodorovně dopad. Číslo v buňce znamená počet assetů v dané kombinaci.</p>
+<p class="muted">Svisle pravděpodobnost, vodorovně dopad. Číslo v buňce znamená počet assetů v dané kombinaci. Nehodnoceno: <?= count($unrated) ?> assetů.</p>
 <table class="heatmap">
 <tr><th>Pravděp. \ Dopad</th><?php for($i=1;$i<=5;$i++): ?><th><?= $i ?></th><?php endfor; ?></tr>
 <?php for($l=5;$l>=1;$l--): ?>
 <tr><th><?= $l ?></th><?php for($i=1;$i<=5;$i++): $count=count($heat[$l][$i]); $class=score_level_report($l*$i + 10); ?><td class="<?= h($class) ?>"><div class="count"><?= $count ?></div><small><?php foreach(array_slice($heat[$l][$i],0,3) as $n) echo h($n['name']).'<br>'; if($count>3) echo '…'; ?></small></td><?php endfor; ?></tr>
 <?php endfor; ?>
 </table>
+<?php if (count($unrated)): ?>
+<h3>Nehodnocená aktiva</h3>
+<p class="muted">Tato aktiva nemají vyplněnou pravděpodobnost nebo dopad a nejsou proto zařazena do heatmapy jako nízké riziko.</p>
+<ul><?php foreach (array_slice($unrated,0,30) as $n): ?><li><?= h($n['name']) ?> <span class="muted">(<?= h($n['type']) ?>)</span></li><?php endforeach; ?><?php if(count($unrated)>30): ?><li>…</li><?php endif; ?></ul>
+<?php endif; ?>
 
 <h2>3. Nejkritičtější aktiva podle kombinovaného skóre</h2>
 <table>
 <tr><th>Asset</th><th>Typ</th><th>Kritičnost</th><th>RTO</th><th>Pravd.</th><th>Dopad</th><th>Skóre</th><th>Úroveň</th></tr>
 <?php foreach (array_slice($ranked,0,20) as $n): ?><tr>
-<td><?= h($n['name']) ?></td><td><?= h($n['type']) ?></td><td><?= h($n['criticality']) ?></td><td><?= h($n['rto_hours']) ?></td><td><?= h($n['risk_likelihood']) ?></td><td><?= h($n['risk_impact']) ?></td><td><?= h($n['_score']) ?></td><td><span class="badge <?= h($n['_level']) ?>"><?= h($n['_level']) ?></span></td>
+<td><?= h($n['name']) ?></td><td><?= h($n['type']) ?></td><td><?= h($n['criticality']) ?></td><td><?= h($n['rto_hours']) ?></td><td><?= h($n['risk_likelihood']) ?></td><td><?= h($n['risk_impact']) ?></td><td><?= h($n['_score'] ?? '—') ?></td><td><span class="badge <?= h($n['_level']) ?>"><?= h($n['_level']) ?></span></td>
 </tr><?php endforeach; ?>
 </table>
 
 <h2>4. Seznam aktiv, atributy a vazby</h2>
 <?php foreach ($ranked as $n): ?>
 <section class="asset-block">
-<h3><?= h($n['name']) ?> <span class="badge <?= h($n['_level']) ?>"><?= h($n['_level']) ?> / <?= h($n['_score']) ?></span></h3>
+<h3><?= h($n['name']) ?> <span class="badge <?= h($n['_level']) ?>"><?= h($n['_level']) ?> / <?= h($n['_score'] ?? '—') ?></span></h3>
 <p><?= nl2br(h($n['description'])) ?></p>
 <table>
 <tr><th>Typ</th><td><?= h($n['type']) ?></td><th>Kritičnost</th><td><?= h($n['criticality']) ?></td></tr>
@@ -137,6 +152,6 @@ foreach ($nodes as $n) $countsByType[$n['type']] = ($countsByType[$n['type']] ??
 <?php endforeach; ?>
 
 <h2>5. Metodická poznámka ke skóre</h2>
-<p>První verze skóre je záměrně jednoduchá: základ tvoří pravděpodobnost × dopad. K tomu se přičítá váha deklarované kritičnosti, nejvyšší hodnota CIA a faktor RTO. Krátké RTO zvyšuje skóre, protože signalizuje nízkou toleranci výpadku. Skóre je podpůrné a nenahrazuje formální risk assessment.</p>
+<p>První verze skóre je záměrně jednoduchá: základ tvoří pravděpodobnost × dopad. K tomu se přičítá váha deklarované kritičnosti, nejvyšší hodnota CIA a faktor RTO. Krátké RTO zvyšuje skóre, protože signalizuje nízkou toleranci výpadku. Pokud pravděpodobnost nebo dopad nejsou vyplněny, asset je označen jako nehodnocený a není zařazen do heatmapy jako nízké riziko. Skóre je podpůrné a nenahrazuje formální risk assessment.</p>
 </body>
 </html>

@@ -2,7 +2,36 @@
 
 ## Evidence IT aktiv / DORA Asset Map
 
-Tento changelog byl zpětně zrekonstruován z iterací vývoje v chatu. Verze v16 nemění funkčnost aplikace, ale doplňuje dokumentaci projektu.
+Tento changelog byl zpětně zrekonstruován z iterací vývoje v chatu a je dále průběžně udržován v projektu.
+
+## v17-tech-performance
+
+Datum: 2026-06-28
+
+### Opraveno
+
+- Dynamické pohledy (`hardware`, `data`, `process`, `supplier`, `impact`) nyní skutečně respektují povolené typy vazeb pro daný režim a finálně filtrují vazby podle vypočteného `keepEdgeIds`.
+- Tabulka vazeb validuje `source_node_id` a `target_node_id` proti kompletnímu seznamu uzlů z aktuální databáze, ne proti aktuálně zobrazené podmnožině grafu.
+- `save_position` nyní validuje existenci `view_id` a `node_id` a vrací řízené JSON chyby 400/404 místo nekontrolované SQLite/FK chyby.
+- Rizikové položky bez vyplněné pravděpodobnosti nebo dopadu už nejsou převáděny na `1 × 1`; jsou označeny jako `unrated` / nehodnoceno.
+- HTML a DOCX reporty rozlišují nehodnocená aktiva a neumisťují je do heatmapy nízkého rizika.
+- Kopie a download aktuálního SQLite modelu kontrolují výsledek WAL checkpointu a v případě `busy` stavu vrátí řízenou chybu.
+
+### Přidáno
+
+- Endpoint `get_node_lookup` pro kompletní seznam uzlů používaný tabulkovým editorem vazeb.
+- Endpoint `save_positions` pro dávkové ukládání pozic uzlů.
+- Agregovaný auditní záznam `move_nodes_batch` pro hromadný přesun/zarovnání pozic.
+- Konfigurace retence change logu:
+  - `DORA_CHANGE_LOG_RETENTION_DAYS`, default 90 dní,
+  - `DORA_CHANGE_LOG_MAX_RECORDS`, default 5000 záznamů.
+- Automatické čištění `change_log` podle stáří a maximálního počtu záznamů.
+
+### Výkon
+
+- Hromadné ukládání pozic posílá jeden HTTP request místo jednoho requestu za každý uzel.
+- Pozice se zapisují a logují jen tehdy, když se reálně změnily.
+- Hromadné přesuny se v auditní stopě zapisují agregovaně, aby se SQLite databáze zbytečně nenafukovala.
 
 ## v16-changelog
 
