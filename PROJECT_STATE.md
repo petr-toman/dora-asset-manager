@@ -531,3 +531,8 @@ Demo initialization is now separated from the core database bootstrap code. The 
 ## v24 seed loader correction
 
 The active codebase includes the v23 demo seed refactor plus a v24 fix. `app/db_seed_data.php` is self-contained for nullable integer conversion via `seed_nullable_int()`. This prevents the seed importer from failing during first initialization with `Call to undefined function nullable_int()`. Demo data is still stored in `app/demo_seed_data.json` and loaded only when initializing a new demo model.
+
+
+## v25-edge-asset-picker
+
+Aktuální navazující iterace přidává do tabulkového pohledu vazeb doubleclick picker pro výběr assetu ve sloupcích `source_node_id` a `target_node_id`. Přímá editace ID i TSV/Excel paste zůstávají zachovány; picker je pouze pomocná nadstavba pro snazší zjištění, které ID patří kterému assetu.

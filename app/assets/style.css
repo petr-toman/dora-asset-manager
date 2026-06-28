@@ -839,3 +839,94 @@ body.sidebar-collapsed .canvas-wrap::before { content: "DORA ASSET GRAPH · SIDE
     .node-edge-section-head { flex-direction: column; }
     .node-edge-toolbar { flex-wrap: wrap; }
 }
+
+/* v25: asset picker for edge table node ID cells */
+.data-grid td.edge-node-id-cell {
+    cursor: text;
+    position: relative;
+}
+.data-grid td.edge-node-id-cell::after {
+    content: '⌕';
+    float: right;
+    color: #64748b;
+    font-size: 11px;
+    opacity: .65;
+    margin-left: 6px;
+}
+.data-grid td.edge-node-id-cell:focus::after {
+    opacity: .95;
+    color: #2563eb;
+}
+.edge-node-picker {
+    position: fixed;
+    z-index: 5000;
+    width: 410px;
+    max-width: calc(100vw - 20px);
+    background: rgba(255,255,255,.98);
+    border: 1px solid rgba(37, 99, 235, .22);
+    border-radius: 16px;
+    box-shadow: 0 24px 58px rgba(15,23,42,.22), 0 2px 10px rgba(37,99,235,.08);
+    padding: 12px;
+    color: #0f172a;
+}
+.edge-node-picker-title {
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #1e40af;
+    margin: 0 0 8px;
+}
+.edge-node-picker-search {
+    width: 100%;
+    margin-bottom: 8px;
+}
+.edge-node-picker-list {
+    max-height: 230px;
+    overflow: auto;
+    border: 1px solid rgba(51,65,85,.10);
+    border-radius: 12px;
+    background: #f8fbff;
+}
+.edge-node-picker-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 34px;
+    padding: 7px 9px;
+    border: 0;
+    border-bottom: 1px solid rgba(51,65,85,.08);
+    background: transparent;
+    color: #172033;
+    text-align: left;
+    border-radius: 0;
+    box-shadow: none;
+}
+.edge-node-picker-item:last-child { border-bottom: 0; }
+.edge-node-picker-item:hover,
+.edge-node-picker-item.active {
+    background: #eaf2ff;
+    color: #0f172a;
+}
+.edge-node-picker-item .node-name {
+    font-size: 12px;
+    font-weight: 750;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.edge-node-picker-item .node-meta {
+    flex: 0 0 auto;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 650;
+}
+.edge-node-picker-empty,
+.edge-node-picker-hint {
+    color: #64748b;
+    font-size: 11px;
+}
+.edge-node-picker-empty { padding: 10px; }
+.edge-node-picker-hint { margin-top: 8px; line-height: 1.35; }

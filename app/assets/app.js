@@ -934,6 +934,11 @@ function renderEditableTable(tableId, columns, rows, kind) {
                 if (editable) {
                     td.contentEditable = 'true';
                     td.classList.add('editable-cell');
+                    if (kind === 'edge' && (field === 'source_node_id' || field === 'target_node_id')) {
+                        td.classList.add('edge-node-id-cell');
+                        td.title = 'ID lze psát přímo. Doubleclick otevře vyhledání assetu podle názvu nebo typu.';
+                        td.addEventListener('dblclick', (evt) => openEdgeNodePicker(evt.currentTarget));
+                    }
                     td.addEventListener('focus', () => td.dataset.before = td.textContent);
                     td.addEventListener('blur', () => updateRowFromCell(td));
                     td.addEventListener('keydown', tableCellKeydown);
@@ -1022,11 +1027,127 @@ function updateRowFromCell(td, repaint = true) {
     if (!row) return;
     const field = td.dataset.field;
     row[field] = td.textContent.trim();
+    if (td.dataset.kind === 'edge' && isEdgeNodeIdField(field)) {
+        updateEdgeLookupForRow(row, field);
+        if (repaint) {
+            const nameField = field === 'source_node_id' ? 'source_name' : 'target_name';
+            const nameCell = td.parentElement.querySelector(`td[data-field="${nameField}"]`);
+            if (nameCell) nameCell.textContent = row[nameField] || '';
+        }
+    }
     if (row._state !== 'new') row._state = 'dirty';
     if (repaint) {
         td.classList.add('dirty-cell');
         td.parentElement.classList.add('dirty-row');
     }
+}
+
+
+function isEdgeNodeIdField(field) {
+    return field === 'source_node_id' || field === 'target_node_id';
+}
+
+function updateEdgeLookupForRow(row, field) {
+    if (!row || !isEdgeNodeIdField(field)) return;
+    const prefix = field === 'source_node_id' ? 'source' : 'target';
+    const id = String(row[field] ?? '').trim();
+    const node = allNodeLookup.get(id);
+    row[`${prefix}_name`] = node ? node.name : '';
+}
+
+function edgeNodeOptionLabel(node) {
+    const typeLabel = meta.node_types?.[node.type] || node.type || 'asset';
+    return `${node.name} (${typeLabel}) #${node.id}`;
+}
+
+function closeEdgeNodePicker() {
+    const existing = document.querySelector('.edge-node-picker');
+    if (existing) existing.remove();
+}
+
+async function openEdgeNodePicker(td) {
+    if (!td || td.dataset.kind !== 'edge' || !isEdgeNodeIdField(td.dataset.field)) return;
+    await loadNodeLookup();
+    closeEdgeNodePicker();
+
+    const table = td.closest('table');
+    const row = tableRows[table.id].find(r => r._rowid === td.dataset.rowid);
+    if (!row) return;
+
+    const picker = document.createElement('div');
+    picker.className = 'edge-node-picker';
+    picker.innerHTML = `
+        <div class="edge-node-picker-title">Vybrat asset</div>
+        <input class="edge-node-picker-search" type="search" placeholder="Hledat název, typ nebo ID…" autocomplete="off">
+        <div class="edge-node-picker-list"></div>
+        <div class="edge-node-picker-hint">Enter vybere první položku, Esc zavře. Přímá editace ID a copy/paste zůstává zachována.</div>
+    `;
+    document.body.appendChild(picker);
+
+    const rect = td.getBoundingClientRect();
+    const maxLeft = window.innerWidth - 430;
+    picker.style.left = Math.max(10, Math.min(rect.left, maxLeft)).toFixed(0) + 'px';
+    picker.style.top = Math.min(rect.bottom + 6, window.innerHeight - 360).toFixed(0) + 'px';
+
+    const input = picker.querySelector('.edge-node-picker-search');
+    const list = picker.querySelector('.edge-node-picker-list');
+    const nodes = Array.from(allNodeLookup.values()).sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'cs', { numeric: true, sensitivity: 'base' }));
+
+    const applySelection = (node) => {
+        row[td.dataset.field] = String(node.id);
+        updateEdgeLookupForRow(row, td.dataset.field);
+        if (row._state !== 'new') row._state = 'dirty';
+        closeEdgeNodePicker();
+        renderEditableTable(table.id, edgeColumns, tableRows[table.id], 'edge');
+        toast(`Vybrán asset: ${edgeNodeOptionLabel(node)}`);
+    };
+
+    const renderList = () => {
+        const q = input.value.trim().toLowerCase();
+        const filtered = nodes.filter(n => {
+            if (!q) return true;
+            const typeLabel = meta.node_types?.[n.type] || n.type || '';
+            return `${n.id} ${n.name || ''} ${n.type || ''} ${typeLabel}`.toLowerCase().includes(q);
+        }).slice(0, 60);
+        list.innerHTML = '';
+        if (!filtered.length) {
+            const empty = document.createElement('div');
+            empty.className = 'edge-node-picker-empty';
+            empty.textContent = 'Nenalezen žádný asset.';
+            list.appendChild(empty);
+            return;
+        }
+        filtered.forEach((node, idx) => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'edge-node-picker-item';
+            if (idx === 0) item.classList.add('active');
+            const typeLabel = meta.node_types?.[node.type] || node.type || 'asset';
+            item.innerHTML = `<span class="node-name"></span><span class="node-meta"></span>`;
+            item.querySelector('.node-name').textContent = node.name || `#${node.id}`;
+            item.querySelector('.node-meta').textContent = `${typeLabel} · ID ${node.id}`;
+            item.addEventListener('mousedown', (evt) => { evt.preventDefault(); applySelection(node); });
+            list.appendChild(item);
+        });
+    };
+
+    input.addEventListener('input', renderList);
+    input.addEventListener('keydown', (evt) => {
+        if (evt.key === 'Escape') { evt.preventDefault(); closeEdgeNodePicker(); td.focus(); }
+        if (evt.key === 'Enter') {
+            evt.preventDefault();
+            const first = list.querySelector('.edge-node-picker-item');
+            if (first) first.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        }
+    });
+
+    setTimeout(() => {
+        const currentNode = allNodeLookup.get(String(row[td.dataset.field] ?? '').trim());
+        input.value = currentNode ? currentNode.name : '';
+        renderList();
+        input.select();
+        input.focus();
+    }, 0);
 }
 
 function addTableRow(kind, repaint = true) {
@@ -1316,6 +1437,11 @@ async function main() {
     $('#searchBox').addEventListener('input', applyUiFilter);
     $('#typeFilter').addEventListener('change', applyUiFilter);
     $('#criticalityFilter').addEventListener('change', applyUiFilter);
+
+    document.addEventListener('mousedown', (evt) => {
+        if (!evt.target.closest?.('.edge-node-picker') && !evt.target.closest?.('.edge-node-id-cell')) closeEdgeNodePicker();
+    });
+    document.addEventListener('keydown', (evt) => { if (evt.key === 'Escape') closeEdgeNodePicker(); });
 
     $('#btnAddOutgoingNodeEdge').addEventListener('click', () => addNodeEdge('outgoing'));
     $('#btnAddIncomingNodeEdge').addEventListener('click', () => addNodeEdge('incoming'));

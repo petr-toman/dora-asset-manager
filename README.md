@@ -196,3 +196,8 @@ The demo model is initialized from `app/demo_seed_data.json` via `app/db_seed_da
 ## v24 note - seed bug fix
 
 Version v24 fixes the demo seed initialization bug from v23. The seed loader now defines its own nullable integer conversion helper and no longer calls an undefined `nullable_int()` function. If a previous startup created an empty `demo.sqlite`, remove it or create a new demo model so the fixed seed can populate the demo data.
+
+
+## v25: výběr assetu v tabulce vazeb
+
+V pohledu **Vazby tabulka** zůstávají sloupce `Zdroj ID` a `Cíl ID` editovatelné jako číslo, takže lze dál vkládat řádky z Excelu přes copy/paste. Navíc lze na buňku `Zdroj ID` nebo `Cíl ID` udělat doubleclick: otevře se vyhledávací picker nad všemi assety aktuálního modelu. Položky jsou zobrazeny jako `Název (typ) · ID`. Po výběru se do buňky doplní ID a aktualizuje se read-only název assetu.

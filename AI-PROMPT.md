@@ -752,3 +752,8 @@ Keep demo seed data outside the core DB helper. Implement `app/db_seed_data.php`
 ## v24 seed implementation detail
 
 When implementing the external demo seed loader, make `app/db_seed_data.php` self-contained for seed-only helper conversions. Do not call request/API helper functions such as `nullable_int()` unless they are guaranteed to be loaded. Define a local helper such as `seed_nullable_int()` inside the seed module and use it for nullable numeric fields.
+
+
+## Additional requirement from v25
+
+In the Edges table view, keep `source_node_id` and `target_node_id` as directly editable numeric cells to preserve Excel/TSV copy-paste workflows. Add a double-click asset picker on these cells. The picker must search all nodes in the current model and display each option as `Name (type) · ID`. Selecting an option writes the numeric ID into the cell and updates the corresponding read-only source/target name field in the same table row.

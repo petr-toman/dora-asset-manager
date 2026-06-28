@@ -1,5 +1,14 @@
 # CHANGELOG.md
 
+## v25 - Edge table asset picker
+
+- Added a double-click asset picker for `source_node_id` and `target_node_id` cells in the Edges table.
+- Users can still directly type numeric asset IDs and paste TSV/Excel rows unchanged.
+- The picker searches all nodes in the current model and displays options as `Name (type) · ID`.
+- Selecting an asset fills the numeric ID and refreshes the read-only source/target name in the table row.
+- Updated edge-table UX documentation.
+
+
 
 ## v23 - Demo seed data refactor
 
