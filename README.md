@@ -42,10 +42,29 @@ Při prvním spuštění prázdné datové složky se vytvoří ukázkový model
 - nový prázdný model, kopie aktuálního modelu, přepnutí modelu, bezpečné smazání do koše
 - stažení/nahrání SQLite DB souboru pro výměnu modelů mezi instancemi aplikace
 - excel-like tabulka assetů s editací buněk, filtrováním, sortováním a copy/paste přes TSV
+- import assetů z CSV s preview a validací před zápisem do DB
+- export assetů do CSV jako šablona nebo přenosový formát
 - excel-like tabulka vazeb s editací buněk, filtrováním, sortováním a copy/paste přes TSV
 - tisknutelný report: `/report.php`
 - heatmapa rizik v reportu
 - change log pro auditní stopu a budoucí undo/redo
+
+
+## CSV import assetů
+
+V pohledu **Assety tabulka** jsou tlačítka **Import CSV** a **Export CSV**.
+
+Doporučený postup:
+
+1. Připrav Excel ve struktuře assetové tabulky aplikace.
+2. Ulož list jako **CSV UTF-8**.
+3. V aplikaci otevři **Assety tabulka** a klikni na **Import CSV**.
+4. Zkontroluj preview a případné červené validační chyby.
+5. Pokud je CSV validní, potvrď import.
+
+Výchozí import ignoruje sloupec `ID` a vkládá assety jako nové záznamy. Volitelně lze zapnout režim **Aktualizovat existující assety podle ID**. V takovém případě musí ID v CSV existovat v aktuálním modelu.
+
+Podporované oddělovače: středník, čárka a tabulátor. CSV může obsahovat UTF-8 BOM. Import vazeb z CSV zatím není implementován; vazby lze hromadně spravovat přes tabulku vazeb nebo copy/paste z Excelu.
 
 ## Report / PDF
 

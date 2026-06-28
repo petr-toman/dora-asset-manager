@@ -117,6 +117,18 @@ try {
             get_edges_table($pdo);
             break;
 
+        case 'preview_assets_csv':
+            preview_assets_csv($pdo);
+            break;
+
+        case 'import_assets_csv':
+            import_assets_csv($pdo);
+            break;
+
+        case 'export_assets_csv':
+            export_assets_csv($pdo);
+            break;
+
         case 'batch_save_nodes':
             batch_save_nodes($pdo);
             break;
@@ -946,6 +958,368 @@ function get_edges_table(PDO $pdo): void
             ORDER BY e.id';
     $rows = $pdo->query($sql)->fetchAll();
     json_response(['ok' => true, 'edges' => $rows]);
+}
+
+function assets_csv_columns(): array
+{
+    return [
+        'id' => 'ID',
+        'type' => 'Typ',
+        'name' => 'Název',
+        'description' => 'Popis',
+        'owner' => 'Owner',
+        'business_owner' => 'Business owner',
+        'technical_owner' => 'Technical owner',
+        'vendor_manufacturer' => 'Vendor/manufacturer',
+        'criticality' => 'Kritičnost',
+        'confidentiality' => 'Důvěrnost',
+        'integrity_level' => 'Integrita',
+        'availability' => 'Dostupnost',
+        'rto_hours' => 'RTO h',
+        'rpo_hours' => 'RPO h',
+        'mtd_hours' => 'MTD h',
+        'data_sensitivity' => 'Citlivost dat',
+        'data_categories' => 'Kategorie dat',
+        'environment' => 'Prostředí',
+        'location' => 'Lokalita',
+        'status' => 'Stav',
+        'lifecycle_state' => 'Lifecycle',
+        'last_reviewed_at' => 'Poslední revize',
+        'review_frequency_months' => 'Revize měs.',
+        'threats' => 'Hrozby',
+        'risk_scenarios' => 'Rizikové scénáře',
+        'risk_likelihood' => 'Pravděp. 1-5',
+        'risk_impact' => 'Dopad 1-5',
+        'risk_controls' => 'Kontroly',
+        'residual_risk' => 'Reziduální riziko',
+        'good_to_know' => 'Good-to-know',
+    ];
+}
+
+function assets_csv_header_aliases(): array
+{
+    $aliases = [];
+    foreach (assets_csv_columns() as $field => $label) {
+        $aliases[canonical_csv_header($label)] = $field;
+        $aliases[canonical_csv_header($field)] = $field;
+    }
+    $extra = [
+        'id' => ['ID ▲', 'ID'],
+        'type' => ['Typ', 'Type', 'node_type'],
+        'name' => ['Název', 'Nazev', 'Name', 'Asset', 'Asset name'],
+        'description' => ['Popis', 'Description'],
+        'business_owner' => ['Business owner', 'Business Owner'],
+        'technical_owner' => ['Technical owner', 'Technical Owner'],
+        'vendor_manufacturer' => ['Vendor/manufacturer', 'Vendor / manufacturer', 'Vendor manufacturer', 'Manufacturer', 'Výrobce', 'Vyrobce', 'Vendor'],
+        'integrity_level' => ['Integrita', 'Integrity', 'integrity'],
+        'rto_hours' => ['RTO h', 'RTO', 'RTO hours'],
+        'rpo_hours' => ['RPO h', 'RPO', 'RPO hours'],
+        'mtd_hours' => ['MTD h', 'MTD', 'MTD hours'],
+        'data_sensitivity' => ['Citlivost dat', 'Data sensitivity'],
+        'data_categories' => ['Kategorie dat', 'Data categories'],
+        'last_reviewed_at' => ['Poslední revize', 'Posledni revize', 'Last reviewed'],
+        'review_frequency_months' => ['Revize měs.', 'Revize mes.', 'Review frequency months'],
+        'risk_likelihood' => ['Pravděp. 1-5', 'Pravdep. 1-5', 'Likelihood', 'Probability'],
+        'risk_impact' => ['Dopad 1-5', 'Impact'],
+        'risk_controls' => ['Kontroly', 'Controls'],
+        'risk_scenarios' => ['Rizikové scénáře', 'Rizikove scenare', 'Risk scenarios'],
+        'residual_risk' => ['Reziduální riziko', 'Rezidualni riziko', 'Residual risk'],
+        'good_to_know' => ['Good-to-know', 'Good to know', 'Poznámky', 'Poznamky'],
+    ];
+    foreach ($extra as $field => $labels) {
+        foreach ($labels as $label) $aliases[canonical_csv_header($label)] = $field;
+    }
+    return $aliases;
+}
+
+function canonical_csv_header(string $value): string
+{
+    $value = preg_replace('/^\xEF\xBB\xBF/', '', $value);
+    $value = function_exists('mb_strtolower') ? mb_strtolower(trim($value), 'UTF-8') : strtolower(trim($value));
+    $value = str_replace(['▲', '▼'], '', $value);
+    $value = preg_replace('/\s+/', ' ', $value);
+    return trim($value);
+}
+
+function detect_csv_delimiter(string $headerLine): string
+{
+    $candidates = [";", ",", "\t"];
+    $best = ';';
+    $bestCount = -1;
+    foreach ($candidates as $delimiter) {
+        $count = count(str_getcsv($headerLine, $delimiter));
+        if ($count > $bestCount) {
+            $best = $delimiter;
+            $bestCount = $count;
+        }
+    }
+    return $best;
+}
+
+function read_uploaded_assets_csv(): array
+{
+    if (!isset($_FILES['csv_file']) || !is_uploaded_file($_FILES['csv_file']['tmp_name'])) {
+        json_response(['ok' => false, 'error' => 'Nebyl nahrán žádný CSV soubor'], 400);
+    }
+    $path = $_FILES['csv_file']['tmp_name'];
+    $content = file_get_contents($path);
+    if ($content === false || trim($content) === '') {
+        json_response(['ok' => false, 'error' => 'CSV soubor je prázdný'], 400);
+    }
+    $content = str_replace(["\r\n", "\r"], "\n", $content);
+    $lines = explode("\n", $content);
+    $firstLine = '';
+    foreach ($lines as $line) {
+        if (trim($line) !== '') { $firstLine = $line; break; }
+    }
+    if ($firstLine === '') json_response(['ok' => false, 'error' => 'CSV soubor neobsahuje hlavičku'], 400);
+    $delimiter = detect_csv_delimiter($firstLine);
+    $handle = fopen($path, 'rb');
+    if (!$handle) json_response(['ok' => false, 'error' => 'CSV soubor se nepodařilo otevřít'], 400);
+    $rows = [];
+    while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+        if (count($row) === 1 && trim((string)$row[0]) === '') continue;
+        $rows[] = array_map(fn($v) => preg_replace('/^\xEF\xBB\xBF/', '', (string)$v), $row);
+    }
+    fclose($handle);
+    if (!$rows) json_response(['ok' => false, 'error' => 'CSV soubor neobsahuje žádné řádky'], 400);
+    return [$delimiter, $rows];
+}
+
+function parse_assets_csv_rows(array $csvRows, bool $updateById = false): array
+{
+    $headers = array_shift($csvRows);
+    $aliases = assets_csv_header_aliases();
+    $fieldByIndex = [];
+    $unknownHeaders = [];
+    foreach ($headers as $i => $header) {
+        $canonical = canonical_csv_header((string)$header);
+        if ($canonical === '') continue;
+        if (isset($aliases[$canonical])) {
+            $fieldByIndex[$i] = $aliases[$canonical];
+        } else {
+            $unknownHeaders[] = trim((string)$header);
+        }
+    }
+
+    $requiredHeaders = ['type', 'name'];
+    $mappedFields = array_values($fieldByIndex);
+    $headerErrors = [];
+    foreach ($requiredHeaders as $field) {
+        if (!in_array($field, $mappedFields, true)) {
+            $headerErrors[] = 'Chybí povinný sloupec: ' . (assets_csv_columns()[$field] ?? $field);
+        }
+    }
+
+    $resultRows = [];
+    $errors = [];
+    foreach ($headerErrors as $msg) $errors[] = ['row_number' => 1, 'field' => '', 'message' => $msg];
+
+    $rowNumber = 1;
+    foreach ($csvRows as $rawRow) {
+        $rowNumber++;
+        $isEmpty = true;
+        foreach ($rawRow as $v) { if (trim((string)$v) !== '') { $isEmpty = false; break; } }
+        if ($isEmpty) continue;
+        $data = array_fill_keys(array_keys(assets_csv_columns()), '');
+        foreach ($fieldByIndex as $i => $field) {
+            $data[$field] = isset($rawRow[$i]) ? trim((string)$rawRow[$i]) : '';
+        }
+        if (!$updateById) $data['id'] = '';
+        normalize_import_node_row($data);
+        $rowErrors = collect_node_validation_errors($data, $updateById);
+        foreach ($rowErrors as $e) {
+            $errors[] = ['row_number' => $rowNumber, 'field' => $e['field'], 'message' => 'Řádek ' . $rowNumber . ': ' . $e['message']];
+        }
+        $data['_csv_row_number'] = $rowNumber;
+        $resultRows[] = $data;
+    }
+
+    return [
+        'headers' => $headers,
+        'mapped_fields' => $fieldByIndex,
+        'unknown_headers' => $unknownHeaders,
+        'rows' => $resultRows,
+        'errors' => $errors,
+    ];
+}
+
+function normalize_import_node_row(array &$data): void
+{
+    foreach ($data as $k => $v) {
+        if (is_string($v)) $data[$k] = trim($v);
+    }
+    foreach (['last_reviewed_at'] as $field) {
+        if (!empty($data[$field])) {
+            $data[$field] = normalize_import_date((string)$data[$field]);
+        }
+    }
+    foreach (['risk_likelihood','risk_impact','rto_hours','rpo_hours','mtd_hours','review_frequency_months'] as $field) {
+        if (isset($data[$field])) $data[$field] = str_replace(',', '.', (string)$data[$field]);
+    }
+}
+
+function normalize_import_date(string $value): string
+{
+    $value = trim($value);
+    if ($value === '') return '';
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) return $value;
+    if (preg_match('/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/', $value, $m)) {
+        return sprintf('%04d-%02d-%02d', (int)$m[3], (int)$m[2], (int)$m[1]);
+    }
+    if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $value, $m)) {
+        return sprintf('%04d-%02d-%02d', (int)$m[3], (int)$m[2], (int)$m[1]);
+    }
+    return $value;
+}
+
+function collect_node_validation_errors(array $data, bool $updateById = false): array
+{
+    $errors = [];
+    $name = trim((string)($data['name'] ?? ''));
+    $type = trim((string)($data['type'] ?? ''));
+    if ($updateById && trim((string)($data['id'] ?? '')) !== '' && (!ctype_digit((string)$data['id']) || (int)$data['id'] <= 0)) {
+        $errors[] = ['field' => 'id', 'message' => 'ID musí být kladné celé číslo.'];
+    }
+    if ($name === '') $errors[] = ['field' => 'name', 'message' => 'Název assetu je povinný.'];
+    if ($type === '') $errors[] = ['field' => 'type', 'message' => 'Typ assetu je povinný.'];
+    elseif (!array_key_exists($type, node_types())) $errors[] = ['field' => 'type', 'message' => 'Neplatný typ assetu: ' . $type];
+
+    $choices = [
+        'criticality' => ['low','medium','high','critical'],
+        'confidentiality' => ['low','medium','high','critical'],
+        'integrity_level' => ['low','medium','high','critical'],
+        'availability' => ['low','medium','high','critical'],
+        'data_sensitivity' => ['public','private','secret'],
+        'environment' => ['prod','test','dev','archive','unknown'],
+        'status' => ['active','planned','retired','unknown'],
+        'lifecycle_state' => ['production','test','development','archived','unknown'],
+    ];
+    foreach ($choices as $field => $allowed) {
+        $v = trim((string)($data[$field] ?? ''));
+        if ($v !== '' && !in_array($v, $allowed, true)) {
+            $errors[] = ['field' => $field, 'message' => "Neplatná hodnota $field: $v"];
+        }
+    }
+    foreach (['rto_hours','rpo_hours','mtd_hours','review_frequency_months'] as $field) {
+        $v = trim((string)($data[$field] ?? ''));
+        if ($v !== '' && (!is_numeric($v) || (float)$v < 0)) {
+            $errors[] = ['field' => $field, 'message' => "$field musí být nezáporné číslo."];
+        }
+    }
+    foreach (['risk_likelihood','risk_impact'] as $field) {
+        $v = trim((string)($data[$field] ?? ''));
+        if ($v !== '' && (!ctype_digit((string)$v) || (int)$v < 1 || (int)$v > 5)) {
+            $errors[] = ['field' => $field, 'message' => "$field musí být 1–5."];
+        }
+    }
+    $date = trim((string)($data['last_reviewed_at'] ?? ''));
+    if ($date !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        $errors[] = ['field' => 'last_reviewed_at', 'message' => 'Datum poslední revize musí být ve formátu YYYY-MM-DD nebo DD.MM.YYYY.'];
+    }
+    return $errors;
+}
+
+function csv_append_update_id_errors(PDO $pdo, array $rows, array &$errors): void
+{
+    foreach ($rows as $row) {
+        $id = trim((string)($row['id'] ?? ''));
+        if ($id === '') continue;
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM nodes WHERE id = ?');
+        $stmt->execute([(int)$id]);
+        if ((int)$stmt->fetchColumn() === 0) {
+            $errors[] = ['row_number' => $row['_csv_row_number'] ?? '', 'field' => 'id', 'message' => 'Řádek ' . ($row['_csv_row_number'] ?? '?') . ': asset s ID ' . $id . ' neexistuje.'];
+        }
+    }
+}
+
+function preview_assets_csv(PDO $pdo): void
+{
+    $updateById = isset($_POST['update_by_id']) && $_POST['update_by_id'] === '1';
+    [$delimiter, $csvRows] = read_uploaded_assets_csv();
+    $parsed = parse_assets_csv_rows($csvRows, $updateById);
+    if ($updateById) csv_append_update_id_errors($pdo, $parsed['rows'], $parsed['errors']);
+    json_response([
+        'ok' => true,
+        'delimiter' => $delimiter === "\t" ? 'tab' : $delimiter,
+        'update_by_id' => $updateById,
+        'total_rows' => count($parsed['rows']),
+        'valid_rows' => max(0, count($parsed['rows']) - count(array_unique(array_map(fn($e) => (string)$e['row_number'], $parsed['errors'])))),
+        'error_count' => count($parsed['errors']),
+        'unknown_headers' => $parsed['unknown_headers'],
+        'rows' => $parsed['rows'],
+        'errors' => $parsed['errors'],
+    ]);
+}
+
+function import_assets_csv(PDO $pdo): void
+{
+    $payload = read_json_body();
+    $rows = $payload['rows'] ?? [];
+    $updateById = !empty($payload['update_by_id']);
+    if (!is_array($rows) || count($rows) === 0) {
+        json_response(['ok' => false, 'error' => 'Import neobsahuje žádné řádky'], 400);
+    }
+    $errors = [];
+    foreach ($rows as $index => $row) {
+        if (!is_array($row)) {
+            $errors[] = ['row_number' => $index + 2, 'field' => '', 'message' => 'Neplatný řádek importu.'];
+            continue;
+        }
+        normalize_import_node_row($row);
+        if (!$updateById) $row['id'] = '';
+        foreach (collect_node_validation_errors($row, $updateById) as $e) {
+            $errors[] = ['row_number' => $row['_csv_row_number'] ?? ($index + 2), 'field' => $e['field'], 'message' => $e['message']];
+        }
+    }
+    if ($updateById) csv_append_update_id_errors($pdo, $rows, $errors);
+    if ($errors) {
+        json_response(['ok' => false, 'error' => 'Import obsahuje validační chyby', 'errors' => $errors], 400);
+    }
+
+    $created = 0;
+    $updated = 0;
+    $pdo->beginTransaction();
+    try {
+        foreach ($rows as $row) {
+            if (!is_array($row)) continue;
+            normalize_import_node_row($row);
+            if (!$updateById) $row['id'] = '';
+            $hadId = trim((string)($row['id'] ?? '')) !== '';
+            $clean = [];
+            foreach (array_keys(assets_csv_columns()) as $field) {
+                if ($field === 'id' && !$updateById) continue;
+                $clean[$field] = $row[$field] ?? '';
+            }
+            upsert_node($pdo, $clean);
+            if ($hadId) $updated++; else $created++;
+        }
+        $pdo->commit();
+        json_response(['ok' => true, 'created' => $created, 'updated' => $updated, 'total' => $created + $updated]);
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+}
+
+function export_assets_csv(PDO $pdo): void
+{
+    ensure_current_db_checkpoint($pdo);
+    $columns = assets_csv_columns();
+    $filename = preg_replace('/\.sqlite$/', '', current_model_name()) . '-assets-' . gmdate('Ymd-His') . '.csv';
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    echo "\xEF\xBB\xBF";
+    $out = fopen('php://output', 'w');
+    fputcsv($out, array_values($columns), ';');
+    $rows = $pdo->query('SELECT * FROM nodes ORDER BY id')->fetchAll();
+    foreach ($rows as $row) {
+        $line = [];
+        foreach (array_keys($columns) as $field) $line[] = $row[$field] ?? '';
+        fputcsv($out, $line, ';');
+    }
+    fclose($out);
+    exit;
 }
 
 function change_log(PDO $pdo): void

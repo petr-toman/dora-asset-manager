@@ -920,6 +920,120 @@ async function copyWholeTable(tableId) {
     toast('Tabulka zkopírována do schránky');
 }
 
+let pendingCsvImport = { rows: [], updateById: false, errors: [] };
+
+function openAssetsCsvImportDialog() {
+    const input = $('#assetsCsvInput');
+    pendingCsvImport = { rows: [], updateById: !!$('#csvUpdateById')?.checked, errors: [] };
+    if (input) {
+        input.value = '';
+        input.click();
+    }
+}
+
+async function previewAssetsCsvFile(evt) {
+    const file = evt.target.files && evt.target.files[0];
+    if (!file) return;
+    const updateById = !!$('#csvUpdateById')?.checked;
+    const form = new FormData();
+    form.append('csv_file', file);
+    form.append('update_by_id', updateById ? '1' : '0');
+    try {
+        const data = await fetchJson(`${api}?action=preview_assets_csv`, { method: 'POST', body: form });
+        pendingCsvImport = { rows: data.rows || [], updateById, errors: data.errors || [] };
+        renderCsvImportPreview(data);
+        openModal('csvImportModal');
+    } catch (e) {
+        toast('CSV import preview selhal: ' + e.message);
+    }
+}
+
+function renderCsvImportPreview(data) {
+    const summary = $('#csvImportSummary');
+    const warnings = $('#csvImportWarnings');
+    const confirmBtn = $('#btnConfirmAssetsCsvImport');
+    const errors = data.errors || [];
+    const unknown = data.unknown_headers || [];
+    summary.innerHTML = `<strong>Soubor načten.</strong> Řádků: ${data.total_rows || 0}, chyb: ${errors.length}. Režim: ${data.update_by_id ? 'aktualizovat podle ID' : 'vložit jako nové assety'}.`;
+    if (unknown.length) {
+        warnings.classList.remove('hidden');
+        warnings.innerHTML = `<strong>Ignorované sloupce:</strong> ${unknown.map(escapeHtml).join(', ')}`;
+    } else {
+        warnings.classList.add('hidden');
+        warnings.textContent = '';
+    }
+    confirmBtn.disabled = errors.length > 0 || !data.rows || data.rows.length === 0;
+
+    const table = $('#csvPreviewGrid');
+    const errorByRow = new Map();
+    errors.forEach(e => {
+        const key = String(e.row_number || '');
+        if (!errorByRow.has(key)) errorByRow.set(key, []);
+        errorByRow.get(key).push(e);
+    });
+    const previewCols = [
+        ['_status','Stav'], ['_csv_row_number','CSV ř.'], ['id','ID'], ['type','Typ'], ['name','Název'], ['criticality','Kritičnost'],
+        ['owner','Owner'], ['business_owner','Business owner'], ['technical_owner','Technical owner'], ['vendor_manufacturer','Vendor/manufacturer'],
+        ['rto_hours','RTO h'], ['rpo_hours','RPO h'], ['mtd_hours','MTD h'], ['_errors','Chyby']
+    ];
+    const thead = document.createElement('thead');
+    const hr = document.createElement('tr');
+    previewCols.forEach(([, label]) => { const th = document.createElement('th'); th.textContent = label; hr.appendChild(th); });
+    thead.appendChild(hr);
+    const tbody = document.createElement('tbody');
+    (data.rows || []).slice(0, 200).forEach(row => {
+        const csvRow = String(row._csv_row_number || '');
+        const rowErrors = errorByRow.get(csvRow) || [];
+        const tr = document.createElement('tr');
+        if (rowErrors.length) tr.classList.add('error-row');
+        previewCols.forEach(([field]) => {
+            const td = document.createElement('td');
+            if (field === '_status') td.textContent = rowErrors.length ? 'CHYBA' : 'OK';
+            else if (field === '_errors') td.textContent = rowErrors.map(e => e.message).join(' | ');
+            else td.textContent = row[field] ?? '';
+            if (field === '_status' && rowErrors.length) td.classList.add('invalid-cell');
+            tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+    });
+    table.innerHTML = '';
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    if ((data.rows || []).length > 200) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = previewCols.length;
+        td.textContent = `Preview zobrazuje prvních 200 řádků z ${data.rows.length}.`;
+        td.className = 'readonly-cell';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+    }
+}
+
+async function confirmAssetsCsvImport() {
+    if (!pendingCsvImport.rows.length) { toast('Není co importovat.'); return; }
+    if (pendingCsvImport.errors && pendingCsvImport.errors.length) { toast('Import nelze potvrdit, CSV obsahuje chyby.'); return; }
+    if (!confirm(`Importovat ${pendingCsvImport.rows.length} assetů do aktuálního modelu?`)) return;
+    try {
+        const res = await postJson('import_assets_csv', { rows: pendingCsvImport.rows, update_by_id: pendingCsvImport.updateById });
+        closeModal('csvImportModal');
+        toast(`CSV import dokončen: vytvořeno ${res.created}, aktualizováno ${res.updated}.`);
+        await loadGraph();
+        await loadAssetsTable();
+    } catch (e) {
+        toast('CSV import selhal: ' + e.message);
+    }
+}
+
+function exportAssetsCsv() {
+    window.location.href = `${api}?action=export_assets_csv`;
+}
+
+async function rePreviewCsvIfLoaded() {
+    const input = $('#assetsCsvInput');
+    if (input?.files?.[0]) await previewAssetsCsvFile({ target: input });
+}
+
 async function main() {
     initSidebarToggle();
     showPendingToast();
@@ -944,6 +1058,11 @@ async function main() {
     $('#edgesTableFilter').addEventListener('input', () => renderEditableTable('edgesGrid', edgeColumns, tableRows.edgesGrid, 'edge'));
     $('#btnCopyAssetsTable').addEventListener('click', () => copyWholeTable('assetsGrid'));
     $('#btnCopyEdgesTable').addEventListener('click', () => copyWholeTable('edgesGrid'));
+    $('#btnImportAssetsCsv').addEventListener('click', openAssetsCsvImportDialog);
+    $('#btnExportAssetsCsv').addEventListener('click', exportAssetsCsv);
+    $('#assetsCsvInput').addEventListener('change', previewAssetsCsvFile);
+    $('#btnConfirmAssetsCsvImport').addEventListener('click', confirmAssetsCsvImport);
+    $('#csvUpdateById').addEventListener('change', rePreviewCsvIfLoaded);
 
     $('#btnAddNode').addEventListener('click', () => openNodeModalById(null));
     $('#btnAddEdge').addEventListener('click', () => openEdgeModalById(null));

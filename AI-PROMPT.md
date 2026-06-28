@@ -2,7 +2,7 @@
 
 ## Prompt pro znovuvytvoření aktuální aplikace od začátku
 
-Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v16.
+Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v18.
 
 ---
 
@@ -710,3 +710,16 @@ Nevyplněná pravděpodobnost nebo dopad se nesmí interpretovat jako `1 × 1`. 
 ### SQLite kopie modelu
 
 Před kopírováním nebo stažením aktuálního SQLite modelu má aplikace zavolat `PRAGMA wal_checkpoint(FULL)` a zkontrolovat návratový stav. Pokud je checkpoint `busy`, operace má vrátit řízenou chybu a nemá kopírovat pouze hlavní `.sqlite` soubor.
+
+
+## CSV import/export požadavek
+
+Implementuj v pohledu **Assety tabulka** funkce:
+
+- `Import CSV` — upload CSV souboru s assety, preview před zápisem, validace celého souboru, zápis jen pokud nejsou chyby.
+- `Export CSV` — stažení aktuální assetové tabulky v CSV UTF-8 se středníkem jako oddělovačem.
+- CSV import má podporovat hlavičky shodné s UI tabulkou: `ID`, `Typ`, `Název`, `Popis`, `Owner`, `Business owner`, `Technical owner`, `Vendor/manufacturer`, `Kritičnost`, `Důvěrnost`, `Integrita`, `Dostupnost`, `RTO h`, `RPO h`, `MTD h`, `Citlivost dat`, `Kategorie dat`, `Prostředí`, `Lokalita`, `Stav`, `Lifecycle`, `Poslední revize`, `Revize měs.`, `Hrozby`, `Rizikové scénáře`, `Pravděp. 1-5`, `Dopad 1-5`, `Kontroly`, `Reziduální riziko`, `Good-to-know`.
+- Výchozí import ignoruje `ID` a vkládá řádky jako nové assety.
+- Volitelný režim aktualizace podle ID musí ověřit, že ID v aktuální DB existuje.
+- Validuj povinné `Typ` a `Název`, číselníky, čísla a rizikové hodnoty 1–5.
+- Import vazeb z CSV není součástí tohoto požadavku.

@@ -127,7 +127,10 @@
             <button id="btnDeleteAssetRows" class="danger subtle-danger">Smazat řádku</button>
             <button id="btnSaveAssetsTable" class="primary">Save</button>
             <button id="btnReloadAssetsTable">Reload</button>
+            <button id="btnImportAssetsCsv">Import CSV</button>
+            <button id="btnExportAssetsCsv">Export CSV</button>
             <button id="btnCopyAssetsTable">Kopírovat tabulku</button>
+            <input id="assetsCsvInput" type="file" accept=".csv,text/csv,text/plain" class="hidden">
         </div>
     </div>
     <div class="table-wrap">
@@ -252,6 +255,28 @@
                 <button type="submit" class="primary">Uložit</button>
             </div>
         </form>
+    </div>
+</div>
+
+
+<div id="csvImportModal" class="modal hidden">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h2>Import assetů z CSV</h2>
+            <button class="icon" data-close="csvImportModal">×</button>
+        </div>
+        <div class="csv-import-body">
+            <p id="csvImportSummary" class="hint">Nahraj CSV exportované z Excelu ve struktuře assetové tabulky.</p>
+            <label class="inline-check"><input id="csvUpdateById" type="checkbox"> Aktualizovat existující assety podle ID místo vložení jako nové</label>
+            <div id="csvImportWarnings" class="csv-warnings hidden"></div>
+            <div class="csv-preview-wrap">
+                <table id="csvPreviewGrid" class="data-grid csv-preview-grid"></table>
+            </div>
+            <div class="form-actions">
+                <button type="button" data-close="csvImportModal">Zavřít</button>
+                <button type="button" id="btnConfirmAssetsCsvImport" class="primary" disabled>Importovat do DB</button>
+            </div>
+        </div>
     </div>
 </div>
 

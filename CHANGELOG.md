@@ -4,6 +4,31 @@
 
 Tento changelog byl zpětně zrekonstruován z iterací vývoje v chatu a je dále průběžně udržován v projektu.
 
+## v18-csv-import
+
+Datum: 2026-06-28
+
+### Přidáno
+
+- Import assetů z CSV přímo z obrazovky **Assety tabulka**.
+- CSV preview před zápisem do databáze.
+- Validace celého CSV před importem; do DB se ukládá pouze tehdy, pokud je celý soubor validní.
+- Detekce oddělovače CSV (`;`, `,`, tab) a podpora UTF-8 BOM.
+- Mapování českých hlaviček z tabulky aplikace i interních názvů polí.
+- Režim výchozího importu „vložit jako nové assety“, kdy se CSV `ID` ignoruje.
+- Volitelný režim „aktualizovat podle ID“ pro aktualizaci existujících assetů.
+- Kontrola, že při aktualizaci podle ID cílový asset v aktuálním modelu existuje.
+- Export assetové tabulky do CSV jako šablona nebo jako přenosový formát z aktuálního modelu.
+
+### Změněno
+
+- README, PROJECT_STATE a AI-PROMPT rozšířeny o CSV import/export workflow.
+- CSV import používá stejnou sadu validačních pravidel jako tabulkový editor assetů: `Typ` a `Název` jsou povinné, číselníky a číselná pole se validují před uložením.
+
+### Poznámka
+
+- Import vazeb z CSV zatím není součástí v18. Vazby lze nadále hromadně spravovat přes tabulkový editor vazeb nebo copy/paste z Excelu.
+
 ## v17-tech-performance
 
 Datum: 2026-06-28

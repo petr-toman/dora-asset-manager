@@ -537,3 +537,30 @@ body.sidebar-collapsed .sidebar-toggle {
     box-shadow: 0 12px 32px rgba(37, 99, 235, .13);
 }
 body.sidebar-collapsed .canvas-wrap::before { content: "DORA ASSET GRAPH · SIDEBAR COLLAPSED"; }
+
+.inline-check {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    margin: 8px 0 12px 0;
+    font-weight: 700;
+    color: var(--text, #172033);
+}
+.csv-import-body { display: block; }
+.csv-preview-wrap {
+    max-height: 52vh;
+    overflow: auto;
+    border: 1px solid rgba(148, 163, 184, .45);
+    border-radius: 14px;
+    background: rgba(255,255,255,.82);
+}
+.csv-preview-grid td, .csv-preview-grid th { white-space: nowrap; }
+.csv-warnings {
+    border: 1px solid rgba(217, 119, 6, .35);
+    background: rgba(255, 247, 237, .9);
+    color: #92400e;
+    padding: 10px 12px;
+    border-radius: 12px;
+    margin: 8px 0 12px 0;
+    font-size: 13px;
+}

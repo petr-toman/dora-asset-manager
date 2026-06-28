@@ -1,8 +1,8 @@
 # PROJECT_STATE.md
 
-## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v17
+## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v18
 
-Tento dokument zachycuje aktuální stav aplikace po 17 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
+Tento dokument zachycuje aktuální stav aplikace po 18 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
 
 ## 1. Účel aplikace
 
@@ -19,8 +19,8 @@ Mentální model aplikace je: **webová aplikace jako editor, SQLite soubor jako
 
 ## 2. Aktuální verze
 
-- Aktuální iterace: `v17-tech-performance`
-- Poslední funkční základ: `v16-changelog` + technické a výkonové opravy v17
+- Aktuální iterace: `v18-csv-import`
+- Poslední funkční základ: `v17-tech-performance` + CSV import/export assetů ve v18
 - Aplikace běží na portu: `8888`
 - URL: `http://localhost:8888`
 
@@ -480,3 +480,26 @@ Prázdná pravděpodobnost nebo dopad už neznamená nízké riziko `1 × 1`. Ta
 ### SQLite model copy/download
 
 Před kopírováním nebo stažením aktuálního SQLite modelu se kontroluje výsledek WAL checkpointu. Pokud je checkpoint busy, aplikace vrátí řízenou chybu, protože kopírovat jen hlavní `.sqlite` soubor by nemuselo být bezpečné.
+
+
+## CSV import/export assetů
+
+Ve verzi v18 aplikace podporuje import assetů z CSV přímo z tabulkového pohledu **Assety tabulka**. CSV soubor má mít hlavičky odpovídající tabulce aplikace, například:
+
+```text
+ID;Typ;Název;Popis;Owner;Business owner;Technical owner;Vendor/manufacturer;Kritičnost;Důvěrnost;Integrita;Dostupnost;RTO h;RPO h;MTD h;Citlivost dat;Kategorie dat;Prostředí;Lokalita;Stav;Lifecycle;Poslední revize;Revize měs.;Hrozby;Rizikové scénáře;Pravděp. 1-5;Dopad 1-5;Kontroly;Reziduální riziko;Good-to-know
+```
+
+Workflow:
+
+1. Uživatel otevře **Assety tabulka**.
+2. Klikne na **Import CSV**.
+3. Vybere CSV soubor exportovaný z Excelu.
+4. Aplikace zobrazí preview, počet řádků, ignorované sloupce a validační chyby.
+5. Import do DB je povolen pouze tehdy, když CSV neobsahuje validační chyby.
+6. Výchozí režim ignoruje CSV `ID` a vkládá všechny řádky jako nové assety.
+7. Volitelně lze zapnout aktualizaci podle ID existujících assetů.
+
+Aplikace také umí exportovat aktuální assetovou tabulku do CSV přes tlačítko **Export CSV**. Tento export slouží jako šablona, přenosový formát a podklad pro úpravy v Excelu.
+
+CSV import se týká pouze assetů. Vazby se zatím importují přes tabulkový editor vazeb nebo copy/paste.
