@@ -526,3 +526,8 @@ Tato iterace nemění datový model ani endpointy z v19/v20.
 ## v23 seed data organization
 
 Demo initialization is now separated from the core database bootstrap code. The updated demo model is stored as `app/demo_seed_data.json`; `app/db_seed_data.php` contains the importer function `seed_demo_data(PDO $pdo)`. `app/db.php` requires this file only when creating a new demo SQLite model. This keeps ordinary application requests lighter and makes future demo-data replacement possible without editing the core DB helper. The seed intentionally imports nodes, edges, views and node positions, but not `change_log`.
+
+
+## v24 seed loader correction
+
+The active codebase includes the v23 demo seed refactor plus a v24 fix. `app/db_seed_data.php` is self-contained for nullable integer conversion via `seed_nullable_int()`. This prevents the seed importer from failing during first initialization with `Call to undefined function nullable_int()`. Demo data is still stored in `app/demo_seed_data.json` and loaded only when initializing a new demo model.

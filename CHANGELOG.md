@@ -378,3 +378,11 @@ Datum: 2026-06-26
 - The delete action is now a smaller, less visually dominant icon button.
 - The section header combines the explanation and action buttons more cleanly.
 - No data model or API behavior was changed in this iteration.
+
+
+## v24 - Demo seed loader bug fix
+
+- Fixed a runtime error in `app/db_seed_data.php` where the seed importer called an unavailable helper `nullable_int()`.
+- Added a self-contained `seed_nullable_int()` helper in the seed module, so demo initialization no longer depends on request/API helpers.
+- The demo seed remains externalized in `app/demo_seed_data.json` and still imports nodes, edges, views and positions, but not `change_log`.
+- This version keeps v22 as the functional/UI baseline and v23 seed refactor, with only the seed runtime bug corrected.

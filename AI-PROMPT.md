@@ -747,3 +747,8 @@ V sekci Vazby assetu na detailu assetu musí inputy/selecty používat stejný v
 ## v23 seed requirement
 
 Keep demo seed data outside the core DB helper. Implement `app/db_seed_data.php` with `seed_demo_data(PDO $pdo)` and store the demo dataset in `app/demo_seed_data.json`. Load this seed module from `db.php` only when initializing a new demo model. Do not seed `change_log`; seed only nodes, edges, views and view positions.
+
+
+## v24 seed implementation detail
+
+When implementing the external demo seed loader, make `app/db_seed_data.php` self-contained for seed-only helper conversions. Do not call request/API helper functions such as `nullable_int()` unless they are guaranteed to be loaded. Define a local helper such as `seed_nullable_int()` inside the seed module and use it for nullable numeric fields.

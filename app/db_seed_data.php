@@ -6,6 +6,23 @@
  * carry a large inline seed array. db.php loads this file only when creating a new
  * demo model with seed data.
  */
+
+if (!function_exists('seed_nullable_int')) {
+    function seed_nullable_int(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (is_string($value)) {
+            $value = trim($value);
+            if ($value === '') {
+                return null;
+            }
+        }
+        return is_numeric($value) ? (int)$value : null;
+    }
+}
+
 function seed_demo_data(PDO $pdo): void
 {
     $count = (int)$pdo->query('SELECT COUNT(*) AS c FROM nodes')->fetch()['c'];
@@ -81,9 +98,9 @@ function seed_demo_data(PDO $pdo): void
                 $node['confidentiality'] ?? null,
                 $node['integrity_level'] ?? null,
                 $node['availability'] ?? null,
-                nullable_int($node['rto_hours'] ?? null),
-                nullable_int($node['rpo_hours'] ?? null),
-                nullable_int($node['mtd_hours'] ?? null),
+                seed_nullable_int($node['rto_hours'] ?? null),
+                seed_nullable_int($node['rpo_hours'] ?? null),
+                seed_nullable_int($node['mtd_hours'] ?? null),
                 $node['data_sensitivity'] ?? null,
                 $node['data_categories'] ?? null,
                 $node['environment'] ?? null,
@@ -92,11 +109,11 @@ function seed_demo_data(PDO $pdo): void
                 $node['lifecycle_state'] ?? null,
                 $node['good_to_know'] ?? null,
                 $node['last_reviewed_at'] ?? null,
-                nullable_int($node['review_frequency_months'] ?? null),
+                seed_nullable_int($node['review_frequency_months'] ?? null),
                 $node['threats'] ?? null,
                 $node['risk_scenarios'] ?? null,
-                nullable_int($node['risk_likelihood'] ?? null),
-                nullable_int($node['risk_impact'] ?? null),
+                seed_nullable_int($node['risk_likelihood'] ?? null),
+                seed_nullable_int($node['risk_impact'] ?? null),
                 $node['risk_controls'] ?? null,
                 $node['residual_risk'] ?? null,
                 $node['created_at'] ?? $now,

@@ -191,3 +191,8 @@ Verze v22 sjednocuje vzhled polí v tabulce **Vazby assetu** se standardními fo
 ## v23 note - demo seed data
 
 The demo model is initialized from `app/demo_seed_data.json` via `app/db_seed_data.php`. To replace the demo seed in the future, update the JSON file and keep the structure `nodes`, `edges`, `views`, and `view_node_positions`. The seed does not import `change_log`.
+
+
+## v24 note - seed bug fix
+
+Version v24 fixes the demo seed initialization bug from v23. The seed loader now defines its own nullable integer conversion helper and no longer calls an undefined `nullable_int()` function. If a previous startup created an empty `demo.sqlite`, remove it or create a new demo model so the fixed seed can populate the demo data.
