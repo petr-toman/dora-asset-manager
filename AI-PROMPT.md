@@ -737,3 +737,8 @@ When recreating or extending the app, keep the asset-card relationship editor co
 ## v21 UI/design requirement
 
 When rendering the asset-card relationship editor, keep the relationship table visually aligned with the rest of the asset form. Relationship table controls must not look larger or heavier than normal form fields. Use compact 12px text, 30px-high inputs/selects, 10px border radius, subtle borders, form-like focus styling, understated headers, a neutral read-only badge for the current asset, and a delete button that is visually calm by default and becomes red only on hover. This is a pure UI refinement over v20; do not change APIs or persistence behavior.
+
+
+## UI detail v22
+
+V sekci Vazby assetu na detailu assetu musí inputy/selecty používat stejný vizuální styl jako běžná formulářová pole karty assetu: stejná výška, padding, font, border radius, pozadí a focus state. Vazbová tabulka nesmí působit typograficky větší nebo dominantnější než zbytek asset formuláře.

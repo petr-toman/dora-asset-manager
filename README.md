@@ -181,3 +181,8 @@ Verze v20 pouze zpřehledňuje design sekce **Vazby assetu** na detailní kartě
 ## v21 poznámka
 
 Verze v21 dále dolaďuje vzhled sekce **Vazby assetu** v detailní kartě assetu. Tabulka vazeb je nyní sjednocená s běžnými poli formuláře: menší písmo, nižší pole, stejné zaoblení, jemnější hlavičky a méně výrazné tlačítko mazání. Funkčně zůstává stejná jako ve v20.
+
+
+## v22 poznámka
+
+Verze v22 sjednocuje vzhled polí v tabulce **Vazby assetu** se standardními formulářovými poli na kartě assetu. Funkčně navazuje na v21 beze změn datového modelu.

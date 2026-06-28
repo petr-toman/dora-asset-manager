@@ -463,6 +463,7 @@ function nodeDisplayName(id) {
 
 function makeNodeOptionSelect(value, ariaLabel) {
     const select = document.createElement('select');
+    select.className = 'node-edge-field';
     select.dataset.field = ariaLabel;
     select.append(new Option('', ''));
     [...allNodeLookup.values()]
@@ -474,7 +475,7 @@ function makeNodeOptionSelect(value, ariaLabel) {
 
 function makeEdgeTypeSelect(value) {
     const select = document.createElement('select');
-    select.className = 'node-edge-type';
+    select.className = 'node-edge-type node-edge-field';
     select.append(new Option('', ''));
     Object.entries(meta.edge_types || {}).forEach(([k, v]) => select.append(new Option(v, k)));
     select.value = value || '';
@@ -483,7 +484,7 @@ function makeEdgeTypeSelect(value) {
 
 function makeCriticalitySelect(value) {
     const select = document.createElement('select');
-    select.className = 'node-edge-criticality';
+    select.className = 'node-edge-criticality node-edge-field';
     select.append(new Option('', ''));
     (meta.criticalities || ['low','medium','high','critical']).forEach(v => select.append(new Option(v, v)));
     select.value = value || '';
@@ -547,6 +548,7 @@ function renderNodeEdgesTable() {
 
         const desc = document.createElement('input');
         desc.type = 'text';
+        desc.className = 'node-edge-field';
         desc.value = row.description || '';
         desc.placeholder = 'Popis vazby...';
         desc.addEventListener('change', () => updateNodeEdgeRow(row._rowid, 'description', desc.value));
