@@ -564,3 +564,94 @@ body.sidebar-collapsed .canvas-wrap::before { content: "DORA ASSET GRAPH · SIDE
     margin: 8px 0 12px 0;
     font-size: 13px;
 }
+
+
+/* v19 asset card edge editor */
+.modal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.node-edges-section {
+    border-top: 1px solid rgba(51, 65, 85, .12);
+    padding-top: 8px;
+}
+.node-edge-title {
+    border-top: 0;
+    margin-top: 0;
+    padding-top: 4px;
+}
+.node-edge-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 10px 0;
+}
+.node-edge-wrap {
+    overflow: auto;
+    border: 1px solid rgba(37, 99, 235, .14);
+    border-radius: 14px;
+    background: rgba(248, 250, 252, .82);
+}
+.node-edges-grid {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 860px;
+    font-size: 12px;
+}
+.node-edges-grid th,
+.node-edges-grid td {
+    border-bottom: 1px solid rgba(148, 163, 184, .22);
+    padding: 7px;
+    vertical-align: middle;
+}
+.node-edges-grid th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    text-align: left;
+    background: linear-gradient(180deg, #eef6ff, #e2ecf8);
+    color: #1e3a8a;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
+.node-edges-grid select,
+.node-edges-grid input {
+    margin: 0;
+    min-width: 130px;
+    padding: 7px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+}
+.node-edges-grid td:nth-child(5) input { min-width: 220px; }
+.node-edge-current {
+    background: rgba(37, 99, 235, .08);
+    color: #1e3a8a;
+    font-weight: 900;
+    border-radius: 8px;
+}
+.node-edges-grid .new-row td { background: rgba(37,99,235,.05); }
+.node-edges-grid .dirty-row td { background: rgba(250,204,21,.10); }
+.node-edge-empty {
+    padding: 18px !important;
+    text-align: center;
+    color: #64748b;
+    font-weight: 700;
+}
+.icon-trash {
+    min-width: 34px;
+    padding: 7px 9px;
+    line-height: 1;
+}
+.sticky-actions {
+    position: sticky;
+    bottom: -18px;
+    z-index: 2;
+    margin: 8px -18px -18px;
+    padding: 12px 18px 16px;
+    border-top: 1px solid rgba(51,65,85,.14);
+    background: rgba(248,251,255,.96);
+    backdrop-filter: blur(10px);
+    border-radius: 0 0 22px 22px;
+}

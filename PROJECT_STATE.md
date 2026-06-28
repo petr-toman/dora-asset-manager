@@ -503,3 +503,9 @@ Workflow:
 Aplikace také umí exportovat aktuální assetovou tabulku do CSV přes tlačítko **Export CSV**. Tento export slouží jako šablona, přenosový formát a podklad pro úpravy v Excelu.
 
 CSV import se týká pouze assetů. Vazby se zatím importují přes tabulkový editor vazeb nebo copy/paste.
+
+## Current addition in v19
+
+The asset detail card in graph view includes an embedded relationship editor. It loads all incoming and outgoing edges for the opened asset using `get_node_edges`. The table keeps relationship direction explicit by showing the current asset on the left for outgoing edges and on the right for incoming edges. The current asset side is read-only, while the other asset, edge type, criticality and description can be edited. New incoming/outgoing relationships can be added and existing relationships can be marked for deletion. Relationship changes are saved through the existing batch edge API when the asset card is saved.
+
+The asset modal now also has Save/Close actions in the header, plus a sticky bottom action bar, so users do not have to scroll to the bottom of a large card just to save changes.

@@ -5,6 +5,9 @@ let graph = { nodes: [], edges: [] };
 let allNodeLookup = new Map();
 let selected = null;
 let currentViewId = 1;
+let currentNodeEdges = [];
+let currentNodeDeletedEdges = [];
+let nodeEdgesDirty = false;
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -388,10 +391,17 @@ function clearForm(form) { form.reset(); [...form.elements].forEach(e => { if (e
 
 async function openNodeModalById(id) {
     clearForm($('#nodeForm'));
+    currentNodeEdges = [];
+    currentNodeDeletedEdges = [];
+    nodeEdgesDirty = false;
+    $('#nodeEdgesSection').classList.add('hidden');
+    $('#nodeEdgesGrid tbody').innerHTML = '';
     if (id) {
+        await loadNodeLookup();
         const data = await fetchJson(`${api}?action=get_node&id=${id}`);
         fillForm($('#nodeForm'), data.node);
         $('#nodeModalTitle').textContent = `Uzel: ${data.node.name}`;
+        await loadNodeEdges(id);
     } else {
         $('#nodeModalTitle').textContent = 'Nový uzel';
         $('#nodeForm').elements.type.value = 'software';
@@ -432,21 +442,238 @@ function formData(form) {
     return data;
 }
 
+
+function currentNodeIdFromForm() {
+    return Number($('#nodeForm').elements.id.value || 0);
+}
+
+async function loadNodeEdges(id) {
+    const data = await fetchJson(`${api}?action=get_node_edges&id=${encodeURIComponent(id)}`);
+    currentNodeEdges = (data.edges || []).map(e => ({ ...e, _rowid: 'edge-' + e.id, _state: 'clean', _deleted: false }));
+    currentNodeDeletedEdges = [];
+    nodeEdgesDirty = false;
+    $('#nodeEdgesSection').classList.remove('hidden');
+    renderNodeEdgesTable();
+}
+
+function nodeDisplayName(id) {
+    const n = allNodeLookup.get(String(id));
+    return n ? `${n.name} (#${n.id})` : `#${id}`;
+}
+
+function makeNodeOptionSelect(value, ariaLabel) {
+    const select = document.createElement('select');
+    select.dataset.field = ariaLabel;
+    select.append(new Option('', ''));
+    [...allNodeLookup.values()]
+        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'cs'))
+        .forEach(n => select.append(new Option(`${n.name} (#${n.id})`, n.id)));
+    select.value = value ? String(value) : '';
+    return select;
+}
+
+function makeEdgeTypeSelect(value) {
+    const select = document.createElement('select');
+    select.className = 'node-edge-type';
+    select.append(new Option('', ''));
+    Object.entries(meta.edge_types || {}).forEach(([k, v]) => select.append(new Option(v, k)));
+    select.value = value || '';
+    return select;
+}
+
+function makeCriticalitySelect(value) {
+    const select = document.createElement('select');
+    select.className = 'node-edge-criticality';
+    select.append(new Option('', ''));
+    (meta.criticalities || ['low','medium','high','critical']).forEach(v => select.append(new Option(v, v)));
+    select.value = value || '';
+    return select;
+}
+
+function renderNodeEdgesTable() {
+    const tbody = $('#nodeEdgesGrid tbody');
+    tbody.innerHTML = '';
+    const currentId = currentNodeIdFromForm();
+    const currentName = nodeDisplayName(currentId);
+    if (!currentId) {
+        $('#nodeEdgesSection').classList.add('hidden');
+        return;
+    }
+    const rows = currentNodeEdges.filter(r => !r._deleted);
+    if (!rows.length) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 6;
+        td.className = 'node-edge-empty';
+        td.textContent = 'Zatím žádné vazby. Přidej odchozí nebo příchozí vazbu.';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+    }
+    rows.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.dataset.rowid = row._rowid;
+        if (row._state === 'new') tr.classList.add('new-row');
+        if (row._state === 'dirty') tr.classList.add('dirty-row');
+
+        const sourceTd = document.createElement('td');
+        const targetTd = document.createElement('td');
+        const typeTd = document.createElement('td');
+        const critTd = document.createElement('td');
+        const descTd = document.createElement('td');
+        const actionTd = document.createElement('td');
+
+        if (Number(row.source_node_id) === currentId) {
+            sourceTd.textContent = currentName;
+            sourceTd.className = 'node-edge-current';
+            const sel = makeNodeOptionSelect(row.target_node_id, 'target_node_id');
+            sel.addEventListener('change', () => updateNodeEdgeRow(row._rowid, 'target_node_id', sel.value));
+            targetTd.appendChild(sel);
+        } else {
+            const sel = makeNodeOptionSelect(row.source_node_id, 'source_node_id');
+            sel.addEventListener('change', () => updateNodeEdgeRow(row._rowid, 'source_node_id', sel.value));
+            sourceTd.appendChild(sel);
+            targetTd.textContent = currentName;
+            targetTd.className = 'node-edge-current';
+        }
+
+        const typeSelect = makeEdgeTypeSelect(row.type);
+        typeSelect.addEventListener('change', () => updateNodeEdgeRow(row._rowid, 'type', typeSelect.value));
+        typeTd.appendChild(typeSelect);
+
+        const critSelect = makeCriticalitySelect(row.criticality || '');
+        critSelect.addEventListener('change', () => updateNodeEdgeRow(row._rowid, 'criticality', critSelect.value));
+        critTd.appendChild(critSelect);
+
+        const desc = document.createElement('input');
+        desc.type = 'text';
+        desc.value = row.description || '';
+        desc.placeholder = 'Popis vazby...';
+        desc.addEventListener('change', () => updateNodeEdgeRow(row._rowid, 'description', desc.value));
+        descTd.appendChild(desc);
+
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'danger icon-trash';
+        del.title = 'Smazat vazbu';
+        del.textContent = '🗑';
+        del.addEventListener('click', () => deleteNodeEdgeRow(row._rowid));
+        actionTd.appendChild(del);
+
+        [sourceTd, typeTd, targetTd, critTd, descTd, actionTd].forEach(td => tr.appendChild(td));
+        tbody.appendChild(tr);
+    });
+}
+
+function updateNodeEdgeRow(rowid, field, value) {
+    const row = currentNodeEdges.find(r => r._rowid === rowid);
+    if (!row) return;
+    row[field] = value;
+    if (row._state !== 'new') row._state = 'dirty';
+    nodeEdgesDirty = true;
+    renderNodeEdgesTable();
+}
+
+function addNodeEdge(direction) {
+    const currentId = currentNodeIdFromForm();
+    if (!currentId) { toast('Vazby lze přidávat až po uložení nového assetu.'); return; }
+    const row = {
+        id: '',
+        source_node_id: direction === 'incoming' ? '' : currentId,
+        target_node_id: direction === 'incoming' ? currentId : '',
+        type: 'depends_on',
+        criticality: '',
+        description: '',
+        _rowid: 'new-edge-' + Date.now() + '-' + Math.random().toString(16).slice(2),
+        _state: 'new',
+        _deleted: false
+    };
+    currentNodeEdges.push(row);
+    nodeEdgesDirty = true;
+    renderNodeEdgesTable();
+}
+
+function deleteNodeEdgeRow(rowid) {
+    const row = currentNodeEdges.find(r => r._rowid === rowid);
+    if (!row) return;
+    if (row.id) currentNodeDeletedEdges.push(Number(row.id));
+    row._deleted = true;
+    nodeEdgesDirty = true;
+    renderNodeEdgesTable();
+}
+
+function validateAndCollectNodeEdges() {
+    const currentId = currentNodeIdFromForm();
+    const rows = [];
+    const errors = [];
+    const validEdgeTypes = new Set(Object.keys(meta.edge_types || {}));
+    currentNodeEdges.filter(r => !r._deleted).forEach((r, idx) => {
+        const source = Number(r.source_node_id || 0);
+        const target = Number(r.target_node_id || 0);
+        const type = String(r.type || '').trim();
+        if (!source || !target || !type) errors.push(`Vazba ${idx + 1}: zdroj, cíl a typ jsou povinné.`);
+        if (source && !allNodeLookup.has(String(source))) errors.push(`Vazba ${idx + 1}: zdrojový asset #${source} neexistuje.`);
+        if (target && !allNodeLookup.has(String(target))) errors.push(`Vazba ${idx + 1}: cílový asset #${target} neexistuje.`);
+        if (type && !validEdgeTypes.has(type)) errors.push(`Vazba ${idx + 1}: neplatný typ vazby ${type}.`);
+        if (source && target && source === target) errors.push(`Vazba ${idx + 1}: zdroj a cíl nesmí být stejný asset.`);
+        if (source !== currentId && target !== currentId) errors.push(`Vazba ${idx + 1}: musí obsahovat aktuálně otevřený asset.`);
+        rows.push({
+            id: r.id || '',
+            source_node_id: source || '',
+            target_node_id: target || '',
+            type,
+            criticality: r.criticality || '',
+            description: r.description || ''
+        });
+    });
+    return { ok: errors.length === 0, errors, rows, delete_ids: currentNodeDeletedEdges.slice() };
+}
+
+async function saveNodeEdgesIfNeeded() {
+    if ($('#nodeEdgesSection').classList.contains('hidden')) return;
+    if (!nodeEdgesDirty) return;
+    const collected = validateAndCollectNodeEdges();
+    if (!collected.ok) {
+        toast(collected.errors[0]);
+        throw new Error(collected.errors.join('\n'));
+    }
+    const changedRows = currentNodeEdges
+        .filter(r => !r._deleted && (r._state === 'new' || r._state === 'dirty'))
+        .map(r => ({
+            id: r.id || '',
+            source_node_id: Number(r.source_node_id || 0),
+            target_node_id: Number(r.target_node_id || 0),
+            type: r.type || '',
+            criticality: r.criticality || '',
+            description: r.description || ''
+        }));
+    if (!changedRows.length && !currentNodeDeletedEdges.length) return;
+    await postJson('batch_save_edges', { rows: changedRows, delete_ids: currentNodeDeletedEdges });
+    nodeEdgesDirty = false;
+}
+
 async function submitNode(evt) {
     evt.preventDefault();
-    const data = formData(evt.target);
-    const saved = await postJson('save_node', data);
-    closeModal('nodeModal');
-    selected = null;
-    await loadGraph();
-    if (saved.node && cy) {
-        const node = cy.$(`#n${saved.node.id}`);
-        if (node && node.length) {
-            node.select();
-            cy.animate({ center: { eles: node }, zoom: Math.max(cy.zoom(), 1) }, { duration: 250 });
+    try {
+        const data = formData(evt.target);
+        const saved = await postJson('save_node', data);
+        if (saved.node && $('#nodeForm').elements.id.value) {
+            await saveNodeEdgesIfNeeded();
         }
+        closeModal('nodeModal');
+        selected = null;
+        await loadGraph();
+        if (saved.node && cy) {
+            const node = cy.$(`#n${saved.node.id}`);
+            if (node && node.length) {
+                node.select();
+                cy.animate({ center: { eles: node }, zoom: Math.max(cy.zoom(), 1) }, { duration: 250 });
+            }
+        }
+        toast('Uzel uložen');
+    } catch (e) {
+        toast('Uložení selhalo: ' + e.message);
     }
-    toast('Uzel uložen');
 }
 
 async function submitEdge(evt) {
@@ -1086,6 +1313,10 @@ async function main() {
     $('#searchBox').addEventListener('input', applyUiFilter);
     $('#typeFilter').addEventListener('change', applyUiFilter);
     $('#criticalityFilter').addEventListener('change', applyUiFilter);
+
+    $('#btnAddOutgoingNodeEdge').addEventListener('click', () => addNodeEdge('outgoing'));
+    $('#btnAddIncomingNodeEdge').addEventListener('click', () => addNodeEdge('incoming'));
+    $('#btnReloadNodeEdges').addEventListener('click', async () => { const id = currentNodeIdFromForm(); if (id) await loadNodeEdges(id); });
 
     $('#nodeForm').addEventListener('submit', submitNode);
     $('#edgeForm').addEventListener('submit', submitEdge);

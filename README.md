@@ -166,3 +166,7 @@ Konfigurace retence change logu přes environment variables:
 DORA_CHANGE_LOG_RETENTION_DAYS=90
 DORA_CHANGE_LOG_MAX_RECORDS=5000
 ```
+
+## v19 note - editing relationships from asset card
+
+In graph view, double-click an asset to open its detail card. At the end of the card there is now a **Vazby assetu** table showing all incoming and outgoing relationships for the asset. The active asset is displayed as read-only on the left or right side depending on the direction stored in the `edges` table. Use **+ Odchozí vazba** or **+ Příchozí vazba** to add directed relationships, the trash icon to remove relationships, and the main **Uložit** button to save asset details together with changed relationships.

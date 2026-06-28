@@ -330,3 +330,15 @@ Datum: 2026-06-26
 - Dodavatele a procesy modelovat jako samostatné uzly.
 - Připravit DORA atributy včetně CIA, RTO, RPO, MTD, revizí a provozních metadat.
 - Navrhnout reportování a později risk register.
+
+## v19 - Asset card edge editor
+
+- Added an editable relationship table directly to the asset detail card in graph view.
+- The relationship table shows directed edges as `Asset A -> relationship type -> Asset B`.
+- The currently opened asset is kept read-only on the left or right side according to the real stored edge direction.
+- Existing relationships can be edited from the asset card: relationship type, other asset, criticality and description.
+- Relationships can be deleted from the asset card using a trash button.
+- New outgoing and incoming relationships can be added from the asset card.
+- Asset detail modal now has Save/Close buttons in the header as well as the existing bottom action bar, because the card has grown and may require scrolling.
+- Bottom action bar is sticky inside the modal so Save remains easier to reach.
+- Added API endpoint `get_node_edges` to load all incoming/outgoing relationships for a selected node from the full DB, independent of the currently visible graph view.

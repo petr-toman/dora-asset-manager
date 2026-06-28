@@ -117,6 +117,10 @@ try {
             get_edges_table($pdo);
             break;
 
+        case 'get_node_edges':
+            get_node_edges($pdo);
+            break;
+
         case 'preview_assets_csv':
             preview_assets_csv($pdo);
             break;
@@ -958,6 +962,23 @@ function get_edges_table(PDO $pdo): void
             ORDER BY e.id';
     $rows = $pdo->query($sql)->fetchAll();
     json_response(['ok' => true, 'edges' => $rows]);
+}
+
+
+function get_node_edges(PDO $pdo): void
+{
+    $id = (int)($_GET['id'] ?? 0);
+    if ($id <= 0) json_response(['ok' => false, 'error' => 'Node id is required'], 400);
+    if (!node_exists($pdo, $id)) json_response(['ok' => false, 'error' => 'Node not found'], 404);
+    $sql = 'SELECT e.*, s.name AS source_name, s.type AS source_type, t.name AS target_name, t.type AS target_type
+            FROM edges e
+            LEFT JOIN nodes s ON s.id = e.source_node_id
+            LEFT JOIN nodes t ON t.id = e.target_node_id
+            WHERE e.source_node_id = ? OR e.target_node_id = ?
+            ORDER BY e.id';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$id, $id]);
+    json_response(['ok' => true, 'edges' => $stmt->fetchAll()]);
 }
 
 function assets_csv_columns(): array

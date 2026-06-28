@@ -162,7 +162,11 @@
     <div class="modal-content large">
         <div class="modal-header">
             <h2 id="nodeModalTitle">Uzel</h2>
-            <button class="icon" data-close="nodeModal">×</button>
+            <div class="modal-header-actions">
+                <button type="button" data-close="nodeModal">Zavřít</button>
+                <button type="submit" form="nodeForm" class="primary">Uložit</button>
+                <button class="icon" data-close="nodeModal" type="button">×</button>
+            </div>
         </div>
         <form id="nodeForm" class="form-grid asset-form">
             <input type="hidden" name="id">
@@ -209,7 +213,32 @@
             <label class="span2">Opatření / kontroly<input name="risk_controls" placeholder="backup, monitoring, DR plán..."></label>
             <label class="span4">Reziduální riziko<textarea name="residual_risk" rows="2"></textarea></label>
 
-            <div class="form-actions span4">
+            <section id="nodeEdgesSection" class="span4 node-edges-section hidden">
+                <div class="section-title node-edge-title">Vazby assetu</div>
+                <p class="hint">Vazby jsou orientované. Aktuálně otevřený asset je v tabulce uzamčen vlevo nebo vpravo podle skutečného směru vazby.</p>
+                <div class="node-edge-toolbar">
+                    <button type="button" id="btnAddOutgoingNodeEdge">+ Odchozí vazba</button>
+                    <button type="button" id="btnAddIncomingNodeEdge">+ Příchozí vazba</button>
+                    <button type="button" id="btnReloadNodeEdges">Reload vazeb</button>
+                </div>
+                <div class="node-edge-wrap">
+                    <table id="nodeEdgesGrid" class="node-edges-grid">
+                        <thead>
+                            <tr>
+                                <th>Asset A</th>
+                                <th>Typ vazby</th>
+                                <th>Asset B</th>
+                                <th>Kritičnost</th>
+                                <th>Popis</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <div class="form-actions span4 sticky-actions">
                 <button type="button" data-close="nodeModal">Zavřít</button>
                 <button type="submit" class="primary">Uložit</button>
             </div>
