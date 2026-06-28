@@ -742,3 +742,8 @@ When rendering the asset-card relationship editor, keep the relationship table v
 ## UI detail v22
 
 V sekci Vazby assetu na detailu assetu musí inputy/selecty používat stejný vizuální styl jako běžná formulářová pole karty assetu: stejná výška, padding, font, border radius, pozadí a focus state. Vazbová tabulka nesmí působit typograficky větší nebo dominantnější než zbytek asset formuláře.
+
+
+## v23 seed requirement
+
+Keep demo seed data outside the core DB helper. Implement `app/db_seed_data.php` with `seed_demo_data(PDO $pdo)` and store the demo dataset in `app/demo_seed_data.json`. Load this seed module from `db.php` only when initializing a new demo model. Do not seed `change_log`; seed only nodes, edges, views and view positions.

@@ -165,6 +165,7 @@ function init_sqlite_file(string $path, bool $withDemoData = false): void
     $pdo->exec('PRAGMA foreign_keys = ON');
     init_db($pdo);
     if ($withDemoData) {
+        require_once __DIR__ . '/db_seed_data.php';
         seed_demo_data($pdo);
     }
 }
@@ -241,49 +242,6 @@ function init_db(PDO $pdo): void
     ensure_schema_upgrades($pdo);
 }
 
-
-function seed_demo_data(PDO $pdo): void
-{
-    $count = (int)$pdo->query('SELECT COUNT(*) AS c FROM nodes')->fetch()['c'];
-    if ($count > 0) return;
-
-    $now = now_iso();
-    $nodes = [
-        ['software','SAP ECC','Core pojistný a účetní systém pro ukázku DORA evidence.','IT','Finance / pojištění','SAP tým','SAP','critical','high','high','critical',8,24,48,'private','personal, financial, business','prod','SVI datacenter','active','production','Demo asset: hlavní systém pro ukázku vazeb.','2026-06-26',12,'výpadek infrastruktury, ransomware, chyba rozhraní','Nedostupnost SAP zastaví zpracování smluv a účetních dat.',3,5,'backup, monitoring, správa změn, DR postup','Střední až vysoké podle aktuálního DR testu'],
-        ['software','ALICE','Pojistná aplikační funkcionalita v rámci SAP ECC.','IT','Správa pojištění','ALICE tým','msg.PIA','high','high','high','high',8,24,48,'private','personal, business','prod','SAP ECC','active','production','Demo komponenta SAP ECC.','2026-06-26',12,'aplikační chyba, výpadek dodavatele','Nemožnost zpracovat pojistné smlouvy.',3,4,'aplikační monitoring, incident management','Střední'],
-        ['hardware','scsap8cp','Produkční server hostující SAP aplikační vrstvu.','IT','IT infrastruktura','Infra tým','SV Informatik','critical','medium','high','critical',4,null,24,'','technological','prod','SVI datacenter','active','production','Demo HW uzel.','2026-06-26',12,'výpadek serveru, storage, síť','Výpadek serveru ovlivní hostovaný software.',2,5,'monitoring, HA, backup konfigurace','Střední'],
-        ['data','Pojistné smlouvy','Datová sada pojistných smluv a klientských údajů.','Business','Správa smluv','Data owner','SVP','critical','critical','high','high',null,24,48,'private','personal, financial, business','prod','SAP / DB','active','production','Demo datové aktivum.','2026-06-26',12,'únik dat, nekonzistence dat, ztráta záloh','Ohrožení důvěrnosti nebo integrity smluvních dat.',3,5,'přístupová práva, backup, logování','Vysoké bez pravidelné revize oprávnění'],
-        ['process','Správa pojistných smluv','Business proces správy pojistných smluv.','Business','Správa pojištění','Procesní vlastník','SVP','high','medium','high','high',8,24,48,'private','personal, business','prod','Praha','active','production','Demo proces.','2026-06-26',12,'nedostupnost systému, chyba dat','Zpoždění nebo zastavení správy smluv.',3,4,'náhradní postupy, monitoring incidentů','Střední'],
-        ['supplier','SV Informatik','ICT provider pro hosting a infrastrukturní služby.','IT','IT','Vendor manager','SV Informatik','high','medium','medium','high',24,null,72,'','technological','prod','externí poskytovatel','active','production','Demo dodavatel.','2026-06-26',12,'výpadek poskytovatele, SLA selhání','Závislost na externím poskytovateli ICT služeb.',2,5,'SLA, reporting, exit plán','Střední'],
-    ];
-    $stmt = $pdo->prepare('INSERT INTO nodes (type,name,description,owner,business_owner,technical_owner,vendor_manufacturer,criticality,confidentiality,integrity_level,availability,rto_hours,rpo_hours,mtd_hours,data_sensitivity,data_categories,environment,location,status,lifecycle_state,good_to_know,last_reviewed_at,review_frequency_months,threats,risk_scenarios,risk_likelihood,risk_impact,risk_controls,residual_risk,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-    foreach ($nodes as $n) {
-        $n[] = $now; $n[] = $now;
-        $stmt->execute($n);
-    }
-    $ids = [];
-    foreach ($pdo->query('SELECT id, name FROM nodes')->fetchAll() as $row) $ids[$row['name']] = (int)$row['id'];
-    $edges = [
-        ['SAP ECC','ALICE','contains','SAP ECC obsahuje aplikační komponentu ALICE.','high'],
-        ['scsap8cp','SAP ECC','hosts','Produkční server hostuje SAP ECC.','critical'],
-        ['SAP ECC','Pojistné smlouvy','processes_data','SAP ECC zpracovává datovou sadu pojistných smluv.','critical'],
-        ['ALICE','Pojistné smlouvy','processes_data','ALICE pracuje s pojistnými smlouvami.','high'],
-        ['SAP ECC','Správa pojistných smluv','supports_process','SAP ECC podporuje proces správy smluv.','critical'],
-        ['Pojistné smlouvy','Správa pojistných smluv','supports_process','Datová sada je využívána procesem správy smluv.','high'],
-        ['SAP ECC','SV Informatik','provided_by','Hosting/provoz je poskytován externím ICT providerem.','high'],
-    ];
-    $estmt = $pdo->prepare('INSERT INTO edges (source_node_id,target_node_id,type,description,criticality,created_at,updated_at) VALUES (?,?,?,?,?,?,?)');
-    foreach ($edges as [$src,$tgt,$type,$desc,$crit]) {
-        if (isset($ids[$src], $ids[$tgt])) $estmt->execute([$ids[$src], $ids[$tgt], $type, $desc, $crit, $now, $now]);
-    }
-    $positions = [
-        'scsap8cp' => [120, 220], 'SAP ECC' => [360, 220], 'ALICE' => [600, 130], 'Pojistné smlouvy' => [620, 330], 'Správa pojistných smluv' => [880, 330], 'SV Informatik' => [360, 480],
-    ];
-    $pstmt = $pdo->prepare('INSERT OR REPLACE INTO view_node_positions (view_id,node_id,x,y,visible,collapsed) VALUES (1,?,?,?,?,0)');
-    foreach ($positions as $name => [$x,$y]) {
-        if (isset($ids[$name])) $pstmt->execute([$ids[$name], $x, $y, 1]);
-    }
-}
 
 function ensure_schema_upgrades(PDO $pdo): void
 {

@@ -186,3 +186,8 @@ Verze v21 dále dolaďuje vzhled sekce **Vazby assetu** v detailní kartě asset
 ## v22 poznámka
 
 Verze v22 sjednocuje vzhled polí v tabulce **Vazby assetu** se standardními formulářovými poli na kartě assetu. Funkčně navazuje na v21 beze změn datového modelu.
+
+
+## v23 note - demo seed data
+
+The demo model is initialized from `app/demo_seed_data.json` via `app/db_seed_data.php`. To replace the demo seed in the future, update the JSON file and keep the structure `nodes`, `edges`, `views`, and `view_node_positions`. The seed does not import `change_log`.

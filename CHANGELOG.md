@@ -1,5 +1,14 @@
 # CHANGELOG.md
 
+
+## v23 - Demo seed data refactor
+
+- Demo seed data was replaced by the updated exported JSON model supplied on 2026-06-28.
+- `seed_demo_data()` was moved out of `app/db.php` into `app/db_seed_data.php`.
+- The actual demo dataset is stored in `app/demo_seed_data.json`.
+- `db.php` now loads the seed module only when a new demo model is initialized, reducing normal request parse/load cost and keeping database bootstrap code cleaner.
+- Seed import excludes `change_log`; demo data contains nodes, edges, views and view node positions only.
+
 ## Evidence IT aktiv / DORA Asset Map
 
 Tento changelog byl zpětně zrekonstruován z iterací vývoje v chatu a je dále průběžně udržován v projektu.

@@ -521,3 +521,8 @@ Aktuální karta assetu ve view Graf obsahuje sekci **Vazby assetu** jako kompak
 Sekce **Vazby assetu** v detailní kartě assetu je ve v21 vizuálně sjednocená s ostatními formulářovými poli. Cílem bylo odstranit dojem, že vazbová tabulka používá jiné měřítko než zbytek karty. Selecty, inputy, read-only badge aktuálního assetu a delete tlačítko mají nyní kompaktnější styl, menší písmo a stejné zaoblení jako pole typu CIA/RTO/RPO na kartě assetu.
 
 Tato iterace nemění datový model ani endpointy z v19/v20.
+
+
+## v23 seed data organization
+
+Demo initialization is now separated from the core database bootstrap code. The updated demo model is stored as `app/demo_seed_data.json`; `app/db_seed_data.php` contains the importer function `seed_demo_data(PDO $pdo)`. `app/db.php` requires this file only when creating a new demo SQLite model. This keeps ordinary application requests lighter and makes future demo-data replacement possible without editing the core DB helper. The seed intentionally imports nodes, edges, views and node positions, but not `change_log`.
