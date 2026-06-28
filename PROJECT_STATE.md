@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v18
+## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v26
 
 Tento dokument zachycuje aktuální stav aplikace po 18 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
 
@@ -19,8 +19,8 @@ Mentální model aplikace je: **webová aplikace jako editor, SQLite soubor jako
 
 ## 2. Aktuální verze
 
-- Aktuální iterace: `v18-csv-import`
-- Poslední funkční základ: `v17-tech-performance` + CSV import/export assetů ve v18
+- Aktuální iterace: `v26-node-field-pickers`
+- Poslední funkční základ: `v25-edge-asset-picker` + číselníkové výběry v tabulce assetů ve v26
 - Aplikace běží na portu: `8888`
 - URL: `http://localhost:8888`
 
@@ -536,3 +536,22 @@ The active codebase includes the v23 demo seed refactor plus a v24 fix. `app/db_
 ## v25-edge-asset-picker
 
 Aktuální navazující iterace přidává do tabulkového pohledu vazeb doubleclick picker pro výběr assetu ve sloupcích `source_node_id` a `target_node_id`. Přímá editace ID i TSV/Excel paste zůstávají zachovány; picker je pouze pomocná nadstavba pro snazší zjištění, které ID patří kterému assetu.
+
+
+## v26-node-field-pickers
+
+Verze v26 doplňuje do **Assety tabulka** pomocné doubleclick výběry pro stabilní číselníková pole. Uživatel může stále psát raw hodnotu přímo do buňky nebo vkládat blok dat z Excelu/TSV, ale u vybraných polí může dvojklikem otevřít seznam povolených hodnot a vybrat správnou hodnotu bez znalosti interního kódu.
+
+Pole s výběrem:
+
+- `type`
+- `criticality`
+- `environment`
+- `status`
+- `confidentiality`
+- `integrity_level`
+- `availability`
+- `lifecycle_state`
+- `data_sensitivity`
+
+Typy třetích stran byly zjednodušeny: původní `supplier`, `provider` a `manufacturer` jsou nyní jeden typ `third_party` s UI popiskem **3. strana (dodavatel)**. Starší SQLite modely se při inicializaci automaticky normalizují, takže existující dodavatelé/poskytovatelé/výrobci zůstanou v datech, ale budou mít nový společný typ.

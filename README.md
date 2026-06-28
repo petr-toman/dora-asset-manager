@@ -201,3 +201,22 @@ Version v24 fixes the demo seed initialization bug from v23. The seed loader now
 ## v25: výběr assetu v tabulce vazeb
 
 V pohledu **Vazby tabulka** zůstávají sloupce `Zdroj ID` a `Cíl ID` editovatelné jako číslo, takže lze dál vkládat řádky z Excelu přes copy/paste. Navíc lze na buňku `Zdroj ID` nebo `Cíl ID` udělat doubleclick: otevře se vyhledávací picker nad všemi assety aktuálního modelu. Položky jsou zobrazeny jako `Název (typ) · ID`. Po výběru se do buňky doplní ID a aktualizuje se read-only název assetu.
+
+
+## v26: výběry hodnot v tabulce assetů
+
+V pohledu **Assety tabulka** zůstává zachována přímá editace buněk i copy/paste z Excelu/TSV. U číselníkových polí lze navíc provést doubleclick na buňku a vybrat hodnotu z krátkého seznamu povolených hodnot.
+
+Podporovaná pole:
+
+- `Typ`
+- `Kritičnost`
+- `Prostředí`
+- `Stav`
+- `Důvěrnost`
+- `Integrita`
+- `Dostupnost`
+- `Lifecycle`
+- `Citlivost dat`
+
+Typy `supplier`, `provider` a `manufacturer` byly sjednoceny do jednoho typu `third_party`, který se v UI zobrazuje jako **3. strana (dodavatel)**. Starší modely se při otevření automaticky normalizují na nový typ.

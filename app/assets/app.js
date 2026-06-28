@@ -218,7 +218,7 @@ function initCy(elements) {
             { selector: 'node[type="data"]', style: { 'background-color': '#ecfdf5', 'border-color': '#059669' }},
             { selector: 'node[type="process"]', style: { 'background-color': '#fff7ed', 'border-color': '#d97706' }},
             { selector: 'node[type="business_function"]', style: { 'background-color': '#fff1e8', 'border-color': '#ea580c' }},
-            { selector: 'node[type="supplier"], node[type="provider"], node[type="manufacturer"]', style: { 'background-color': '#f5f3ff', 'border-color': '#7c3aed' }},
+            { selector: 'node[type="third_party"], node[type="supplier"], node[type="provider"], node[type="manufacturer"]', style: { 'background-color': '#f5f3ff', 'border-color': '#7c3aed' }},
             { selector: 'node[type="network"], node[type="location"], node[type="ict_service"], node[type="documentation"]', style: { 'background-color': '#ecfeff', 'border-color': '#0891b2' }},
             { selector: 'node[criticality="low"]', style: { 'border-width': 2 }},
             { selector: 'node[criticality="medium"]', style: { 'border-width': 3 }},
@@ -839,6 +839,7 @@ let tempRowSeq = 1;
 const numberFields = new Set(['rto_hours','rpo_hours','mtd_hours','review_frequency_months','risk_likelihood','risk_impact','source_node_id','target_node_id']);
 const requiredNodeFields = new Set(['type','name']);
 const requiredEdgeFields = new Set(['source_node_id','target_node_id','type']);
+const nodeChoiceFields = new Set(['type','criticality','environment','status','confidentiality','integrity_level','availability','lifecycle_state','data_sensitivity']);
 const choiceSets = {
     node: {
         type: () => Object.keys(meta.node_types || {}),
@@ -938,6 +939,11 @@ function renderEditableTable(tableId, columns, rows, kind) {
                         td.classList.add('edge-node-id-cell');
                         td.title = 'ID lze psát přímo. Doubleclick otevře vyhledání assetu podle názvu nebo typu.';
                         td.addEventListener('dblclick', (evt) => openEdgeNodePicker(evt.currentTarget));
+                    }
+                    if (kind === 'node' && nodeChoiceFields.has(field)) {
+                        td.classList.add('choice-cell');
+                        td.title = 'Hodnotu lze psát přímo. Doubleclick otevře seznam povolených hodnot.';
+                        td.addEventListener('dblclick', (evt) => openNodeChoicePicker(evt.currentTarget));
                     }
                     td.addEventListener('focus', () => td.dataset.before = td.textContent);
                     td.addEventListener('blur', () => updateRowFromCell(td));
@@ -1042,6 +1048,92 @@ function updateRowFromCell(td, repaint = true) {
     }
 }
 
+
+
+function isNodeChoiceField(field) {
+    return nodeChoiceFields.has(field);
+}
+
+function nodeChoiceLabel(field, value) {
+    const raw = String(value ?? '');
+    if (field === 'type') return meta.node_types?.[raw] || raw || '(prázdné)';
+    if (field === 'criticality') {
+        const labels = { low: 'low', medium: 'medium', high: 'high', critical: 'critical' };
+        return labels[raw] || raw || '(prázdné)';
+    }
+    if (['confidentiality','integrity_level','availability'].includes(field)) {
+        return raw ? `${raw} (CIA)` : '(prázdné)';
+    }
+    if (field === 'data_sensitivity') {
+        const labels = { public: 'public', private: 'private', secret: 'secret' };
+        return labels[raw] || raw || '(prázdné)';
+    }
+    return raw || '(prázdné)';
+}
+
+function closeNodeChoicePicker() {
+    const existing = document.querySelector('.node-choice-picker');
+    if (existing) existing.remove();
+}
+
+function openNodeChoicePicker(td) {
+    if (!td || td.dataset.kind !== 'node' || !isNodeChoiceField(td.dataset.field)) return;
+    closeNodeChoicePicker();
+    closeEdgeNodePicker();
+
+    const table = td.closest('table');
+    const row = tableRows[table.id].find(r => r._rowid === td.dataset.rowid);
+    if (!row) return;
+    const field = td.dataset.field;
+    const values = (choiceSets.node[field]?.() || []).map(String);
+
+    const picker = document.createElement('div');
+    picker.className = 'node-choice-picker edge-node-picker';
+    const title = document.createElement('div');
+    title.className = 'edge-node-picker-title';
+    title.textContent = `Vybrat hodnotu: ${nodeColumns.find(c => c[0] === field)?.[1] || field}`;
+    const list = document.createElement('div');
+    list.className = 'edge-node-picker-list node-choice-picker-list';
+    const hint = document.createElement('div');
+    hint.className = 'edge-node-picker-hint';
+    hint.textContent = 'Doubleclick jen pomáhá s výběrem. Přímá editace a copy/paste zůstávají zachované.';
+    picker.appendChild(title);
+    picker.appendChild(list);
+    picker.appendChild(hint);
+    document.body.appendChild(picker);
+
+    const rect = td.getBoundingClientRect();
+    const maxLeft = window.innerWidth - 360;
+    picker.style.width = '340px';
+    picker.style.left = Math.max(10, Math.min(rect.left, maxLeft)).toFixed(0) + 'px';
+    picker.style.top = Math.min(rect.bottom + 6, window.innerHeight - 320).toFixed(0) + 'px';
+
+    const applySelection = (value) => {
+        row[field] = value;
+        if (row._state !== 'new') row._state = 'dirty';
+        closeNodeChoicePicker();
+        renderEditableTable(table.id, nodeColumns, tableRows[table.id], 'node');
+        toast(`Vybráno: ${nodeChoiceLabel(field, value)}${value ? ' [' + value + ']' : ''}`);
+    };
+
+    list.innerHTML = '';
+    values.forEach(value => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'edge-node-picker-item node-choice-picker-item';
+        if (String(row[field] ?? '') === value) item.classList.add('active');
+        item.innerHTML = '<span class="node-name"></span><span class="node-meta"></span>';
+        item.querySelector('.node-name').textContent = nodeChoiceLabel(field, value);
+        item.querySelector('.node-meta').textContent = value || 'prázdné';
+        item.addEventListener('mousedown', (evt) => { evt.preventDefault(); applySelection(value); });
+        list.appendChild(item);
+    });
+
+    setTimeout(() => {
+        const active = list.querySelector('.active') || list.querySelector('.edge-node-picker-item');
+        active?.focus?.();
+    }, 0);
+}
 
 function isEdgeNodeIdField(field) {
     return field === 'source_node_id' || field === 'target_node_id';

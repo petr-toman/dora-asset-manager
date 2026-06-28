@@ -757,3 +757,24 @@ When implementing the external demo seed loader, make `app/db_seed_data.php` sel
 ## Additional requirement from v25
 
 In the Edges table view, keep `source_node_id` and `target_node_id` as directly editable numeric cells to preserve Excel/TSV copy-paste workflows. Add a double-click asset picker on these cells. The picker must search all nodes in the current model and display each option as `Name (type) · ID`. Selecting an option writes the numeric ID into the cell and updates the corresponding read-only source/target name field in the same table row.
+
+
+## Additional requirement from v26
+
+In the Assets table view, keep all cells directly editable to preserve Excel/TSV copy-paste workflows. For stable enum fields, add a double-click picker that opens a small list of allowed values and writes the selected raw value into the cell.
+
+Fields requiring a picker:
+
+- `type`
+- `criticality`
+- `environment`
+- `status`
+- `confidentiality`
+- `integrity_level`
+- `availability`
+- `lifecycle_state`
+- `data_sensitivity`
+
+Do not replace cells with permanent `<select>` elements; direct editing must remain available. Use the picker only as a helper on double-click.
+
+Consolidate third-party node types: replace separate `supplier`, `provider` and `manufacturer` node types with one raw type `third_party`, displayed as `3. strana (dodavatel)`. Existing older models should be normalized by converting nodes with type `supplier`, `provider` or `manufacturer` to `third_party` during schema initialization. Demo seed data should also use `third_party`.

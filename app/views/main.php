@@ -61,7 +61,7 @@
             <div><span class="dot software"></span> software</div>
             <div><span class="dot data"></span> data</div>
             <div><span class="dot process"></span> proces</div>
-            <div><span class="dot supplier"></span> dodavatel</div>
+            <div><span class="dot third-party"></span> 3. strana</div>
         </section>
 
         <section class="panel">
@@ -80,7 +80,7 @@
                 <option value="hardware">Hardware view</option>
                 <option value="data">Data view</option>
                 <option value="process">Process view</option>
-                <option value="supplier">Supplier view</option>
+                <option value="supplier">3. strany view</option>
                 <option value="critical">Kritická a vysoká aktiva</option>
                 <option value="personal_data">Osobní data</option>
                 <option value="impact">Impact vybraného uzlu</option>

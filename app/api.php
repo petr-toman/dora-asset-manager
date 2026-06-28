@@ -299,9 +299,7 @@ function node_types(): array
         'data' => 'Data',
         'process' => 'Proces',
         'business_function' => 'Business funkce',
-        'supplier' => 'Dodavatel',
-        'provider' => 'Poskytovatel',
-        'manufacturer' => 'Výrobce',
+        'third_party' => '3. strana (dodavatel)',
         'network' => 'Síť',
         'location' => 'Lokalita',
         'documentation' => 'Dokumentace',
@@ -387,7 +385,7 @@ function filter_dynamic_graph(array $nodes, array $edges, string $mode, ?int $no
         if ($mode === 'hardware' && $type === 'hardware') $addNode($id);
         if ($mode === 'data' && $type === 'data') $addNode($id);
         if ($mode === 'process' && in_array($type, ['process', 'business_function'], true)) $addNode($id);
-        if ($mode === 'supplier' && in_array($type, ['supplier', 'provider', 'manufacturer'], true)) $addNode($id);
+        if ($mode === 'supplier' && $type === 'third_party') $addNode($id);
         if ($mode === 'critical' && in_array($n['criticality'], ['high', 'critical'], true)) $addNode($id);
         if ($mode === 'personal_data' && $type === 'data' && str_contains((string)$n['data_categories'], 'personal')) $addNode($id);
     }
@@ -519,7 +517,7 @@ function save_edge(PDO $pdo): void
     $id = isset($data['id']) && $data['id'] !== '' ? (int)$data['id'] : null;
     $source = (int)($data['source_node_id'] ?? 0);
     $target = (int)($data['target_node_id'] ?? 0);
-    $type = trim((string)($data['type'] ?? ''));
+    $type = normalize_node_type_value(trim((string)($data['type'] ?? '')));
     validate_edge_payload($pdo, $data);
     $now = now_iso();
     $before = null;
@@ -772,6 +770,18 @@ function export_json(PDO $pdo): void
 }
 
 
+function normalize_node_type_value(string $type): string
+{
+    $type = trim($type);
+    if (in_array($type, ['supplier', 'provider', 'manufacturer'], true)) return 'third_party';
+    return $type;
+}
+
+function normalize_node_payload(array &$data): void
+{
+    if (isset($data['type'])) $data['type'] = normalize_node_type_value((string)$data['type']);
+}
+
 function validate_node_payload(array $data): void
 {
     $name = trim((string)($data['name'] ?? ''));
@@ -884,6 +894,7 @@ function batch_save_edges(PDO $pdo): void
 
 function upsert_node(PDO $pdo, array $data): array
 {
+    normalize_node_payload($data);
     validate_node_payload($data);
     $id = isset($data['id']) && $data['id'] !== '' ? (int)$data['id'] : null;
     $now = now_iso();
@@ -1170,6 +1181,7 @@ function normalize_import_node_row(array &$data): void
     foreach ($data as $k => $v) {
         if (is_string($v)) $data[$k] = trim($v);
     }
+    if (isset($data['type'])) $data['type'] = normalize_node_type_value((string)$data['type']);
     foreach (['last_reviewed_at'] as $field) {
         if (!empty($data[$field])) {
             $data[$field] = normalize_import_date((string)$data[$field]);
@@ -1198,7 +1210,7 @@ function collect_node_validation_errors(array $data, bool $updateById = false): 
 {
     $errors = [];
     $name = trim((string)($data['name'] ?? ''));
-    $type = trim((string)($data['type'] ?? ''));
+    $type = normalize_node_type_value(trim((string)($data['type'] ?? '')));
     if ($updateById && trim((string)($data['id'] ?? '')) !== '' && (!ctype_digit((string)$data['id']) || (int)$data['id'] <= 0)) {
         $errors[] = ['field' => 'id', 'message' => 'ID musí být kladné celé číslo.'];
     }

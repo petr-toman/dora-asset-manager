@@ -315,7 +315,7 @@ select option { color: #0f172a; background: #f8fafc; }
 .dot.software { background: #2563eb; }
 .dot.data { background: #059669; }
 .dot.process { background: #d97706; }
-.dot.supplier { background: #7c3aed; }
+.dot.supplier, .dot.third-party { background: #7c3aed; }
 
 .table-view {
     height: calc(100vh - 74px);
@@ -856,6 +856,28 @@ body.sidebar-collapsed .canvas-wrap::before { content: "DORA ASSET GRAPH · SIDE
 .data-grid td.edge-node-id-cell:focus::after {
     opacity: .95;
     color: #2563eb;
+}
+.data-grid td.choice-cell {
+    cursor: text;
+    position: relative;
+}
+.data-grid td.choice-cell::after {
+    content: '▾';
+    float: right;
+    color: #64748b;
+    font-size: 10px;
+    opacity: .65;
+    margin-left: 6px;
+}
+.data-grid td.choice-cell:focus::after {
+    opacity: .95;
+    color: #2563eb;
+}
+.node-choice-picker-list {
+    max-height: 260px;
+}
+.node-choice-picker-item .node-name {
+    max-width: 220px;
 }
 .edge-node-picker {
     position: fixed;

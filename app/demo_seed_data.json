@@ -173,7 +173,7 @@
     },
     {
       "id": 6,
-      "type": "supplier",
+      "type": "third_party",
       "name": "SV Informatik",
       "description": "ICT provider pro hosting a infrastrukturní služby.",
       "owner": "IT",
@@ -241,7 +241,7 @@
     },
     {
       "id": 8,
-      "type": "manufacturer",
+      "type": "third_party",
       "name": "msg.ag",
       "description": "Firma vyrábějící sw ALICE,",
       "owner": "IT",

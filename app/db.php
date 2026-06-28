@@ -264,6 +264,10 @@ function ensure_schema_upgrades(PDO $pdo): void
             $pdo->exec('ALTER TABLE nodes ADD COLUMN ' . $name . ' ' . $type);
         }
     }
+
+    // v26: Supplier, provider and manufacturer are now represented by one node type: third_party.
+    // Normalize existing older models transparently so table validation and graph styling stay consistent.
+    $pdo->exec("UPDATE nodes SET type = 'third_party' WHERE type IN ('supplier', 'provider', 'manufacturer')");
 }
 
 function json_response($data, int $status = 200): void

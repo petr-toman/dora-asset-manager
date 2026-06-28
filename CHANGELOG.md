@@ -395,3 +395,19 @@ Datum: 2026-06-26
 - Added a self-contained `seed_nullable_int()` helper in the seed module, so demo initialization no longer depends on request/API helpers.
 - The demo seed remains externalized in `app/demo_seed_data.json` and still imports nodes, edges, views and positions, but not `change_log`.
 - This version keeps v22 as the functional/UI baseline and v23 seed refactor, with only the seed runtime bug corrected.
+
+
+## v25 - Edge table asset picker
+
+- Added double-click asset picker for `source_node_id` and `target_node_id` in the Edges table view.
+- The picker searches all nodes in the current model and displays options as `Name (type) · ID`.
+- Selecting an asset writes its numeric ID into the cell and updates the read-only source/target name in the row.
+- Direct numeric editing and Excel/TSV copy-paste remain supported.
+
+## v26 - Node table enum pickers and third-party type consolidation
+
+- Added double-click value pickers in the Assets table for stable enum fields: type, criticality, environment, status, confidentiality, integrity, availability, lifecycle and data sensitivity.
+- Direct editing and Excel/TSV copy-paste remain supported; the picker only helps select valid raw values.
+- Consolidated node types `supplier`, `provider` and `manufacturer` into one raw type `third_party`, shown in the UI as `3. strana (dodavatel)`.
+- Existing models are normalized on schema initialization: old node types `supplier`, `provider` and `manufacturer` are converted to `third_party`.
+- Demo seed data was updated to use `third_party`.
