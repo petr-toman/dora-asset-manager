@@ -524,7 +524,7 @@ function renderNodeEdgesTable() {
         const actionTd = document.createElement('td');
 
         if (Number(row.source_node_id) === currentId) {
-            sourceTd.textContent = currentName;
+            sourceTd.innerHTML = `<span class="node-edge-current-badge">${escapeHtml(currentName)}</span>`;
             sourceTd.className = 'node-edge-current';
             const sel = makeNodeOptionSelect(row.target_node_id, 'target_node_id');
             sel.addEventListener('change', () => updateNodeEdgeRow(row._rowid, 'target_node_id', sel.value));
@@ -533,7 +533,7 @@ function renderNodeEdgesTable() {
             const sel = makeNodeOptionSelect(row.source_node_id, 'source_node_id');
             sel.addEventListener('change', () => updateNodeEdgeRow(row._rowid, 'source_node_id', sel.value));
             sourceTd.appendChild(sel);
-            targetTd.textContent = currentName;
+            targetTd.innerHTML = `<span class="node-edge-current-badge">${escapeHtml(currentName)}</span>`;
             targetTd.className = 'node-edge-current';
         }
 
@@ -554,9 +554,10 @@ function renderNodeEdgesTable() {
 
         const del = document.createElement('button');
         del.type = 'button';
-        del.className = 'danger icon-trash';
+        del.className = 'icon-trash';
         del.title = 'Smazat vazbu';
-        del.textContent = '🗑';
+        del.setAttribute('aria-label', 'Smazat vazbu');
+        del.textContent = '×';
         del.addEventListener('click', () => deleteNodeEdgeRow(row._rowid));
         actionTd.appendChild(del);
 

@@ -4,6 +4,23 @@
 
 Tento changelog byl zpětně zrekonstruován z iterací vývoje v chatu a je dále průběžně udržován v projektu.
 
+
+## v21 - Asset relationship table visual alignment
+
+Datum: 2026-06-28
+
+### Změněno
+
+- Sekce **Vazby assetu** na detailní kartě assetu byla vizuálně sjednocena se zbytkem formuláře.
+- Pole v tabulce vazeb nyní používají menší písmo, nižší výšku, stejné zaoblení, podobné ohraničení a focus styl jako běžná formulářová pole na kartě.
+- Hlavičky tabulky vazeb jsou méně dominantní a už nepůsobí jako samostatná velká tabulka mimo formulář.
+- Read-only aktuální asset v tabulce vazeb je zobrazen jako decentní badge se stejnou výškou jako input/select pole.
+- Tlačítko smazání vazby je méně agresivní; červená se objeví až při hoveru.
+
+### Poznámka
+
+- Jde čistě o UI/design iteraci. Funkce, API a datový model zůstávají stejné jako ve v20.
+
 ## v18-csv-import
 
 Datum: 2026-06-28
@@ -342,3 +359,13 @@ Datum: 2026-06-26
 - Asset detail modal now has Save/Close buttons in the header as well as the existing bottom action bar, because the card has grown and may require scrolling.
 - Bottom action bar is sticky inside the modal so Save remains easier to reach.
 - Added API endpoint `get_node_edges` to load all incoming/outgoing relationships for a selected node from the full DB, independent of the currently visible graph view.
+
+## v20 - Compact asset relationship table design
+
+- Improved the visual design of the **Vazby assetu** section in the asset detail card.
+- The relationship editor now uses a more compact technical table layout with fixed column widths.
+- Current asset cells are displayed as compact read-only badges instead of large table text.
+- Relationship type, other asset, criticality and description fields are visually smaller and better aligned.
+- The delete action is now a smaller, less visually dominant icon button.
+- The section header combines the explanation and action buttons more cleanly.
+- No data model or API behavior was changed in this iteration.

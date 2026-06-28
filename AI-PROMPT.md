@@ -727,3 +727,13 @@ Implementuj v pohledu **Assety tabulka** funkce:
 ### v19 UI requirement: relationship editor in asset card
 
 In the graph asset detail modal, add a final section called `Vazby assetu`. This section must display all relationships where the opened asset is either source or target. Render it as a table with the conceptual columns `Asset A`, `Typ vazby`, `Asset B`, `Kritičnost`, `Popis`, and delete action. Relationships are directed and active, so the current asset must appear read-only on the correct side: left if it is `source_node_id`, right if it is `target_node_id`. The other asset must be editable via a select populated from all nodes in the current model. The relationship type must be editable via the edge type dictionary. Allow adding outgoing and incoming relationships separately, deleting relationships with a trash button, and saving relationship changes together with the asset card. Add an API endpoint that loads all incoming/outgoing edges for a node from the full DB, not just from the currently visible graph. Also provide Save/Close buttons in the modal header and keep the bottom action bar sticky for long asset cards.
+
+
+## v20 UI/design requirement
+
+When recreating or extending the app, keep the asset-card relationship editor compact. It should look like a technical relationship table rather than a large form: fixed column widths, small selects/inputs, read-only badge for the current asset, subtle delete icon, and a concise header toolbar.
+
+
+## v21 UI/design requirement
+
+When rendering the asset-card relationship editor, keep the relationship table visually aligned with the rest of the asset form. Relationship table controls must not look larger or heavier than normal form fields. Use compact 12px text, 30px-high inputs/selects, 10px border radius, subtle borders, form-like focus styling, understated headers, a neutral read-only badge for the current asset, and a delete button that is visually calm by default and becomes red only on hover. This is a pure UI refinement over v20; do not change APIs or persistence behavior.

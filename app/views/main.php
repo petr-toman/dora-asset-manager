@@ -214,15 +214,27 @@
             <label class="span4">Reziduální riziko<textarea name="residual_risk" rows="2"></textarea></label>
 
             <section id="nodeEdgesSection" class="span4 node-edges-section hidden">
-                <div class="section-title node-edge-title">Vazby assetu</div>
-                <p class="hint">Vazby jsou orientované. Aktuálně otevřený asset je v tabulce uzamčen vlevo nebo vpravo podle skutečného směru vazby.</p>
-                <div class="node-edge-toolbar">
-                    <button type="button" id="btnAddOutgoingNodeEdge">+ Odchozí vazba</button>
-                    <button type="button" id="btnAddIncomingNodeEdge">+ Příchozí vazba</button>
-                    <button type="button" id="btnReloadNodeEdges">Reload vazeb</button>
+                <div class="node-edge-section-head">
+                    <div>
+                        <div class="section-title node-edge-title">Vazby assetu</div>
+                        <p class="hint node-edge-hint">Orientované vazby ve směru <strong>Asset A → typ vazby → Asset B</strong>. Aktuální asset je vždy uzamčený.</p>
+                    </div>
+                    <div class="node-edge-toolbar">
+                        <button type="button" id="btnAddOutgoingNodeEdge" title="Přidat vazbu z aktuálního assetu na jiný asset">+ Odchozí</button>
+                        <button type="button" id="btnAddIncomingNodeEdge" title="Přidat vazbu z jiného assetu na aktuální asset">+ Příchozí</button>
+                        <button type="button" id="btnReloadNodeEdges" class="secondary" title="Znovu načíst vazby z databáze">↻</button>
+                    </div>
                 </div>
                 <div class="node-edge-wrap">
                     <table id="nodeEdgesGrid" class="node-edges-grid">
+                        <colgroup>
+                            <col class="edge-col-asset">
+                            <col class="edge-col-type">
+                            <col class="edge-col-asset">
+                            <col class="edge-col-criticality">
+                            <col class="edge-col-description">
+                            <col class="edge-col-action">
+                        </colgroup>
                         <thead>
                             <tr>
                                 <th>Asset A</th>

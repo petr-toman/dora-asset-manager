@@ -45,6 +45,7 @@ Při prvním spuštění prázdné datové složky se vytvoří ukázkový model
 - import assetů z CSV s preview a validací před zápisem do DB
 - export assetů do CSV jako šablona nebo přenosový formát
 - excel-like tabulka vazeb s editací buněk, filtrováním, sortováním a copy/paste přes TSV
+- kompaktní editor vazeb přímo na kartě assetu v grafovém view
 - tisknutelný report: `/report.php`
 - heatmapa rizik v reportu
 - change log pro auditní stopu a budoucí undo/redo
@@ -170,3 +171,13 @@ DORA_CHANGE_LOG_MAX_RECORDS=5000
 ## v19 note - editing relationships from asset card
 
 In graph view, double-click an asset to open its detail card. At the end of the card there is now a **Vazby assetu** table showing all incoming and outgoing relationships for the asset. The active asset is displayed as read-only on the left or right side depending on the direction stored in the `edges` table. Use **+ Odchozí vazba** or **+ Příchozí vazba** to add directed relationships, the trash icon to remove relationships, and the main **Uložit** button to save asset details together with changed relationships.
+
+
+## v20 poznámka
+
+Verze v20 pouze zpřehledňuje design sekce **Vazby assetu** na detailní kartě assetu. Funkční chování, API a datový model zůstávají stejné jako ve v19.
+
+
+## v21 poznámka
+
+Verze v21 dále dolaďuje vzhled sekce **Vazby assetu** v detailní kartě assetu. Tabulka vazeb je nyní sjednocená s běžnými poli formuláře: menší písmo, nižší pole, stejné zaoblení, jemnější hlavičky a méně výrazné tlačítko mazání. Funkčně zůstává stejná jako ve v20.

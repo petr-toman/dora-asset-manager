@@ -509,3 +509,15 @@ CSV import se týká pouze assetů. Vazby se zatím importují přes tabulkový 
 The asset detail card in graph view includes an embedded relationship editor. It loads all incoming and outgoing edges for the opened asset using `get_node_edges`. The table keeps relationship direction explicit by showing the current asset on the left for outgoing edges and on the right for incoming edges. The current asset side is read-only, while the other asset, edge type, criticality and description can be edited. New incoming/outgoing relationships can be added and existing relationships can be marked for deletion. Relationship changes are saved through the existing batch edge API when the asset card is saved.
 
 The asset modal now also has Save/Close actions in the header, plus a sticky bottom action bar, so users do not have to scroll to the bottom of a large card just to save changes.
+
+
+## v20 UI state
+
+Aktuální karta assetu ve view Graf obsahuje sekci **Vazby assetu** jako kompaktní editovatelnou tabulku. Vztahy se zobrazují ve směru `Asset A -> typ vazby -> Asset B`; aktuálně otevřený asset je read-only badge vlevo nebo vpravo podle skutečného směru. Ostatní pole vztahu jsou editovatelná, ale vizuálně zmenšená, aby sekce nepůsobila jako samostatný velký formulář.
+
+
+## v21 UI state
+
+Sekce **Vazby assetu** v detailní kartě assetu je ve v21 vizuálně sjednocená s ostatními formulářovými poli. Cílem bylo odstranit dojem, že vazbová tabulka používá jiné měřítko než zbytek karty. Selecty, inputy, read-only badge aktuálního assetu a delete tlačítko mají nyní kompaktnější styl, menší písmo a stejné zaoblení jako pole typu CIA/RTO/RPO na kartě assetu.
+
+Tato iterace nemění datový model ani endpointy z v19/v20.
