@@ -1,5 +1,23 @@
 # CHANGELOG.md
 
+## v27 - Assets table usability
+
+- Added sticky left columns in **Assety tabulka** for the row selector, `ID`, `Typ` and `Název`.
+- Horizontal scrolling no longer hides the asset identity while editing attributes on the right side of the wide table.
+- Added a toolbar toggle for compact/full row display.
+- Compact mode keeps rows at a consistent height and visually truncates long text with ellipsis without changing the stored value.
+- Full mode keeps the previous wrapping behavior with row height based on content.
+- The compact/full preference is stored in `localStorage`.
+- Preserved direct cell editing, TSV/Excel copy-paste, validation and v26 double-click value pickers.
+
+
+## v26 - Node table enum pickers
+
+- Added double-click pickers in **Assety tabulka** for stable enum fields: `type`, `criticality`, `environment`, `status`, `confidentiality`, `integrity_level`, `availability`, `lifecycle_state` and `data_sensitivity`.
+- Direct raw-value editing and TSV/Excel copy-paste remain available.
+- Consolidated `supplier`, `provider` and `manufacturer` into the single node type `third_party`, displayed as `3. strana (dodavatel)`.
+- Added automatic normalization of older SQLite models from the former third-party types to `third_party`.
+
 ## v25 - Edge table asset picker
 
 - Added a double-click asset picker for `source_node_id` and `target_node_id` cells in the Edges table.

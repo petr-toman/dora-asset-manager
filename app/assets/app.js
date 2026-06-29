@@ -835,6 +835,7 @@ let tableSort = { assetsGrid: { field: 'id', dir: 1 }, edgesGrid: { field: 'id',
 let tableRows = { assetsGrid: [], edgesGrid: [] };
 let tableDeleted = { assetsGrid: [], edgesGrid: [] };
 let tempRowSeq = 1;
+let assetTableCompactRows = localStorage.getItem('doraAssetTableCompactRows') !== '0';
 
 const numberFields = new Set(['rto_hours','rpo_hours','mtd_hours','review_frequency_months','risk_likelihood','risk_impact','source_node_id','target_node_id']);
 const requiredNodeFields = new Set(['type','name']);
@@ -857,6 +858,45 @@ const choiceSets = {
         criticality: () => ['', ...(meta.criticalities || ['low','medium','high','critical'])]
     }
 };
+
+const assetStickyFields = new Map([
+    ['_sel', 'sticky-sel'],
+    ['id', 'sticky-id'],
+    ['type', 'sticky-type'],
+    ['name', 'sticky-name']
+]);
+
+function applyAssetStickyClass(tableId, field, cell) {
+    if (tableId !== 'assetsGrid' || !assetStickyFields.has(field)) return;
+    cell.classList.add('sticky-col', assetStickyFields.get(field));
+    if (field === 'name') cell.classList.add('sticky-last');
+}
+
+function tableCellTitle(kind, field, value) {
+    if (kind === 'edge' && isEdgeNodeIdField(field)) return 'ID lze psát přímo. Doubleclick otevře vyhledání assetu podle názvu nebo typu.';
+    if (kind === 'node' && nodeChoiceFields.has(field)) return 'Hodnotu lze psát přímo. Doubleclick otevře seznam povolených hodnot.';
+    return String(value ?? '');
+}
+
+function applyAssetRowsMode() {
+    const table = $('#assetsGrid');
+    if (table) table.classList.toggle('compact-rows', assetTableCompactRows);
+    const btn = $('#btnToggleAssetRowsCompact');
+    if (btn) {
+        btn.textContent = assetTableCompactRows ? 'Plné zobrazení řádků' : 'Kompaktní zobrazení řádků';
+        btn.title = assetTableCompactRows
+            ? 'Přepnout tabulku assetů na plné zalamování textu a výšku řádků podle obsahu.'
+            : 'Přepnout tabulku assetů na jednotnou výšku řádků a zkrácení dlouhých textů třemi tečkami.';
+        btn.classList.toggle('active-toggle', assetTableCompactRows);
+    }
+}
+
+function toggleAssetRowsMode() {
+    assetTableCompactRows = !assetTableCompactRows;
+    localStorage.setItem('doraAssetTableCompactRows', assetTableCompactRows ? '1' : '0');
+    applyAssetRowsMode();
+    toast(assetTableCompactRows ? 'Kompaktní zobrazení řádků zapnuto' : 'Plné zobrazení řádků zapnuto');
+}
 
 function showView(view) {
     $('#graphView').classList.toggle('hidden', view !== 'graph');
@@ -895,6 +935,7 @@ function renderEditableTable(tableId, columns, rows, kind) {
     const hr = document.createElement('tr');
     columns.forEach(([field, label]) => {
         const th = document.createElement('th');
+        applyAssetStickyClass(tableId, field, th);
         if (field === '_sel') {
             const cb = document.createElement('input');
             cb.type = 'checkbox';
@@ -924,6 +965,7 @@ function renderEditableTable(tableId, columns, rows, kind) {
             td.dataset.field = field;
             td.dataset.kind = kind;
             td.dataset.rowid = row._rowid;
+            applyAssetStickyClass(tableId, field, td);
             if (field === '_sel') {
                 const cb = document.createElement('input');
                 cb.type = 'checkbox';
@@ -932,6 +974,7 @@ function renderEditableTable(tableId, columns, rows, kind) {
                 td.classList.add('selector-cell');
             } else {
                 td.textContent = row[field] ?? '';
+                td.title = tableCellTitle(kind, field, row[field]);
                 if (editable) {
                     td.contentEditable = 'true';
                     td.classList.add('editable-cell');
@@ -961,6 +1004,7 @@ function renderEditableTable(tableId, columns, rows, kind) {
     table.innerHTML = '';
     table.appendChild(thead);
     table.appendChild(tbody);
+    if (tableId === 'assetsGrid') applyAssetRowsMode();
 }
 
 function compareValues(a, b) {
@@ -1033,6 +1077,7 @@ function updateRowFromCell(td, repaint = true) {
     if (!row) return;
     const field = td.dataset.field;
     row[field] = td.textContent.trim();
+    td.title = tableCellTitle(td.dataset.kind, field, row[field]);
     if (td.dataset.kind === 'edge' && isEdgeNodeIdField(field)) {
         updateEdgeLookupForRow(row, field);
         if (repaint) {
@@ -1490,6 +1535,8 @@ async function main() {
     $('#btnShowAssetsTable').addEventListener('click', () => showView('assets'));
     $('#btnShowEdgesTable').addEventListener('click', () => showView('edges'));
     $('#btnReloadAssetsTable').addEventListener('click', loadAssetsTable);
+    $('#btnToggleAssetRowsCompact').addEventListener('click', toggleAssetRowsMode);
+    applyAssetRowsMode();
     $('#btnReloadEdgesTable').addEventListener('click', loadEdgesTable);
     $('#btnAddAssetRow').addEventListener('click', () => addTableRow('node'));
     $('#btnAddEdgeRow').addEventListener('click', () => addTableRow('edge'));

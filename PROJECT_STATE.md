@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v26
+## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v27
 
 Tento dokument zachycuje aktuální stav aplikace po 18 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
 
@@ -19,8 +19,8 @@ Mentální model aplikace je: **webová aplikace jako editor, SQLite soubor jako
 
 ## 2. Aktuální verze
 
-- Aktuální iterace: `v26-node-field-pickers`
-- Poslední funkční základ: `v25-edge-asset-picker` + číselníkové výběry v tabulce assetů ve v26
+- Aktuální iterace: `v27-assets-table-usability`
+- Poslední funkční základ: `v26-node-field-pickers` + použitelnost široké tabulky assetů ve v27
 - Aplikace běží na portu: `8888`
 - URL: `http://localhost:8888`
 
@@ -322,6 +322,8 @@ Vlastnosti:
 - filtrování,
 - copy/paste přes TSV z Excelu/LibreOffice.
 
+V **Assety tabulka** jsou ve v27 zafixované vlevo identifikační sloupce `checkbox`, `ID`, `Typ` a `Název`, aby při horizontálním scrollování zůstal vidět kontext editovaného assetu. Tabulka má také přepínač **Kompaktní zobrazení řádků / Plné zobrazení řádků**. Kompaktní režim používá jednotnou výšku řádků a ellipsis pro dlouhé texty; plný režim zachovává zalamování a výšku podle obsahu. Nastavení se ukládá do `localStorage`.
+
 Povinná pole assetu:
 
 - `type`,
@@ -555,3 +557,12 @@ Pole s výběrem:
 - `data_sensitivity`
 
 Typy třetích stran byly zjednodušeny: původní `supplier`, `provider` a `manufacturer` jsou nyní jeden typ `third_party` s UI popiskem **3. strana (dodavatel)**. Starší SQLite modely se při inicializaci automaticky normalizují, takže existující dodavatelé/poskytovatelé/výrobci zůstanou v datech, ale budou mít nový společný typ.
+
+## v27-assets-table-usability
+
+Verze v27 zlepšuje práci s širokou obrazovkou **Assety tabulka**. První identifikační sloupce — checkbox, `ID`, `Typ` a `Název` — jsou sticky vlevo, takže při editaci vzdálených atributů zůstává zřejmé, který asset uživatel upravuje.
+
+Do toolbaru assetové tabulky byl přidán přepínač kompaktního/plného zobrazení řádků. Kompaktní režim drží řádky ve stejné výšce a dlouhé texty zobrazuje zkráceně přes `...`; uložená hodnota se nezkracuje. Plný režim nechává texty zalamovat a řádky rostou podle obsahu.
+
+Změna je implementována převážně přes CSS a třídy v renderu tabulky; nemění datový model, API ani ukládání tabulky. Zachována je přímá editace, TSV/Excel copy-paste i doubleclick pickery z v26.
+

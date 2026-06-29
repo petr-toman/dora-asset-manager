@@ -220,3 +220,22 @@ Podporovaná pole:
 - `Citlivost dat`
 
 Typy `supplier`, `provider` a `manufacturer` byly sjednoceny do jednoho typu `third_party`, který se v UI zobrazuje jako **3. strana (dodavatel)**. Starší modely se při otevření automaticky normalizují na nový typ.
+
+## v27: použitelnost široké tabulky assetů
+
+V pohledu **Assety tabulka** jsou první identifikační sloupce zafixované vlevo:
+
+- výběrový checkbox pro mazání řádku,
+- `ID`,
+- `Typ`,
+- `Název`.
+
+Při horizontálním scrollování doprava tak zůstává vidět, který asset se právě upravuje. Přímá editace buněk, copy/paste z Excelu/TSV i doubleclick číselníkové výběry z v26 zůstávají zachované.
+
+Nové tlačítko **Plné zobrazení řádků / Kompaktní zobrazení řádků** přepíná výšku řádků:
+
+- kompaktní režim: jednotná výška řádků, dlouhé texty jsou vizuálně zkrácené přes `...`, ale data v buňkách se neztrácí,
+- plný režim: text se zalamuje a řádky jsou vysoké podle obsahu.
+
+Nastavení režimu se ukládá do `localStorage` pro daný prohlížeč.
+

@@ -2,7 +2,7 @@
 
 ## Prompt pro znovuvytvoření aktuální aplikace od začátku
 
-Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v18.
+Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v27.
 
 ---
 
@@ -778,3 +778,30 @@ Fields requiring a picker:
 Do not replace cells with permanent `<select>` elements; direct editing must remain available. Use the picker only as a helper on double-click.
 
 Consolidate third-party node types: replace separate `supplier`, `provider` and `manufacturer` node types with one raw type `third_party`, displayed as `3. strana (dodavatel)`. Existing older models should be normalized by converting nodes with type `supplier`, `provider` or `manufacturer` to `third_party` during schema initialization. Demo seed data should also use `third_party`.
+
+## Additional requirement from v27
+
+In the **Assety tabulka** view, improve usability for very wide node tables without replacing the existing spreadsheet-like editor.
+
+Implement sticky left columns for:
+
+- row delete/select checkbox,
+- `ID`,
+- `Typ`,
+- `Název`.
+
+These columns must remain visible while horizontally scrolling to the right side of the table. The solution should be lightweight, preferably CSS `position: sticky`, and must not break:
+
+- direct cell editing,
+- TSV/Excel copy-paste,
+- sorting/filtering,
+- validation,
+- v26 double-click enum pickers.
+
+Add a toolbar toggle for row display mode:
+
+- compact mode: uniform row height, long values visually hidden with CSS ellipsis, no data truncation,
+- full mode: previous wrapping behavior with row height based on content.
+
+Persist the compact/full preference in `localStorage`. Do not implement manual column resizing in this iteration.
+

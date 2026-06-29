@@ -127,6 +127,7 @@
             <button id="btnDeleteAssetRows" class="danger subtle-danger">Smazat řádku</button>
             <button id="btnSaveAssetsTable" class="primary">Save</button>
             <button id="btnReloadAssetsTable">Reload</button>
+            <button id="btnToggleAssetRowsCompact" type="button">Plné zobrazení řádků</button>
             <button id="btnImportAssetsCsv">Import CSV</button>
             <button id="btnExportAssetsCsv">Export CSV</button>
             <button id="btnCopyAssetsTable">Kopírovat tabulku</button>

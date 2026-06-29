@@ -952,3 +952,106 @@ body.sidebar-collapsed .canvas-wrap::before { content: "DORA ASSET GRAPH · SIDE
 }
 .edge-node-picker-empty { padding: 10px; }
 .edge-node-picker-hint { margin-top: 8px; line-height: 1.35; }
+
+/* v27: Asset table usability — sticky identity columns and compact rows */
+#btnToggleAssetRowsCompact.active-toggle {
+    border-color: rgba(37, 99, 235, .34);
+    background: linear-gradient(180deg, #eff6ff, #dbeafe);
+    color: #1d4ed8;
+}
+
+#assetsGrid .sticky-col {
+    position: sticky;
+    background-clip: padding-box;
+}
+
+#assetsGrid th.sticky-col {
+    z-index: 8;
+    background: linear-gradient(180deg, #eef4fb, #e2e8f0);
+}
+
+#assetsGrid td.sticky-col {
+    z-index: 4;
+}
+
+#assetsGrid td.sticky-col.selector-cell,
+#assetsGrid td.sticky-col.readonly-cell {
+    background: #f1f5f9;
+}
+
+#assetsGrid td.sticky-col.editable-cell {
+    background: #ffffff;
+}
+
+#assetsGrid tr.dirty-row td.sticky-col {
+    background: #fff8d8;
+}
+
+#assetsGrid tr.new-row td.sticky-col {
+    background: #eff6ff;
+}
+
+#assetsGrid .sticky-sel {
+    left: 0;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+}
+
+#assetsGrid .sticky-id {
+    left: 44px;
+    width: 70px;
+    min-width: 70px;
+    max-width: 70px;
+}
+
+#assetsGrid .sticky-type {
+    left: 114px;
+    width: 160px;
+    min-width: 160px;
+    max-width: 160px;
+}
+
+#assetsGrid .sticky-name {
+    left: 274px;
+    width: 300px;
+    min-width: 300px;
+    max-width: 300px;
+}
+
+#assetsGrid .sticky-last {
+    box-shadow: 8px 0 16px -14px rgba(15,23,42,.75);
+    border-right-color: rgba(37,99,235,.22);
+}
+
+#assetsGrid.compact-rows td {
+    height: 34px;
+    max-height: 34px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+}
+
+#assetsGrid.compact-rows th {
+    white-space: nowrap;
+}
+
+#assetsGrid.compact-rows td.selector-cell {
+    overflow: visible;
+}
+
+#assetsGrid.compact-rows td.choice-cell::after,
+#assetsGrid.compact-rows td.edge-node-id-cell::after {
+    float: none;
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 0;
+}
+
+#assetsGrid.compact-rows td.choice-cell,
+#assetsGrid.compact-rows td.edge-node-id-cell {
+    padding-right: 18px;
+}
