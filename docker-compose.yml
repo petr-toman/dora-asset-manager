@@ -5,11 +5,13 @@ services:
     ports:
       - "8888:80"
     volumes:
-      # Persistent application data. Bind mount is intentionally used so
-      # SQLite model files remain visible in ./data and survive `docker compose down -v`.
-      - type: bind
-        source: ./data
-        target: /data
+      # Persistent application data stored in a Docker named volume.
+      # It survives rebuilds and `docker compose down`, but is intentionally
+      # removed by `docker compose down -v` for a full reinstall/reset.
+      - dora_assets_data:/data
     environment:
       DORA_DATA_DIR: /data
     restart: unless-stopped
+
+volumes:
+  dora_assets_data:

@@ -2,7 +2,7 @@
 
 ## Prompt pro znovuvytvoření aktuální aplikace od začátku
 
-Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v28.
+Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v29.
 
 ---
 
@@ -73,23 +73,28 @@ dora-assets/
 └── data/
 ```
 
-`docker-compose.yml` musí mapovat port `8888:80` a používat persistentní bind mount `./data:/data` přes explicitní syntaxi:
+`docker-compose.yml` musí mapovat port `8888:80` a používat persistentní Docker named volume pro `/data`:
 
 ```yaml
-ports:
-  - "8888:80"
+services:
+  dora-assets:
+    ports:
+      - "8888:80"
+    volumes:
+      - dora_assets_data:/data
+
 volumes:
-  - type: bind
-    source: ./data
-    target: /data
+  dora_assets_data:
 ```
 
-Bind mount je záměrný: SQLite modely mají být běžné soubory v projektu a mají přežít i `docker compose down -v`. README má uvádět i full rebuild variantu:
+Named volume je záměrný: data mají přežít běžný rebuild image i `docker compose down`, ale `docker compose down -v` má sloužit jako vědomý reset dat / čistá reinstalace. README má uvádět i full rebuild/reset variantu:
 
 ```bash
 docker compose down -v && docker compose build
 docker compose up -d
 ```
+
+README musí zároveň upozornit, že `down -v` odstraní datový volume a vytvoří se nový seed demo model. Pro běžný rebuild bez ztráty dat má stačit `docker compose up -d --build` nebo `docker compose down` bez `-v` a potom `docker compose up -d`.
 
 `Dockerfile` musí instalovat podporu pro SQLite a ZIP:
 
@@ -816,7 +821,7 @@ Add a toolbar toggle for row display mode:
 
 Persist the compact/full preference in `localStorage`. Do not implement manual column resizing in this iteration.
 
-## Additional requirement from v28
+## Additional requirement from v28/v29
 
 Add repository hygiene files:
 
@@ -847,4 +852,4 @@ Thumbs.db
 *.zip
 ```
 
-Do not commit real SQLite model data. Keep only the runtime directory structure through `.gitkeep`.
+Do not commit real SQLite model data. Keep only the runtime directory structure through `.gitkeep`. The default compose setup stores runtime data in Docker named volume `dora_assets_data`; `.gitignore` still covers local `./data` files for optional bind-mount/local development scenarios.

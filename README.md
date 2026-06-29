@@ -16,12 +16,14 @@ Spuštění na pozadí:
 docker compose up -d --build
 ```
 
-Full rebuild kontejneru:
+Full rebuild kontejneru včetně resetu datového volume:
 
 ```bash
 docker compose down -v && docker compose build
 docker compose up -d
 ```
+
+Pozor: varianta s `down -v` záměrně smaže Docker volume s aplikačními daty. Používej ji jen tehdy, když chceš čistou reinstalaci a nový seed demo model. Pro běžný rebuild bez ztráty dat stačí `docker compose up -d --build`, případně `docker compose down` bez `-v` a potom `docker compose up -d`.
 
 Aplikace poběží na:
 
@@ -29,17 +31,17 @@ Aplikace poběží na:
 http://localhost:8888
 ```
 
-SQLite modely/databáze jsou uložené v persistentním adresáři:
+SQLite modely/databáze jsou uložené uvnitř kontejneru v cestě `/data`, která je mapovaná do Docker named volume:
 
 ```text
-./data/models/*.sqlite
-./data/current_model.txt
-./data/deleted/*.sqlite
+/data/models/*.sqlite
+/data/current_model.txt
+/data/deleted/*.sqlite
 ```
 
-`docker-compose.yml` používá bind mount `./data:/data`, takže modely zůstávají viditelné v projektu a přežijí rebuild kontejneru i `docker compose down -v`. Příkaz `down -v` by mazal Docker named volumes, ale nemaže soubory v lokálním bind mountu `./data`.
+`docker-compose.yml` používá persistentní named volume `dora_assets_data`. Data tedy přežijí rebuild image i `docker compose down`, ale při `docker compose down -v` se volume smaže. To je záměrné chování pro čistou reinstalaci/reset dat.
 
-Při prvním spuštění prázdné datové složky se vytvoří ukázkový model `demo.sqlite` se stejnými demo daty jako starší prototyp. Pokud aplikace najde starší `./data/assets.sqlite` a adresář modelů je prázdný, zkopíruje jej do `./data/models/assets.sqlite` jako běžný model a zároveň vytvoří `demo.sqlite`.
+Při prvním spuštění prázdného datového volume se vytvoří ukázkový model `demo.sqlite` se seed daty z `app/demo_seed_data.json`. Pokud aplikace najde starší `/data/assets.sqlite` a adresář modelů je prázdný, zkopíruje jej do `/data/models/assets.sqlite` jako běžný model a zároveň vytvoří `demo.sqlite`.
 
 ## Funkce prototypu
 
@@ -70,7 +72,7 @@ Při prvním spuštění prázdné datové složky se vytvoří ukázkový model
 
 ## Licence a git
 
-Projekt obsahuje soubor `LICENSE` s MIT licencí. Runtime SQLite modely a lokální stav aplikace jsou záměrně ignorované přes `.gitignore`, aby se do repozitáře necommitovala reálná data z adresáře `./data`. Adresáře `data/`, `data/models/` a `data/deleted/` jsou v repozitáři ponechané přes `.gitkeep`.
+Projekt obsahuje soubor `LICENSE` s MIT licencí. Runtime SQLite modely jsou standardně uložené v Docker named volume, nikoli v repozitáři. `.gitignore` přesto ignoruje i lokální `./data` SQLite soubory pro případ ručního bind mountu nebo lokálního vývoje. Adresáře `data/`, `data/models/` a `data/deleted/` jsou v repozitáři ponechané přes `.gitkeep`, ale skutečná data se necommitují.
 
 ## CSV import assetů
 
@@ -260,7 +262,7 @@ Nové tlačítko **Plné zobrazení řádků / Kompaktní zobrazení řádků** 
 
 Nastavení režimu se ukládá do `localStorage` pro daný prohlížeč.
 
-## v28 poznámka
+## v28/v29 poznámka
 
-Verze v28 doplňuje repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a explicitní bind mount v `docker-compose.yml` pro persistentní `/data`. README doplňuje variantu full rebuild kontejneru.
+Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat.
 

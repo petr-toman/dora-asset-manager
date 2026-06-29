@@ -1,11 +1,19 @@
 # CHANGELOG
 
+## v29 - Named Docker data volume semantics
+
+- Changed `docker-compose.yml` from a bind mount to a Docker named volume `dora_assets_data` for `/data`.
+- Data now survives ordinary rebuilds and `docker compose down`, while `docker compose down -v` intentionally removes the volume and resets the application data.
+- Updated README to describe the difference between a normal rebuild and a full reinstall/reset.
+- Kept `.gitignore` rules for local `./data` SQLite files for optional local development or manual bind-mount scenarios.
+- No application runtime logic or UI behavior changed.
+
 ## v28 - License, gitignore and persistent data mount
 
 - Added `LICENSE` file from the provided MIT license text.
 - Added `.gitignore` for runtime SQLite model files, current model state, SQLite WAL/SHM/journal files, local env/log/temp files, OS/editor metadata and generated ZIP archives.
 - Added `.gitkeep` placeholders for `data/`, `data/models/` and `data/deleted/` so the runtime directory structure can be committed without real SQLite data.
-- Updated `docker-compose.yml` to use explicit bind-mount syntax for persistent `/data`. This keeps model files visible in `./data` and avoids losing SQLite data during `docker compose down -v`.
+- Updated `docker-compose.yml` in v28 to make `/data` persistence explicit. This was refined in v29 from bind mount to named volume so `docker compose down -v` can intentionally reset data.
 - Updated README with standard background start and full rebuild commands.
 - Updated project documentation to describe repository hygiene and runtime data handling.
 

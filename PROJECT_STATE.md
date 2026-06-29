@@ -1,8 +1,8 @@
 # PROJECT_STATE.md
 
-## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v28
+## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v29
 
-Tento dokument zachycuje aktuální stav aplikace po 18 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
+Tento dokument zachycuje aktuální stav aplikace po 19 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
 
 ## 1. Účel aplikace
 
@@ -19,8 +19,8 @@ Mentální model aplikace je: **webová aplikace jako editor, SQLite soubor jako
 
 ## 2. Aktuální verze
 
-- Aktuální iterace: `v28-repository-hygiene`
-- Poslední funkční základ: `v27-assets-table-usability` + repozitářová/provozní hygiena ve v28
+- Aktuální iterace: `v29-named-volume-reset-semantics`
+- Poslední funkční základ: `v27-assets-table-usability` + repozitářová/provozní hygiena ve v28/v29
 - Aplikace běží na portu: `8888`
 - URL: `http://localhost:8888`
 
@@ -71,22 +71,25 @@ ports:
   - "8888:80"
 ```
 
-Persistentní data jsou v explicitním bind mountu:
+Persistentní data jsou v Docker named volume:
 
 ```yaml
+services:
+  dora-assets:
+    volumes:
+      - dora_assets_data:/data
+
 volumes:
-  - type: bind
-    source: ./data
-    target: /data
+  dora_assets_data:
 ```
 
-Bind mount je zvolen záměrně místo Docker named volume: SQLite modely jsou běžné soubory viditelné v `./data`, lze je zálohovat, stáhnout nebo přenášet a nepřijdou se smazáním Docker volumes přes `docker compose down -v`.
+Named volume je zvolen záměrně kvůli očekávané Docker semantice: data přežijí `docker compose up --build`, rebuild image i `docker compose down`, ale `docker compose down -v` záměrně odstraní volume a provede čistý reset dat. SQLite modely lze nadále přenášet přes funkce aplikace `Stáhnout DB` a `Nahrát DB`.
 
 ## 5. Licence, gitignore a runtime data
 
 Projekt obsahuje MIT licenci v souboru `LICENSE`.
 
-Soubor `.gitignore` ignoruje lokální runtime data, zejména:
+Runtime SQLite data jsou standardně v Docker named volume. Soubor `.gitignore` přesto ignoruje lokální runtime data pro případ ručního bind mountu, lokálního vývoje nebo migrace starších pracovních adresářů, zejména:
 
 - `data/models/*.sqlite`,
 - `data/deleted/*.sqlite`,
@@ -95,7 +98,7 @@ Soubor `.gitignore` ignoruje lokální runtime data, zejména:
 - SQLite sidecar soubory `*.sqlite-wal`, `*.sqlite-shm`, `*.sqlite-journal`,
 - lokální `.env`, logy, dočasné soubory, OS/editor metadata a generované ZIP archivy.
 
-Adresáře `data/`, `data/models/` a `data/deleted/` zůstávají v repozitáři jako prázdná struktura pomocí `.gitkeep`, ale skutečná SQLite data se necommitují.
+Adresáře `data/`, `data/models/` a `data/deleted/` zůstávají v repozitáři jako prázdná struktura pomocí `.gitkeep`, ale skutečná SQLite data se necommitují. Výchozí compose konfigurace tyto adresáře nepoužívá jako bind mount; data jsou v named volume `dora_assets_data`.
 
 ## 6. Modely/projekty jako dokumenty
 
@@ -588,7 +591,7 @@ Do toolbaru assetové tabulky byl přidán přepínač kompaktního/plného zobr
 
 Změna je implementována převážně přes CSS a třídy v renderu tabulky; nemění datový model, API ani ukládání tabulky. Zachována je přímá editace, TSV/Excel copy-paste i doubleclick pickery z v26.
 
-## v28 doplnění
+## v28/v29 doplnění
 
-Verze v28 je technická/provozní iterace bez změny aplikační funkcionality. Přidává `LICENSE`, `.gitignore`, `.gitkeep` placeholdery runtime adresářů a zpřesňuje Docker Compose persistentní data přes explicitní bind mount. README nově obsahuje i full rebuild postup.
+Verze v28 je technická/provozní iterace bez změny aplikační funkcionality. Přidává `LICENSE`, `.gitignore`, `.gitkeep` placeholdery runtime adresářů a README full rebuild postup. Verze v29 zpřesňuje Docker storage: `/data` je mapováno na named volume `dora_assets_data`, takže data přežijí běžný rebuild a `docker compose down`, ale `docker compose down -v` je vědomý reset dat.
 
