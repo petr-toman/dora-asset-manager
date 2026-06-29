@@ -4,8 +4,23 @@ PHP + SQLite webová aplikace pro jednoduchou grafovou evidenci ICT a informačn
 
 ## Spuštění
 
+Běžné spuštění nebo build při prvním startu:
+
 ```bash
 docker compose up --build
+```
+
+Spuštění na pozadí:
+
+```bash
+docker compose up -d --build
+```
+
+Full rebuild kontejneru:
+
+```bash
+docker compose down -v && docker compose build
+docker compose up -d
 ```
 
 Aplikace poběží na:
@@ -21,6 +36,8 @@ SQLite modely/databáze jsou uložené v persistentním adresáři:
 ./data/current_model.txt
 ./data/deleted/*.sqlite
 ```
+
+`docker-compose.yml` používá bind mount `./data:/data`, takže modely zůstávají viditelné v projektu a přežijí rebuild kontejneru i `docker compose down -v`. Příkaz `down -v` by mazal Docker named volumes, ale nemaže soubory v lokálním bind mountu `./data`.
 
 Při prvním spuštění prázdné datové složky se vytvoří ukázkový model `demo.sqlite` se stejnými demo daty jako starší prototyp. Pokud aplikace najde starší `./data/assets.sqlite` a adresář modelů je prázdný, zkopíruje jej do `./data/models/assets.sqlite` jako běžný model a zároveň vytvoří `demo.sqlite`.
 
@@ -50,6 +67,10 @@ Při prvním spuštění prázdné datové složky se vytvoří ukázkový model
 - heatmapa rizik v reportu
 - change log pro auditní stopu a budoucí undo/redo
 
+
+## Licence a git
+
+Projekt obsahuje soubor `LICENSE` s MIT licencí. Runtime SQLite modely a lokální stav aplikace jsou záměrně ignorované přes `.gitignore`, aby se do repozitáře necommitovala reálná data z adresáře `./data`. Adresáře `data/`, `data/models/` a `data/deleted/` jsou v repozitáři ponechané přes `.gitkeep`.
 
 ## CSV import assetů
 
@@ -238,4 +259,8 @@ Nové tlačítko **Plné zobrazení řádků / Kompaktní zobrazení řádků** 
 - plný režim: text se zalamuje a řádky jsou vysoké podle obsahu.
 
 Nastavení režimu se ukládá do `localStorage` pro daný prohlížeč.
+
+## v28 poznámka
+
+Verze v28 doplňuje repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a explicitní bind mount v `docker-compose.yml` pro persistentní `/data`. README doplňuje variantu full rebuild kontejneru.
 

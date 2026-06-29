@@ -2,7 +2,7 @@
 
 ## Prompt pro znovuvytvoření aktuální aplikace od začátku
 
-Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v27.
+Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v28.
 
 ---
 
@@ -55,6 +55,8 @@ dora-assets/
 ├── PROJECT_STATE.md
 ├── CHANGELOG.md
 ├── AI-PROMPT.md
+├── LICENSE
+├── .gitignore
 ├── app/
 │   ├── index.php
 │   ├── api.php
@@ -71,13 +73,22 @@ dora-assets/
 └── data/
 ```
 
-`docker-compose.yml` musí mapovat:
+`docker-compose.yml` musí mapovat port `8888:80` a používat persistentní bind mount `./data:/data` přes explicitní syntaxi:
 
 ```yaml
 ports:
   - "8888:80"
 volumes:
-  - ./data:/data
+  - type: bind
+    source: ./data
+    target: /data
+```
+
+Bind mount je záměrný: SQLite modely mají být běžné soubory v projektu a mají přežít i `docker compose down -v`. README má uvádět i full rebuild variantu:
+
+```bash
+docker compose down -v && docker compose build
+docker compose up -d
 ```
 
 `Dockerfile` musí instalovat podporu pro SQLite a ZIP:
@@ -805,3 +816,35 @@ Add a toolbar toggle for row display mode:
 
 Persist the compact/full preference in `localStorage`. Do not implement manual column resizing in this iteration.
 
+## Additional requirement from v28
+
+Add repository hygiene files:
+
+- `LICENSE` with MIT license text,
+- `.gitignore`,
+- `.gitkeep` placeholders in `data/`, `data/models/` and `data/deleted/`.
+
+The `.gitignore` should exclude runtime SQLite data and local noise, especially:
+
+```gitignore
+data/models/*.sqlite
+data/models/*.sqlite-*
+data/deleted/*.sqlite
+data/deleted/*.sqlite-*
+data/assets.sqlite
+data/assets.sqlite-*
+data/current_model.txt
+.env
+.env.local
+*.log
+*.tmp
+*.bak
+.DS_Store
+**/.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.zip
+```
+
+Do not commit real SQLite model data. Keep only the runtime directory structure through `.gitkeep`.

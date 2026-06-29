@@ -1,3 +1,14 @@
+# CHANGELOG
+
+## v28 - License, gitignore and persistent data mount
+
+- Added `LICENSE` file from the provided MIT license text.
+- Added `.gitignore` for runtime SQLite model files, current model state, SQLite WAL/SHM/journal files, local env/log/temp files, OS/editor metadata and generated ZIP archives.
+- Added `.gitkeep` placeholders for `data/`, `data/models/` and `data/deleted/` so the runtime directory structure can be committed without real SQLite data.
+- Updated `docker-compose.yml` to use explicit bind-mount syntax for persistent `/data`. This keeps model files visible in `./data` and avoids losing SQLite data during `docker compose down -v`.
+- Updated README with standard background start and full rebuild commands.
+- Updated project documentation to describe repository hygiene and runtime data handling.
+
 # CHANGELOG.md
 
 ## v27 - Assets table usability

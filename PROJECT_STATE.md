@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v27
+## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v28
 
 Tento dokument zachycuje aktuální stav aplikace po 18 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
 
@@ -19,8 +19,8 @@ Mentální model aplikace je: **webová aplikace jako editor, SQLite soubor jako
 
 ## 2. Aktuální verze
 
-- Aktuální iterace: `v27-assets-table-usability`
-- Poslední funkční základ: `v26-node-field-pickers` + použitelnost široké tabulky assetů ve v27
+- Aktuální iterace: `v28-repository-hygiene`
+- Poslední funkční základ: `v27-assets-table-usability` + repozitářová/provozní hygiena ve v28
 - Aplikace běží na portu: `8888`
 - URL: `http://localhost:8888`
 
@@ -46,6 +46,8 @@ Aktuální základní struktura projektu:
  ├── PROJECT_STATE.md
  ├── CHANGELOG.md
  ├── AI-PROMPT.md
+ ├── LICENSE
+ ├── .gitignore
  ├── app/
  │   ├── index.php
  │   ├── api.php
@@ -69,13 +71,33 @@ ports:
   - "8888:80"
 ```
 
-Persistentní data jsou v bind mountu:
+Persistentní data jsou v explicitním bind mountu:
 
-```text
-./data:/data
+```yaml
+volumes:
+  - type: bind
+    source: ./data
+    target: /data
 ```
 
-## 5. Modely/projekty jako dokumenty
+Bind mount je zvolen záměrně místo Docker named volume: SQLite modely jsou běžné soubory viditelné v `./data`, lze je zálohovat, stáhnout nebo přenášet a nepřijdou se smazáním Docker volumes přes `docker compose down -v`.
+
+## 5. Licence, gitignore a runtime data
+
+Projekt obsahuje MIT licenci v souboru `LICENSE`.
+
+Soubor `.gitignore` ignoruje lokální runtime data, zejména:
+
+- `data/models/*.sqlite`,
+- `data/deleted/*.sqlite`,
+- `data/current_model.txt`,
+- starší `data/assets.sqlite`,
+- SQLite sidecar soubory `*.sqlite-wal`, `*.sqlite-shm`, `*.sqlite-journal`,
+- lokální `.env`, logy, dočasné soubory, OS/editor metadata a generované ZIP archivy.
+
+Adresáře `data/`, `data/models/` a `data/deleted/` zůstávají v repozitáři jako prázdná struktura pomocí `.gitkeep`, ale skutečná SQLite data se necommitují.
+
+## 6. Modely/projekty jako dokumenty
 
 Aplikace podporuje více samostatných modelů/projektů. Každý model je jeden SQLite soubor.
 
@@ -130,7 +152,7 @@ Smazání neodstraňuje SQLite soubor fyzicky. Soubor se přesune do `/data/dele
 - `Nahrát DB` nahraje SQLite soubor do `/data/models`, zkontroluje duplicitu názvu a přepne aplikaci na importovaný model.
 - Merge modelů se nedělá; případné slučování dat se řeší přes excel-like tabulky assetů a vazeb.
 
-## 6. Datový model
+## 7. Datový model
 
 Datový model je obecný graf:
 
@@ -565,4 +587,8 @@ Verze v27 zlepšuje práci s širokou obrazovkou **Assety tabulka**. První iden
 Do toolbaru assetové tabulky byl přidán přepínač kompaktního/plného zobrazení řádků. Kompaktní režim drží řádky ve stejné výšce a dlouhé texty zobrazuje zkráceně přes `...`; uložená hodnota se nezkracuje. Plný režim nechává texty zalamovat a řádky rostou podle obsahu.
 
 Změna je implementována převážně přes CSS a třídy v renderu tabulky; nemění datový model, API ani ukládání tabulky. Zachována je přímá editace, TSV/Excel copy-paste i doubleclick pickery z v26.
+
+## v28 doplnění
+
+Verze v28 je technická/provozní iterace bez změny aplikační funkcionality. Přidává `LICENSE`, `.gitignore`, `.gitkeep` placeholdery runtime adresářů a zpřesňuje Docker Compose persistentní data přes explicitní bind mount. README nově obsahuje i full rebuild postup.
 

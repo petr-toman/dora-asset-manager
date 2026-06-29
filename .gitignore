@@ -1,5 +1,32 @@
+# Runtime SQLite model data - do not commit real models or local state
 data/models/*.sqlite
+data/models/*.sqlite-*
 data/deleted/*.sqlite
-data/current_model.txt
+data/deleted/*.sqlite-*
 data/assets.sqlite
+data/assets.sqlite-*
+data/current_model.txt
+
+# Keep runtime directory placeholders
+!data/.gitkeep
+!data/models/.gitkeep
+!data/deleted/.gitkeep
+
+# Local environment / logs / temporary files
+.env
+.env.local
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# OS / editor metadata
 .DS_Store
+**/.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Generated archives
+*.zip
