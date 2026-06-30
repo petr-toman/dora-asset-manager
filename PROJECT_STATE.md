@@ -1,8 +1,8 @@
 # PROJECT_STATE.md
 
-## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v30
+## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v31
 
-Tento dokument zachycuje aktuální stav aplikace po 30 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
+Tento dokument zachycuje aktuální stav aplikace po 31 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
 
 ## 1. Účel aplikace
 
@@ -19,8 +19,8 @@ Mentální model aplikace je: **webová aplikace jako editor, SQLite soubor jako
 
 ## 2. Aktuální verze
 
-- Aktuální iterace: `v30-third-party-docs-and-mode-cleanup`
-- Poslední funkční základ: `v29-named-volume-reset-semantics`; v30 pouze čistí dokumentaci a názvosloví `third_party`
+- Aktuální iterace: `v31-detail-table-report-uix`
+- Poslední akceptovaný základ: `v30-third-party-docs-and-mode-cleanup`; v31 upravuje detail assetu, tabulkové filtry, číselníkové editory vazeb a HTML/PDF report
 - Aplikace běží na portu: `8888`
 - URL: `http://localhost:8888`
 
@@ -369,6 +369,9 @@ Aplikace generuje:
 
 ### HTML/PDF report
 
+Report ve v31 používá kartový design s KPI boxy a tiskovým CSS, které se snaží udržet heatmapu rizik pohromadě bez page-breaku.
+
+
 Endpoint:
 
 ```text
@@ -588,6 +591,18 @@ Verze v27 zlepšuje práci s širokou obrazovkou **Assety tabulka**. První iden
 Do toolbaru assetové tabulky byl přidán přepínač kompaktního/plného zobrazení řádků. Kompaktní režim drží řádky ve stejné výšce a dlouhé texty zobrazuje zkráceně přes `...`; uložená hodnota se nezkracuje. Plný režim nechává texty zalamovat a řádky rostou podle obsahu.
 
 Změna je implementována převážně přes CSS a třídy v renderu tabulky; nemění datový model, API ani ukládání tabulky. Zachována je přímá editace, TSV/Excel copy-paste i doubleclick pickery z v26.
+
+## v31 doplnění
+
+Verze v31 je UIX iterace nad akceptovanou v30. Detailní karta assetu má sticky záhlaví a sticky zápatí. Záhlaví zobrazuje přímo `Název (typ)` a menší řádek se skóre rizika; prefix `Uzel:` ani samostatné zavírací `×` se už nepoužívají. Zápatí obsahuje akce **Smazat asset**, **Uložit** a **Zavřít**.
+
+Číselníkové hodnoty na detailu a v editorech vazeb se v UI zobrazují jako uživatelské popisky bez interních DB hodnot v hranatých závorkách. Interní DB hodnoty se dál ukládají stejně jako dříve. Výběry assetů v sekci **Vazby assetu** zobrazují název a typ assetu bez ID.
+
+Tabulka assetů má užší sticky identifikační sloupce `checkbox`, `ID`, `Typ` a `Název`. Tabulky používají textový filtr v řádku pod hlavičkou; filtrování skrývá řádky přes `display:none`, takže řádky zůstávají v DOM a tabulkový editor nepřichází o stav řádků.
+
+Tabulka vazeb má double-click pickery pro číselníkové sloupce `Typ vazby` a `Kritičnost`. Chová se konzistentně s kartou assetu: uživatel vidí popisky, zatímco DB hodnoty zůstávají interní.
+
+HTML/PDF report byl vizuálně přepracován do kartového layoutu s KPI boxy a lepší tiskovou sazbou. Heatmapa rizik má `break-inside: avoid` / `page-break-inside: avoid`, aby se při běžné velikosti netrhala přes více stran.
 
 ## v28/v29/v30 doplnění
 

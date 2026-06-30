@@ -160,13 +160,15 @@
 </section>
 
 <div id="nodeModal" class="modal hidden">
-    <div class="modal-content large">
-        <div class="modal-header">
-            <h2 id="nodeModalTitle">Uzel</h2>
+    <div class="modal-content large asset-modal-content">
+        <div class="modal-header asset-modal-header">
+            <div class="asset-modal-heading">
+                <h2 id="nodeModalTitle">Nový asset</h2>
+                <div id="nodeModalSubtitle" class="asset-modal-subtitle">Nový asset</div>
+            </div>
             <div class="modal-header-actions">
-                <button type="button" data-close="nodeModal">Zavřít</button>
                 <button type="submit" form="nodeForm" class="primary">Uložit</button>
-                <button class="icon" data-close="nodeModal" type="button">×</button>
+                <button type="button" data-close="nodeModal">Zavřít</button>
             </div>
         </div>
         <form id="nodeForm" class="form-grid asset-form">
@@ -175,8 +177,8 @@
             <h3 class="span4 section-title first">Základní informace</h3>
             <label>Název<input name="name" required></label>
             <label>Typ<select name="type" id="nodeTypeSelect"></select></label>
-            <label>Kritičnost <span class="help" title="Celkový význam aktiva pro provoz, procesy a zpracování dat.">ⓘ</span><select name="criticality"><option></option><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label>
-            <label>Prostředí <span class="help" title="Provozní prostředí aktiva, například prod, test, dev nebo archiv.">ⓘ</span><select name="environment"><option></option><option>prod</option><option>test</option><option>dev</option><option>archive</option><option>unknown</option></select></label>
+            <label>Kritičnost <span class="help" title="Celkový význam aktiva pro provoz, procesy a zpracování dat.">ⓘ</span><select name="criticality" data-choice="criticality"></select></label>
+            <label>Prostředí <span class="help" title="Provozní prostředí aktiva, například prod, test, dev nebo archiv.">ⓘ</span><select name="environment" data-choice="environment"></select></label>
 
             <label class="span2 desc-field">Popis<textarea name="description" rows="3"></textarea></label>
             <div class="span2 owner-grid">
@@ -187,19 +189,19 @@
             </div>
 
             <h3 class="span4 section-title compact">Klasifikace a odolnost</h3>
-            <label>Stav<select name="status"><option></option><option>active</option><option>planned</option><option>retired</option><option>unknown</option></select></label>
-            <label>Důvěrnost (CIA) <span class="help" title="Confidentiality — jak závažné by bylo neoprávněné zpřístupnění informací.">ⓘ</span><select name="confidentiality"><option></option><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label>
-            <label>Integrita (CIA) <span class="help" title="Integrity — jak závažné by bylo neoprávněné nebo chybné pozměnění dat.">ⓘ</span><select name="integrity_level"><option></option><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label>
-            <label>Dostupnost (CIA) <span class="help" title="Availability — jak závažná by byla nedostupnost aktiva nebo služby.">ⓘ</span><select name="availability"><option></option><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label>
+            <label>Stav<select name="status" data-choice="status"></select></label>
+            <label>Důvěrnost (CIA) <span class="help" title="Confidentiality — jak závažné by bylo neoprávněné zpřístupnění informací.">ⓘ</span><select name="confidentiality" data-choice="cia"></select></label>
+            <label>Integrita (CIA) <span class="help" title="Integrity — jak závažné by bylo neoprávněné nebo chybné pozměnění dat.">ⓘ</span><select name="integrity_level" data-choice="cia"></select></label>
+            <label>Dostupnost (CIA) <span class="help" title="Availability — jak závažná by byla nedostupnost aktiva nebo služby.">ⓘ</span><select name="availability" data-choice="cia"></select></label>
 
-            <label>Lifecycle <span class="help" title="Fáze životního cyklu aktiva, například production, test, development nebo archived.">ⓘ</span><select name="lifecycle_state"><option></option><option>production</option><option>test</option><option>development</option><option>archived</option><option>unknown</option></select></label>
+            <label>Lifecycle <span class="help" title="Fáze životního cyklu aktiva, například production, test, development nebo archived.">ⓘ</span><select name="lifecycle_state" data-choice="lifecycle_state"></select></label>
             <label>RTO [h] <span class="help" title="Recovery Time Objective — cílová doba obnovy. Do kolika hodin musí být aktivum nebo služba obnovena.">ⓘ</span><input name="rto_hours" type="number" min="0"></label>
             <label>RPO [h] <span class="help" title="Recovery Point Objective — přípustná ztráta dat. O kolik hodin dat maximálně smíme přijít.">ⓘ</span><input name="rpo_hours" type="number" min="0"></label>
             <label>MTD [h] <span class="help" title="Maximum Tolerable Downtime — maximálně tolerovatelná doba výpadku. Delší výpadek je už nepřijatelný.">ⓘ</span><input name="mtd_hours" type="number" min="0"></label>
 
             <h3 class="span4 section-title compact">Data, lokalita a revize</h3>
             <label>Lokalita<input name="location"></label>
-            <label>Citlivost dat <span class="help" title="Klasifikace citlivosti dat z pohledu přístupu a ochrany.">ⓘ</span><select name="data_sensitivity"><option></option><option value="public">veřejná</option><option value="private">soukromá</option><option value="secret">tajná</option></select></label>
+            <label>Citlivost dat <span class="help" title="Klasifikace citlivosti dat z pohledu přístupu a ochrany.">ⓘ</span><select name="data_sensitivity" data-choice="data_sensitivity"></select></label>
             <label>Revize po měsících <span class="help" title="Interval pravidelného přezkumu údajů o aktivu.">ⓘ</span><input name="review_frequency_months" type="number" min="0"></label>
             <label>Poslední revize <span class="help" title="Datum posledního přezkumu správnosti a úplnosti údajů o aktivu.">ⓘ</span><input name="last_reviewed_at" type="date"></label>
 
@@ -217,8 +219,7 @@
             <section id="nodeEdgesSection" class="span4 node-edges-section hidden">
                 <div class="node-edge-section-head">
                     <div>
-                        <div class="section-title node-edge-title">Vazby assetu</div>
-                        <p class="hint node-edge-hint">Orientované vazby ve směru <strong>Asset A → typ vazby → Asset B</strong>. Aktuální asset je vždy uzamčený.</p>
+                        <div class="section-title node-edge-title">Vazby assetu <span class="help" title="Orientované vazby ve směru Asset A → typ vazby → Asset B. Aktuální asset je vždy uzamčený.">ⓘ</span></div>
                     </div>
                     <div class="node-edge-toolbar">
                         <button type="button" id="btnAddOutgoingNodeEdge" title="Přidat vazbu z aktuálního assetu na jiný asset">+ Odchozí</button>
@@ -251,9 +252,14 @@
                 </div>
             </section>
 
-            <div class="form-actions span4 sticky-actions">
-                <button type="button" data-close="nodeModal">Zavřít</button>
-                <button type="submit" class="primary">Uložit</button>
+            <div class="form-actions span4 sticky-actions asset-modal-footer">
+                <div class="asset-modal-footer-left">
+                    <button type="button" id="btnDeleteNodeFromModal" class="danger subtle-danger">Smazat asset</button>
+                </div>
+                <div class="asset-modal-footer-right">
+                    <button type="button" data-close="nodeModal">Zavřít</button>
+                    <button type="submit" class="primary">Uložit</button>
+                </div>
             </div>
         </form>
     </div>
@@ -270,7 +276,7 @@
             <label>Zdroj<select name="source_node_id" id="edgeSource"></select></label>
             <label>Cíl<select name="target_node_id" id="edgeTarget"></select></label>
             <label>Typ vazby<select name="type" id="edgeTypeSelect"></select></label>
-            <label>Kritičnost<select name="criticality"><option></option><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label>
+            <label>Kritičnost<select name="criticality" data-choice="criticality"></select></label>
             <label class="span2">Popis<textarea name="description" rows="3"></textarea></label>
             <div class="form-actions span2">
                 <button type="button" data-close="edgeModal">Zavřít</button>

@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## v31 - Detail card, table filters and report UIX
+
+- Detailní karta assetu má sticky záhlaví a sticky zápatí, aby akce **Uložit**, **Zavřít** a **Smazat asset** zůstaly dostupné i při scrollu dlouhého formuláře.
+- Záhlaví detailu zobrazuje přímo `Název (typ)` a drobný řádek `Asset ID · skóre rizika`; prefix `Uzel:` a samostatné tlačítko `×` byly odstraněny.
+- Číselníkové hodnoty v detailu i v editorech vazeb se v UI zobrazují jako uživatelské popisky bez interních DB hodnot v hranatých závorkách. DB hodnoty zůstávají interně ukládané beze změny.
+- Sekce **Vazby assetu** na kartě assetu má jemnější typografii, sjednocené nadpisy sekcí a původní směrový popis byl přesunut do tooltipu. Výběry assetů v této sekci zobrazují jen název a typ, ne ID.
+- Tabulka assetů má užší sticky sloupce `checkbox`, `ID`, `Typ` a `Název`.
+- Tabulky mají řádek textových filtrů pod hlavičkou; filtrování skrývá řádky přes `display:none`, takže řádky zůstávají v DOM.
+- Tabulka vazeb má double-click výběr z číselníků pro `Typ vazby` a `Kritičnost`, konzistentně s asset kartou.
+- HTML/PDF report dostal kartový design s KPI boxy, čistšími tabulkami a print CSS proti zalomení heatmapy přes více stran.
+- Aktualizovány `README.md`, `PROJECT_STATE.md` a `AI-PROMPT.md` na stav v31.
+
 ## v30 - Third-party naming and documentation cleanup
 
 - Sjednoceno aktuální názvosloví třetích stran v dokumentaci: primární raw typ uzlu je `third_party`, zobrazovaný jako `3. strana (dodavatel)`.

@@ -12,6 +12,71 @@ let nodeEdgesDirty = false;
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
+const uiLabels = {
+    criticality: { low: 'Nízká', medium: 'Střední', high: 'Vysoká', critical: 'Kritická' },
+    cia: { low: 'Nízká', medium: 'Střední', high: 'Vysoká', critical: 'Kritická' },
+    data_sensitivity: { public: 'Veřejná', private: 'Privátní', secret: 'Tajná' },
+    environment: { prod: 'Produkce', test: 'Test', dev: 'Vývoj', archive: 'Archiv', unknown: 'Neznámé' },
+    status: { active: 'Aktivní', planned: 'Plánované', retired: 'Vyřazené', unknown: 'Neznámé' },
+    lifecycle_state: { production: 'Produkce', test: 'Test', development: 'Vývoj', archived: 'Archivováno', unknown: 'Neznámé' }
+};
+
+function labelFromMap(mapName, value) {
+    const raw = String(value ?? '');
+    return uiLabels[mapName]?.[raw] || raw;
+}
+
+function choiceMapForField(kind, field) {
+    if (kind === 'node') {
+        if (field === 'type') return meta.node_types || {};
+        if (field === 'criticality') return uiLabels.criticality;
+        if (['confidentiality','integrity_level','availability'].includes(field)) return uiLabels.cia;
+        if (field === 'data_sensitivity') return uiLabels.data_sensitivity;
+        if (field === 'environment') return uiLabels.environment;
+        if (field === 'status') return uiLabels.status;
+        if (field === 'lifecycle_state') return uiLabels.lifecycle_state;
+    }
+    if (kind === 'edge') {
+        if (field === 'type') return meta.edge_types || {};
+        if (field === 'criticality') return uiLabels.criticality;
+    }
+    return {};
+}
+
+function choiceLabel(kind, field, value) {
+    const raw = String(value ?? '');
+    if (raw === '') return '';
+    return choiceMapForField(kind, field)[raw] || raw;
+}
+
+function choiceValueFromText(kind, field, text) {
+    const raw = String(text ?? '').trim();
+    if (raw === '') return '';
+    const map = choiceMapForField(kind, field);
+    if (Object.prototype.hasOwnProperty.call(map, raw)) return raw;
+    const found = Object.entries(map).find(([value, label]) => String(label).trim().toLowerCase() === raw.toLowerCase());
+    return found ? found[0] : raw;
+}
+
+function fillChoiceSelect(select, values, labels) {
+    if (!select) return;
+    select.innerHTML = '';
+    select.append(new Option('', ''));
+    values.forEach(value => select.append(new Option(labels[value] || value, value)));
+}
+
+function fillAssetDetailChoiceSelects() {
+    fillChoiceSelect($('#nodeForm select[name="criticality"]'), meta.criticalities || ['low','medium','high','critical'], uiLabels.criticality);
+    fillChoiceSelect($('#nodeForm select[name="confidentiality"]'), meta.cia_levels || ['low','medium','high','critical'], uiLabels.cia);
+    fillChoiceSelect($('#nodeForm select[name="integrity_level"]'), meta.cia_levels || ['low','medium','high','critical'], uiLabels.cia);
+    fillChoiceSelect($('#nodeForm select[name="availability"]'), meta.cia_levels || ['low','medium','high','critical'], uiLabels.cia);
+    fillChoiceSelect($('#nodeForm select[name="data_sensitivity"]'), meta.data_sensitivities || ['public','private','secret'], uiLabels.data_sensitivity);
+    fillChoiceSelect($('#nodeForm select[name="environment"]'), meta.environments || ['prod','test','dev','archive','unknown'], uiLabels.environment);
+    fillChoiceSelect($('#nodeForm select[name="status"]'), meta.statuses || ['active','planned','retired','unknown'], uiLabels.status);
+    fillChoiceSelect($('#nodeForm select[name="lifecycle_state"]'), meta.lifecycle_states || ['production','test','development','archived','unknown'], uiLabels.lifecycle_state);
+    fillChoiceSelect($('#edgeForm select[name="criticality"]'), meta.criticalities || ['low','medium','high','critical'], uiLabels.criticality);
+}
+
 function toast(msg) {
     const t = $('#toast');
     t.textContent = msg;
@@ -45,6 +110,7 @@ async function loadMeta() {
     fillSelect($('#nodeTypeSelect'), meta.node_types, false);
     fillSelect($('#typeFilter'), meta.node_types, true);
     fillSelect($('#edgeTypeSelect'), meta.edge_types, false);
+    fillAssetDetailChoiceSelects();
 }
 
 async function loadViews() {
@@ -400,13 +466,15 @@ async function openNodeModalById(id) {
         await loadNodeLookup();
         const data = await fetchJson(`${api}?action=get_node&id=${id}`);
         fillForm($('#nodeForm'), data.node);
-        $('#nodeModalTitle').textContent = `Uzel: ${data.node.name}`;
+        updateNodeModalHeader(data.node);
+        updateNodeModalDeleteButton(true);
         await loadNodeEdges(id);
     } else {
-        $('#nodeModalTitle').textContent = 'Nový uzel';
         $('#nodeForm').elements.type.value = 'software';
         $('#nodeForm').elements.criticality.value = 'medium';
         $('#nodeForm').elements.status.value = 'active';
+        updateNodeModalHeader(formData($('#nodeForm')), true);
+        updateNodeModalDeleteButton(false);
     }
     openModal('nodeModal');
 }
@@ -442,6 +510,72 @@ function formData(form) {
     return data;
 }
 
+function levelNum(value) {
+    return { low: 1, medium: 2, high: 3, critical: 4 }[String(value || '')] || 1;
+}
+
+function rtoFactor(hours) {
+    if (hours === null || hours === '') return 1;
+    const h = Number(hours);
+    if (Number.isNaN(h)) return 1;
+    if (h <= 4) return 5;
+    if (h <= 8) return 4;
+    if (h <= 24) return 3;
+    if (h <= 72) return 2;
+    return 1;
+}
+
+function validRiskLevel(value) {
+    if (value === null || value === '') return null;
+    const n = Number(value);
+    if (!Number.isInteger(n) || n < 1 || n > 5) return null;
+    return n;
+}
+
+function assetScore(node) {
+    const likelihood = validRiskLevel(node.risk_likelihood ?? '');
+    const impact = validRiskLevel(node.risk_impact ?? '');
+    if (likelihood === null || impact === null) return null;
+    const base = likelihood * impact;
+    const crit = levelNum(node.criticality);
+    const cia = Math.max(levelNum(node.confidentiality), levelNum(node.integrity_level), levelNum(node.availability));
+    const rto = rtoFactor(node.rto_hours);
+    return base + (crit * 2) + (cia * 2) + (rto * 2);
+}
+
+function updateNodeModalHeader(node = formData($('#nodeForm')), isNew = false) {
+    const name = String(node.name || '').trim() || 'Nový asset';
+    const typeLabel = meta.node_types?.[node.type] || node.type || 'Asset';
+    $('#nodeModalTitle').textContent = `${name} (${typeLabel})`;
+    const id = String(node.id || '').trim();
+    const score = assetScore(node);
+    $('#nodeModalSubtitle').textContent = isNew || !id
+        ? 'Nový asset'
+        : `Asset ID ${id} · skóre rizika: ${score === null ? 'nehodnoceno' : score}`;
+}
+
+function updateNodeModalDeleteButton(enabled) {
+    const btn = $('#btnDeleteNodeFromModal');
+    if (!btn) return;
+    btn.disabled = !enabled;
+    btn.classList.toggle('hidden', !enabled);
+}
+
+async function deleteNodeFromModal() {
+    const id = currentNodeIdFromForm();
+    const name = $('#nodeForm').elements.name.value || `#${id}`;
+    if (!id) return;
+    if (!confirm(`Smazat asset „${name}“ včetně jeho vazeb?`)) return;
+    try {
+        await postJson('delete_node', { id });
+        closeModal('nodeModal');
+        selected = null;
+        await loadGraph();
+        toast('Asset smazán');
+    } catch (e) {
+        toast('Smazání selhalo: ' + e.message);
+    }
+}
 
 function currentNodeIdFromForm() {
     return Number($('#nodeForm').elements.id.value || 0);
@@ -458,7 +592,9 @@ async function loadNodeEdges(id) {
 
 function nodeDisplayName(id) {
     const n = allNodeLookup.get(String(id));
-    return n ? `${n.name} (#${n.id})` : `#${id}`;
+    if (!n) return `#${id}`;
+    const typeLabel = meta.node_types?.[n.type] || n.type || 'Asset';
+    return `${n.name} (${typeLabel})`;
 }
 
 function makeNodeOptionSelect(value, ariaLabel) {
@@ -468,7 +604,10 @@ function makeNodeOptionSelect(value, ariaLabel) {
     select.append(new Option('', ''));
     [...allNodeLookup.values()]
         .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'cs'))
-        .forEach(n => select.append(new Option(`${n.name} (#${n.id})`, n.id)));
+        .forEach(n => {
+            const typeLabel = meta.node_types?.[n.type] || n.type || 'Asset';
+            select.append(new Option(`${n.name} (${typeLabel})`, n.id));
+        });
     select.value = value ? String(value) : '';
     return select;
 }
@@ -486,7 +625,7 @@ function makeCriticalitySelect(value) {
     const select = document.createElement('select');
     select.className = 'node-edge-criticality node-edge-field';
     select.append(new Option('', ''));
-    (meta.criticalities || ['low','medium','high','critical']).forEach(v => select.append(new Option(v, v)));
+    (meta.criticalities || ['low','medium','high','critical']).forEach(v => select.append(new Option(uiLabels.criticality[v] || v, v)));
     select.value = value || '';
     return select;
 }
@@ -834,6 +973,7 @@ const edgeColumns = [
 let tableSort = { assetsGrid: { field: 'id', dir: 1 }, edgesGrid: { field: 'id', dir: 1 } };
 let tableRows = { assetsGrid: [], edgesGrid: [] };
 let tableDeleted = { assetsGrid: [], edgesGrid: [] };
+let tableColumnFilters = { assetsGrid: {}, edgesGrid: {} };
 let tempRowSeq = 1;
 let assetTableCompactRows = localStorage.getItem('doraAssetTableCompactRows') !== '0';
 
@@ -841,6 +981,7 @@ const numberFields = new Set(['rto_hours','rpo_hours','mtd_hours','review_freque
 const requiredNodeFields = new Set(['type','name']);
 const requiredEdgeFields = new Set(['source_node_id','target_node_id','type']);
 const nodeChoiceFields = new Set(['type','criticality','environment','status','confidentiality','integrity_level','availability','lifecycle_state','data_sensitivity']);
+const edgeChoiceFields = new Set(['type','criticality']);
 const choiceSets = {
     node: {
         type: () => Object.keys(meta.node_types || {}),
@@ -872,10 +1013,19 @@ function applyAssetStickyClass(tableId, field, cell) {
     if (field === 'name') cell.classList.add('sticky-last');
 }
 
+function isChoiceField(kind, field) {
+    return kind === 'node' ? nodeChoiceFields.has(field) : kind === 'edge' && edgeChoiceFields.has(field);
+}
+
+function displayCellValue(kind, field, value) {
+    if (isChoiceField(kind, field)) return choiceLabel(kind, field, value);
+    return value ?? '';
+}
+
 function tableCellTitle(kind, field, value) {
     if (kind === 'edge' && isEdgeNodeIdField(field)) return 'ID lze psát přímo. Doubleclick otevře vyhledání assetu podle názvu nebo typu.';
-    if (kind === 'node' && nodeChoiceFields.has(field)) return 'Hodnotu lze psát přímo. Doubleclick otevře seznam povolených hodnot.';
-    return String(value ?? '');
+    if (isChoiceField(kind, field)) return 'Hodnotu lze psát přímo. Doubleclick otevře seznam povolených hodnot.';
+    return String(displayCellValue(kind, field, value) ?? '');
 }
 
 function applyAssetRowsMode() {
@@ -924,22 +1074,21 @@ async function loadEdgesTable() {
 
 function renderEditableTable(tableId, columns, rows, kind) {
     const table = $('#' + tableId);
-    const filterId = tableId === 'assetsGrid' ? '#assetsTableFilter' : '#edgesTableFilter';
-    const filter = ($(filterId)?.value || '').trim().toLowerCase();
     const sort = tableSort[tableId];
-    let visibleRows = [...rows];
-    if (filter) visibleRows = visibleRows.filter(r => Object.entries(r).filter(([k]) => !k.startsWith('_')).map(([,v]) => v ?? '').join(' ').toLowerCase().includes(filter));
-    visibleRows.sort((a,b) => compareValues(a[sort.field], b[sort.field]) * sort.dir);
+    const sortedRows = [...rows].sort((a,b) => compareValues(a[sort.field], b[sort.field]) * sort.dir);
 
     const thead = document.createElement('thead');
     const hr = document.createElement('tr');
+    const fr = document.createElement('tr');
+    fr.className = 'filter-row';
+
     columns.forEach(([field, label]) => {
         const th = document.createElement('th');
         applyAssetStickyClass(tableId, field, th);
         if (field === '_sel') {
             const cb = document.createElement('input');
             cb.type = 'checkbox';
-            cb.addEventListener('change', () => table.querySelectorAll('tbody input.row-select').forEach(x => x.checked = cb.checked));
+            cb.addEventListener('change', () => table.querySelectorAll('tbody tr:not(.filtered-out) input.row-select').forEach(x => x.checked = cb.checked));
             th.appendChild(cb);
         } else {
             th.textContent = label + (sort.field === field ? (sort.dir > 0 ? ' ▲' : ' ▼') : '');
@@ -951,11 +1100,31 @@ function renderEditableTable(tableId, columns, rows, kind) {
             });
         }
         hr.appendChild(th);
+
+        const fh = document.createElement('th');
+        applyAssetStickyClass(tableId, field, fh);
+        if (field !== '_sel') {
+            const filterInput = document.createElement('input');
+            filterInput.type = 'search';
+            filterInput.className = 'column-filter';
+            filterInput.placeholder = 'filtr';
+            filterInput.value = tableColumnFilters[tableId]?.[field] || '';
+            filterInput.dataset.field = field;
+            filterInput.addEventListener('click', evt => evt.stopPropagation());
+            filterInput.addEventListener('mousedown', evt => evt.stopPropagation());
+            filterInput.addEventListener('input', evt => {
+                tableColumnFilters[tableId][field] = evt.target.value;
+                applyTableDomFilters(tableId, columns, kind);
+            });
+            fh.appendChild(filterInput);
+        }
+        fr.appendChild(fh);
     });
     thead.appendChild(hr);
+    thead.appendChild(fr);
 
     const tbody = document.createElement('tbody');
-    visibleRows.forEach(row => {
+    sortedRows.forEach(row => {
         const tr = document.createElement('tr');
         tr.dataset.rowid = row._rowid;
         if (row._state === 'new') tr.classList.add('new-row');
@@ -973,7 +1142,8 @@ function renderEditableTable(tableId, columns, rows, kind) {
                 td.appendChild(cb);
                 td.classList.add('selector-cell');
             } else {
-                td.textContent = row[field] ?? '';
+                td.textContent = displayCellValue(kind, field, row[field]);
+                td.dataset.rawValue = row[field] ?? '';
                 td.title = tableCellTitle(kind, field, row[field]);
                 if (editable) {
                     td.contentEditable = 'true';
@@ -983,10 +1153,10 @@ function renderEditableTable(tableId, columns, rows, kind) {
                         td.title = 'ID lze psát přímo. Doubleclick otevře vyhledání assetu podle názvu nebo typu.';
                         td.addEventListener('dblclick', (evt) => openEdgeNodePicker(evt.currentTarget));
                     }
-                    if (kind === 'node' && nodeChoiceFields.has(field)) {
+                    if (isChoiceField(kind, field)) {
                         td.classList.add('choice-cell');
                         td.title = 'Hodnotu lze psát přímo. Doubleclick otevře seznam povolených hodnot.';
-                        td.addEventListener('dblclick', (evt) => openNodeChoicePicker(evt.currentTarget));
+                        td.addEventListener('dblclick', (evt) => openChoicePicker(evt.currentTarget));
                     }
                     td.addEventListener('focus', () => td.dataset.before = td.textContent);
                     td.addEventListener('blur', () => updateRowFromCell(td));
@@ -1005,6 +1175,33 @@ function renderEditableTable(tableId, columns, rows, kind) {
     table.appendChild(thead);
     table.appendChild(tbody);
     if (tableId === 'assetsGrid') applyAssetRowsMode();
+    applyTableDomFilters(tableId, columns, kind);
+}
+
+function applyTableDomFilters(tableId, columns, kind) {
+    const table = $('#' + tableId);
+    if (!table) return;
+    const globalFilterId = tableId === 'assetsGrid' ? '#assetsTableFilter' : '#edgesTableFilter';
+    const globalFilter = ($(globalFilterId)?.value || '').trim().toLowerCase();
+    const columnFilters = tableColumnFilters[tableId] || {};
+    table.querySelectorAll('tbody tr').forEach(tr => {
+        const row = tableRows[tableId].find(r => r._rowid === tr.dataset.rowid);
+        if (!row) return;
+        const rowValues = columns
+            .filter(([field]) => field !== '_sel')
+            .map(([field]) => String(displayCellValue(kind, field, row[field]) ?? ''));
+        let hide = false;
+        if (globalFilter && !rowValues.join(' ').toLowerCase().includes(globalFilter)) hide = true;
+        for (const [field, filterValue] of Object.entries(columnFilters)) {
+            const q = String(filterValue || '').trim().toLowerCase();
+            if (!q) continue;
+            const value = String(displayCellValue(kind, field, row[field]) ?? '').toLowerCase();
+            const rawValue = String(row[field] ?? '').toLowerCase();
+            if (!value.includes(q) && !rawValue.includes(q)) { hide = true; break; }
+        }
+        tr.classList.toggle('filtered-out', hide);
+        tr.style.display = hide ? 'none' : '';
+    });
 }
 
 function compareValues(a, b) {
@@ -1076,9 +1273,11 @@ function updateRowFromCell(td, repaint = true) {
     const row = tableRows[tableId].find(r => r._rowid === td.dataset.rowid);
     if (!row) return;
     const field = td.dataset.field;
-    row[field] = td.textContent.trim();
-    td.title = tableCellTitle(td.dataset.kind, field, row[field]);
-    if (td.dataset.kind === 'edge' && isEdgeNodeIdField(field)) {
+    const kind = td.dataset.kind;
+    row[field] = isChoiceField(kind, field) ? choiceValueFromText(kind, field, td.textContent) : td.textContent.trim();
+    td.dataset.rawValue = row[field] ?? '';
+    td.title = tableCellTitle(kind, field, row[field]);
+    if (kind === 'edge' && isEdgeNodeIdField(field)) {
         updateEdgeLookupForRow(row, field);
         if (repaint) {
             const nameField = field === 'source_node_id' ? 'source_name' : 'target_name';
@@ -1086,10 +1285,12 @@ function updateRowFromCell(td, repaint = true) {
             if (nameCell) nameCell.textContent = row[nameField] || '';
         }
     }
+    if (isChoiceField(kind, field) && repaint) td.textContent = displayCellValue(kind, field, row[field]);
     if (row._state !== 'new') row._state = 'dirty';
     if (repaint) {
         td.classList.add('dirty-cell');
         td.parentElement.classList.add('dirty-row');
+        applyTableDomFilters(tableId, kind === 'node' ? nodeColumns : edgeColumns, kind);
     }
 }
 
@@ -1100,20 +1301,7 @@ function isNodeChoiceField(field) {
 }
 
 function nodeChoiceLabel(field, value) {
-    const raw = String(value ?? '');
-    if (field === 'type') return meta.node_types?.[raw] || raw || '(prázdné)';
-    if (field === 'criticality') {
-        const labels = { low: 'low', medium: 'medium', high: 'high', critical: 'critical' };
-        return labels[raw] || raw || '(prázdné)';
-    }
-    if (['confidentiality','integrity_level','availability'].includes(field)) {
-        return raw ? `${raw} (CIA)` : '(prázdné)';
-    }
-    if (field === 'data_sensitivity') {
-        const labels = { public: 'public', private: 'private', secret: 'secret' };
-        return labels[raw] || raw || '(prázdné)';
-    }
-    return raw || '(prázdné)';
+    return choiceLabel('node', field, value) || '(prázdné)';
 }
 
 function closeNodeChoicePicker() {
@@ -1121,22 +1309,24 @@ function closeNodeChoicePicker() {
     if (existing) existing.remove();
 }
 
-function openNodeChoicePicker(td) {
-    if (!td || td.dataset.kind !== 'node' || !isNodeChoiceField(td.dataset.field)) return;
+function openChoicePicker(td) {
+    if (!td || !isChoiceField(td.dataset.kind, td.dataset.field)) return;
     closeNodeChoicePicker();
     closeEdgeNodePicker();
 
     const table = td.closest('table');
     const row = tableRows[table.id].find(r => r._rowid === td.dataset.rowid);
     if (!row) return;
+    const kind = td.dataset.kind;
     const field = td.dataset.field;
-    const values = (choiceSets.node[field]?.() || []).map(String);
+    const columns = kind === 'node' ? nodeColumns : edgeColumns;
+    const values = (choiceSets[kind][field]?.() || []).map(String);
 
     const picker = document.createElement('div');
     picker.className = 'node-choice-picker edge-node-picker';
     const title = document.createElement('div');
     title.className = 'edge-node-picker-title';
-    title.textContent = `Vybrat hodnotu: ${nodeColumns.find(c => c[0] === field)?.[1] || field}`;
+    title.textContent = `Vybrat hodnotu: ${columns.find(c => c[0] === field)?.[1] || field}`;
     const list = document.createElement('div');
     list.className = 'edge-node-picker-list node-choice-picker-list';
     const hint = document.createElement('div');
@@ -1157,8 +1347,8 @@ function openNodeChoicePicker(td) {
         row[field] = value;
         if (row._state !== 'new') row._state = 'dirty';
         closeNodeChoicePicker();
-        renderEditableTable(table.id, nodeColumns, tableRows[table.id], 'node');
-        toast(`Vybráno: ${nodeChoiceLabel(field, value)}${value ? ' [' + value + ']' : ''}`);
+        renderEditableTable(table.id, columns, tableRows[table.id], kind);
+        toast(`Vybráno: ${choiceLabel(kind, field, value) || '(prázdné)'}`);
     };
 
     list.innerHTML = '';
@@ -1167,9 +1357,8 @@ function openNodeChoicePicker(td) {
         item.type = 'button';
         item.className = 'edge-node-picker-item node-choice-picker-item';
         if (String(row[field] ?? '') === value) item.classList.add('active');
-        item.innerHTML = '<span class="node-name"></span><span class="node-meta"></span>';
-        item.querySelector('.node-name').textContent = nodeChoiceLabel(field, value);
-        item.querySelector('.node-meta').textContent = value || 'prázdné';
+        item.innerHTML = '<span class="node-name"></span>';
+        item.querySelector('.node-name').textContent = choiceLabel(kind, field, value) || '(prázdné)';
         item.addEventListener('mousedown', (evt) => { evt.preventDefault(); applySelection(value); });
         list.appendChild(item);
     });
@@ -1178,6 +1367,10 @@ function openNodeChoicePicker(td) {
         const active = list.querySelector('.active') || list.querySelector('.edge-node-picker-item');
         active?.focus?.();
     }, 0);
+}
+
+function openNodeChoicePicker(td) {
+    openChoicePicker(td);
 }
 
 function isEdgeNodeIdField(field) {
@@ -1193,8 +1386,8 @@ function updateEdgeLookupForRow(row, field) {
 }
 
 function edgeNodeOptionLabel(node) {
-    const typeLabel = meta.node_types?.[node.type] || node.type || 'asset';
-    return `${node.name} (${typeLabel}) #${node.id}`;
+    const typeLabel = meta.node_types?.[node.type] || node.type || 'Asset';
+    return `${node.name} (${typeLabel})`;
 }
 
 function closeEdgeNodePicker() {
@@ -1262,7 +1455,7 @@ async function openEdgeNodePicker(td) {
             const typeLabel = meta.node_types?.[node.type] || node.type || 'asset';
             item.innerHTML = `<span class="node-name"></span><span class="node-meta"></span>`;
             item.querySelector('.node-name').textContent = node.name || `#${node.id}`;
-            item.querySelector('.node-meta').textContent = `${typeLabel} · ID ${node.id}`;
+            item.querySelector('.node-meta').textContent = typeLabel;
             item.addEventListener('mousedown', (evt) => { evt.preventDefault(); applySelection(node); });
             list.appendChild(item);
         });
@@ -1544,8 +1737,8 @@ async function main() {
     $('#btnDeleteEdgeRows').addEventListener('click', () => deleteSelectedTableRows('edge'));
     $('#btnSaveAssetsTable').addEventListener('click', () => saveTable('node'));
     $('#btnSaveEdgesTable').addEventListener('click', () => saveTable('edge'));
-    $('#assetsTableFilter').addEventListener('input', () => renderEditableTable('assetsGrid', nodeColumns, tableRows.assetsGrid, 'node'));
-    $('#edgesTableFilter').addEventListener('input', () => renderEditableTable('edgesGrid', edgeColumns, tableRows.edgesGrid, 'edge'));
+    $('#assetsTableFilter').addEventListener('input', () => applyTableDomFilters('assetsGrid', nodeColumns, 'node'));
+    $('#edgesTableFilter').addEventListener('input', () => applyTableDomFilters('edgesGrid', edgeColumns, 'edge'));
     $('#btnCopyAssetsTable').addEventListener('click', () => copyWholeTable('assetsGrid'));
     $('#btnCopyEdgesTable').addEventListener('click', () => copyWholeTable('edgesGrid'));
     $('#btnImportAssetsCsv').addEventListener('click', openAssetsCsvImportDialog);
@@ -1578,14 +1771,20 @@ async function main() {
     $('#criticalityFilter').addEventListener('change', applyUiFilter);
 
     document.addEventListener('mousedown', (evt) => {
-        if (!evt.target.closest?.('.edge-node-picker') && !evt.target.closest?.('.edge-node-id-cell')) closeEdgeNodePicker();
+        if (!evt.target.closest?.('.edge-node-picker') && !evt.target.closest?.('.edge-node-id-cell') && !evt.target.closest?.('.choice-cell')) {
+            closeEdgeNodePicker();
+            closeNodeChoicePicker();
+        }
     });
-    document.addEventListener('keydown', (evt) => { if (evt.key === 'Escape') closeEdgeNodePicker(); });
+    document.addEventListener('keydown', (evt) => { if (evt.key === 'Escape') { closeEdgeNodePicker(); closeNodeChoicePicker(); } });
 
     $('#btnAddOutgoingNodeEdge').addEventListener('click', () => addNodeEdge('outgoing'));
     $('#btnAddIncomingNodeEdge').addEventListener('click', () => addNodeEdge('incoming'));
     $('#btnReloadNodeEdges').addEventListener('click', async () => { const id = currentNodeIdFromForm(); if (id) await loadNodeEdges(id); });
 
+    $('#nodeForm').addEventListener('input', () => updateNodeModalHeader(formData($('#nodeForm'))));
+    $('#nodeForm').addEventListener('change', () => updateNodeModalHeader(formData($('#nodeForm'))));
+    $('#btnDeleteNodeFromModal').addEventListener('click', deleteNodeFromModal);
     $('#nodeForm').addEventListener('submit', submitNode);
     $('#edgeForm').addEventListener('submit', submitEdge);
     $('#viewForm').addEventListener('submit', submitView);

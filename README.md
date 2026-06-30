@@ -45,12 +45,12 @@ Při prvním spuštění prázdného datového volume se vytvoří ukázkový mo
 
 ## Funkce prototypu
 
-- evidence uzlů: hardware, software, data, procesy, business funkce, dodavatelé, poskytovatelé, výrobci, sítě, lokality, dokumentace, ICT služby
+- evidence uzlů: hardware, software, data, procesy, business funkce, `third_party` / 3. strany, sítě, lokality, dokumentace, ICT služby
 - evidence vazeb: contains, hosts, processes_data, supports_process, depends_on atd.
 - hierarchie aktiv přes vazbu `contains`
 - drag & drop graf v Cytoscape.js
 - uložení pozic uzlů per view
-- detail uzlu po doubleclick
+- detail assetu po doubleclick se sticky záhlavím/zápatím a editorem vazeb
 - editace DORA atributů: kritičnost, CIA, RTO/RPO/MTD, citlivost dat, kategorie dat, revize
 - základní rizikové atributy: hrozby, scénáře, pravděpodobnost, dopad, kontroly, reziduální riziko
 - views a dynamické pohledy
@@ -60,12 +60,12 @@ Při prvním spuštění prázdného datového volume se vytvoří ukázkový mo
 - více modelů/projektů jako samostatné SQLite dokumenty
 - nový prázdný model, kopie aktuálního modelu, přepnutí modelu, bezpečné smazání do koše
 - stažení/nahrání SQLite DB souboru pro výměnu modelů mezi instancemi aplikace
-- excel-like tabulka assetů s editací buněk, filtrováním, sortováním a copy/paste přes TSV
+- excel-like tabulka assetů s editací buněk, sticky identifikačními sloupci, DOM-preserving filtrováním, sortováním a copy/paste přes TSV
 - import assetů z CSV s preview a validací před zápisem do DB
 - export assetů do CSV jako šablona nebo přenosový formát
-- excel-like tabulka vazeb s editací buněk, filtrováním, sortováním a copy/paste přes TSV
+- excel-like tabulka vazeb s editací buněk, filtrováním, sortováním, copy/paste přes TSV a double-click pickery pro assety/číselníky
 - kompaktní editor vazeb přímo na kartě assetu v grafovém view
-- tisknutelný report: `/report.php`
+- tisknutelný HTML/PDF report s kartovým designem: `/report.php`
 - heatmapa rizik v reportu
 - change log pro auditní stopu a budoucí undo/redo
 
@@ -262,7 +262,16 @@ Nové tlačítko **Plné zobrazení řádků / Kompaktní zobrazení řádků** 
 
 Nastavení režimu se ukládá do `localStorage` pro daný prohlížeč.
 
-## v28/v29/v30 poznámka
+## v28/v29/v30/v31 poznámka
 
-Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat. Verze v30 sjednocuje dokumentaci a interní název dynamického režimu třetích stran na `third_party`; historický API alias `supplier` zůstává jen kvůli zpětné kompatibilitě.
+Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat. Verze v30 sjednocuje dokumentaci a interní název dynamického režimu třetích stran na `third_party`; historický API alias `supplier` zůstává jen kvůli zpětné kompatibilitě. Verze v31 upravuje detail assetu, tabulkové filtry, číselníkové pickery v tabulce vazeb a HTML/PDF report.
 
+
+
+## v31: detail assetu, tabulkové filtry a report UIX
+
+Detail assetu má sticky záhlaví a sticky zápatí. Záhlaví ukazuje `Název (typ)` a drobný řádek se skóre rizika; tlačítko `×` bylo odstraněno. Zápatí obsahuje **Smazat asset**, **Uložit** a **Zavřít**. Číselníkové hodnoty se v UI zobrazují jako uživatelské popisky bez interních DB hodnot v hranatých závorkách.
+
+Tabulka assetů má užší sticky identifikační sloupce a nový řádek textových filtrů. Filtrování řádky pouze skrývá přes `display:none`, takže zůstávají v DOM. Tabulka vazeb má double-click pickery pro `Typ vazby` a `Kritičnost` a používá stejné uživatelské popisky jako karta assetu.
+
+HTML/PDF report má novější kartový design a tiskové pravidlo proti zalomení heatmapy rizik.

@@ -2,7 +2,7 @@
 
 ## Prompt pro znovuvytvoření aktuální aplikace od začátku
 
-Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v30.
+Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v31.
 
 ---
 
@@ -856,3 +856,18 @@ Do not commit real SQLite model data. Keep only the runtime directory structure 
 ## Additional requirement from v30
 
 Keep third-party naming consistent with the current code. The active raw node type is `third_party` and the graph dynamic mode for third-party context is also `third_party`. Historical raw node types `supplier`, `provider` and `manufacturer` may exist only as legacy aliases normalized to `third_party` during schema initialization/import. The old graph mode value `supplier` may be accepted only as a backward-compatible API alias; new HTML/JS/UI code must use `third_party`. Edge type normalization must be separate from node type normalization; edge save code must not call a node-type normalizer for relationship types.
+
+
+## Additional requirement from v31
+
+Asset detail modal/card must have sticky header and sticky footer. The header must show `Name (type)` and a smaller subtitle with asset ID and risk score. Do not show the prefix `Uzel:` and do not use a separate `×` close button. Header actions are Save and Close. Footer actions include Delete asset, Save and Close.
+
+In the asset detail card and relationship editors, dictionary values must be shown as user labels without appending raw DB values in square brackets. Raw DB values remain internal values used for saving. In the embedded `Vazby assetu` editor, asset choices should show only name and type, not ID.
+
+Section headings inside the asset card must use consistent size and typography. The explanatory text about directed relationships should not be visible as a paragraph; put it into a tooltip/help hint if needed.
+
+The assets table must keep the checkbox, ID, type and name columns sticky and narrower than before. Add text filter inputs in a filter row under the table header. Filtering must hide rows using `display:none` while keeping the rows in the DOM.
+
+The edges table must provide double-click pickers for edge type and criticality, using the same label-first UI as the asset card. Direct edit and TSV copy/paste should continue to work; typed labels should be normalized back to raw DB values before saving.
+
+The HTML/PDF report should use a cleaner card-style layout with KPI boxes, cleaner tables and print CSS that tries to keep the risk heatmap on one page (`break-inside: avoid`, `page-break-inside: avoid`).
