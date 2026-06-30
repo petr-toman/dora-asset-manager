@@ -334,7 +334,7 @@ function edge_types(): array
 function get_graph(PDO $pdo): void
 {
     $viewId = (int)($_GET['view_id'] ?? 1);
-    $mode = $_GET['mode'] ?? 'saved';
+    $mode = normalize_graph_mode((string)($_GET['mode'] ?? 'saved'));
     $nodeId = isset($_GET['node_id']) ? (int)$_GET['node_id'] : null;
 
     $nodes = $pdo->query('SELECT * FROM nodes ORDER BY type, name')->fetchAll();
@@ -385,7 +385,7 @@ function filter_dynamic_graph(array $nodes, array $edges, string $mode, ?int $no
         if ($mode === 'hardware' && $type === 'hardware') $addNode($id);
         if ($mode === 'data' && $type === 'data') $addNode($id);
         if ($mode === 'process' && in_array($type, ['process', 'business_function'], true)) $addNode($id);
-        if ($mode === 'supplier' && $type === 'third_party') $addNode($id);
+        if ($mode === 'third_party' && $type === 'third_party') $addNode($id);
         if ($mode === 'critical' && in_array($n['criticality'], ['high', 'critical'], true)) $addNode($id);
         if ($mode === 'personal_data' && $type === 'data' && str_contains((string)$n['data_categories'], 'personal')) $addNode($id);
     }
@@ -398,14 +398,14 @@ function filter_dynamic_graph(array $nodes, array $edges, string $mode, ?int $no
         'hardware' => ['hosts', 'runs_on', 'contains', 'processes_data', 'stores', 'supports_process', 'supports_function', 'depends_on'],
         'data' => ['processes_data', 'uses_data', 'stores', 'supports_process', 'supports_function', 'provided_by', 'depends_on'],
         'process' => ['supports_process', 'supports_function', 'processes_data', 'uses_data', 'contains', 'depends_on', 'provided_by'],
-        'supplier' => ['provided_by', 'supplied_by', 'manufactured_by', 'administered_by', 'monitored_by', 'backed_up_by', 'depends_on'],
+        'third_party' => ['provided_by', 'supplied_by', 'manufactured_by', 'administered_by', 'monitored_by', 'backed_up_by', 'depends_on'],
         'critical' => ['contains', 'hosts', 'runs_on', 'stores', 'processes_data', 'uses_data', 'supports_process', 'supports_function', 'depends_on', 'provided_by', 'supplied_by', 'manufactured_by', 'connected_to', 'backed_up_by', 'monitored_by', 'administered_by', 'integrates_with', 'authenticates_via'],
         'personal_data' => ['processes_data', 'uses_data', 'stores', 'supports_process', 'supports_function', 'provided_by', 'depends_on'],
         'impact' => ['contains', 'hosts', 'runs_on', 'stores', 'processes_data', 'uses_data', 'supports_process', 'supports_function', 'depends_on', 'provided_by', 'supplied_by', 'manufactured_by', 'connected_to', 'backed_up_by', 'monitored_by', 'administered_by', 'integrates_with', 'authenticates_via'],
     ];
     $allowed = $allowedByMode[$mode] ?? null;
 
-    $depth = in_array($mode, ['hardware', 'data', 'process', 'supplier', 'impact'], true) ? 3 : 1;
+    $depth = in_array($mode, ['hardware', 'data', 'process', 'third_party', 'impact'], true) ? 3 : 1;
     $changed = true;
     for ($i = 0; $i < $depth && $changed; $i++) {
         $changed = false;
@@ -517,7 +517,8 @@ function save_edge(PDO $pdo): void
     $id = isset($data['id']) && $data['id'] !== '' ? (int)$data['id'] : null;
     $source = (int)($data['source_node_id'] ?? 0);
     $target = (int)($data['target_node_id'] ?? 0);
-    $type = normalize_node_type_value(trim((string)($data['type'] ?? '')));
+    $type = normalize_edge_type_value((string)($data['type'] ?? ''));
+    $data['type'] = $type;
     validate_edge_payload($pdo, $data);
     $now = now_iso();
     $before = null;
@@ -770,11 +771,25 @@ function export_json(PDO $pdo): void
 }
 
 
+function normalize_graph_mode(string $mode): string
+{
+    $mode = trim($mode);
+    // Backward compatibility for older UI/API calls before v30.
+    if ($mode === 'supplier') return 'third_party';
+    return $mode;
+}
+
 function normalize_node_type_value(string $type): string
 {
     $type = trim($type);
+    // Legacy aliases from versions before v26. Current third-party nodes use only third_party.
     if (in_array($type, ['supplier', 'provider', 'manufacturer'], true)) return 'third_party';
     return $type;
+}
+
+function normalize_edge_type_value(string $type): string
+{
+    return trim($type);
 }
 
 function normalize_node_payload(array &$data): void
@@ -785,7 +800,7 @@ function normalize_node_payload(array &$data): void
 function validate_node_payload(array $data): void
 {
     $name = trim((string)($data['name'] ?? ''));
-    $type = trim((string)($data['type'] ?? ''));
+    $type = normalize_node_type_value((string)($data['type'] ?? ''));
     if ($name === '') json_response(['ok' => false, 'error' => 'Název assetu je povinný'], 400);
     if ($type === '') json_response(['ok' => false, 'error' => 'Typ assetu je povinný'], 400);
     if (!array_key_exists($type, node_types())) json_response(['ok' => false, 'error' => 'Neplatný typ assetu: ' . $type], 400);
@@ -807,7 +822,7 @@ function validate_edge_payload(PDO $pdo, array $data): void
 {
     $source = (int)($data['source_node_id'] ?? 0);
     $target = (int)($data['target_node_id'] ?? 0);
-    $type = trim((string)($data['type'] ?? ''));
+    $type = normalize_edge_type_value((string)($data['type'] ?? ''));
     if (!$source) json_response(['ok' => false, 'error' => 'Zdroj ID je povinný'], 400);
     if (!$target) json_response(['ok' => false, 'error' => 'Cíl ID je povinný'], 400);
     if ($source === $target) json_response(['ok' => false, 'error' => 'Zdroj a cíl vazby se nesmí shodovat'], 400);
@@ -929,11 +944,12 @@ function upsert_node(PDO $pdo, array $data): array
 
 function upsert_edge(PDO $pdo, array $data): array
 {
+    $type = normalize_edge_type_value((string)($data['type'] ?? ''));
+    $data['type'] = $type;
     validate_edge_payload($pdo, $data);
     $id = isset($data['id']) && $data['id'] !== '' ? (int)$data['id'] : null;
     $source = (int)($data['source_node_id'] ?? 0);
     $target = (int)($data['target_node_id'] ?? 0);
-    $type = trim((string)($data['type'] ?? ''));
     $now = now_iso();
     $before = null;
     if ($id) {

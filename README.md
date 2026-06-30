@@ -242,7 +242,7 @@ Podporovaná pole:
 - `Lifecycle`
 - `Citlivost dat`
 
-Typy `supplier`, `provider` a `manufacturer` byly sjednoceny do jednoho typu `third_party`, který se v UI zobrazuje jako **3. strana (dodavatel)**. Starší modely se při otevření automaticky normalizují na nový typ.
+Aktuální typ třetích stran je `third_party`, který se v UI zobrazuje jako **3. strana (dodavatel)**. Starší typy `supplier`, `provider` a `manufacturer` už nejsou aktuální číselník; aplikace je při otevření starších modelů automaticky normalizuje na `third_party`.
 
 ## v27: použitelnost široké tabulky assetů
 
@@ -262,7 +262,7 @@ Nové tlačítko **Plné zobrazení řádků / Kompaktní zobrazení řádků** 
 
 Nastavení režimu se ukládá do `localStorage` pro daný prohlížeč.
 
-## v28/v29 poznámka
+## v28/v29/v30 poznámka
 
-Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat.
+Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat. Verze v30 sjednocuje dokumentaci a interní název dynamického režimu třetích stran na `third_party`; historický API alias `supplier` zůstává jen kvůli zpětné kompatibilitě.
 

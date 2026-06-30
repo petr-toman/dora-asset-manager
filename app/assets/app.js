@@ -218,7 +218,7 @@ function initCy(elements) {
             { selector: 'node[type="data"]', style: { 'background-color': '#ecfdf5', 'border-color': '#059669' }},
             { selector: 'node[type="process"]', style: { 'background-color': '#fff7ed', 'border-color': '#d97706' }},
             { selector: 'node[type="business_function"]', style: { 'background-color': '#fff1e8', 'border-color': '#ea580c' }},
-            { selector: 'node[type="third_party"], node[type="supplier"], node[type="provider"], node[type="manufacturer"]', style: { 'background-color': '#f5f3ff', 'border-color': '#7c3aed' }},
+            { selector: 'node[type="third_party"]', style: { 'background-color': '#f5f3ff', 'border-color': '#7c3aed' }},
             { selector: 'node[type="network"], node[type="location"], node[type="ict_service"], node[type="documentation"]', style: { 'background-color': '#ecfeff', 'border-color': '#0891b2' }},
             { selector: 'node[criticality="low"]', style: { 'border-width': 2 }},
             { selector: 'node[criticality="medium"]', style: { 'border-width': 3 }},

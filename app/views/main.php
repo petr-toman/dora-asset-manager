@@ -80,7 +80,7 @@
                 <option value="hardware">Hardware view</option>
                 <option value="data">Data view</option>
                 <option value="process">Process view</option>
-                <option value="supplier">3. strany view</option>
+                <option value="third_party">3. strany view</option>
                 <option value="critical">Kritická a vysoká aktiva</option>
                 <option value="personal_data">Osobní data</option>
                 <option value="impact">Impact vybraného uzlu</option>

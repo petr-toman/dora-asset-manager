@@ -315,7 +315,7 @@ select option { color: #0f172a; background: #f8fafc; }
 .dot.software { background: #2563eb; }
 .dot.data { background: #059669; }
 .dot.process { background: #d97706; }
-.dot.supplier, .dot.third-party { background: #7c3aed; }
+.dot.third-party { background: #7c3aed; }
 
 .table-view {
     height: calc(100vh - 74px);

@@ -1,8 +1,8 @@
 # PROJECT_STATE.md
 
-## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v29
+## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v30
 
-Tento dokument zachycuje aktuální stav aplikace po 19 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
+Tento dokument zachycuje aktuální stav aplikace po 30 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
 
 ## 1. Účel aplikace
 
@@ -19,8 +19,8 @@ Mentální model aplikace je: **webová aplikace jako editor, SQLite soubor jako
 
 ## 2. Aktuální verze
 
-- Aktuální iterace: `v29-named-volume-reset-semantics`
-- Poslední funkční základ: `v27-assets-table-usability` + repozitářová/provozní hygiena ve v28/v29
+- Aktuální iterace: `v30-third-party-docs-and-mode-cleanup`
+- Poslední funkční základ: `v29-named-volume-reset-semantics`; v30 pouze čistí dokumentaci a názvosloví `third_party`
 - Aplikace běží na portu: `8888`
 - URL: `http://localhost:8888`
 
@@ -174,9 +174,7 @@ Uzel může být například:
 - data,
 - process,
 - business_function,
-- supplier,
-- provider,
-- manufacturer,
+- third_party,
 - network,
 - location,
 - documentation,
@@ -294,7 +292,7 @@ Funkce:
 - single click vybírá uzel/hranu,
 - vytvoření a mazání uzlů a vazeb,
 - filtry podle typu, kritičnosti a dalších pohledů,
-- dynamické views/režimy: hardware, data, process, supplier, critical, personal data, impact,
+- dynamické views/režimy: hardware, data, process, third_party, critical, personal data, impact,
 - snap to grid.
 
 ### Snap to grid
@@ -479,7 +477,7 @@ Verze v17 zapracovává code review zaměřené na správnost dynamických pohle
 
 ### Dynamické views
 
-Dynamické grafové režimy mají explicitní politiku povolených typů vazeb. Například hardware/data/process/supplier pohled už netahá libovolné okolní vazby, ale pouze vazby relevantní pro daný režim. Finální seznam hran je filtrován podle vypočteného `keepEdgeIds`.
+Dynamické grafové režimy mají explicitní politiku povolených typů vazeb. Například hardware/data/process/third_party pohled už netahá libovolné okolní vazby, ale pouze vazby relevantní pro daný režim. Finální seznam hran je filtrován podle vypočteného `keepEdgeIds`.
 
 ### Tabulka vazeb
 
@@ -591,7 +589,7 @@ Do toolbaru assetové tabulky byl přidán přepínač kompaktního/plného zobr
 
 Změna je implementována převážně přes CSS a třídy v renderu tabulky; nemění datový model, API ani ukládání tabulky. Zachována je přímá editace, TSV/Excel copy-paste i doubleclick pickery z v26.
 
-## v28/v29 doplnění
+## v28/v29/v30 doplnění
 
-Verze v28 je technická/provozní iterace bez změny aplikační funkcionality. Přidává `LICENSE`, `.gitignore`, `.gitkeep` placeholdery runtime adresářů a README full rebuild postup. Verze v29 zpřesňuje Docker storage: `/data` je mapováno na named volume `dora_assets_data`, takže data přežijí běžný rebuild a `docker compose down`, ale `docker compose down -v` je vědomý reset dat.
+Verze v28 je technická/provozní iterace bez změny aplikační funkcionality. Přidává `LICENSE`, `.gitignore`, `.gitkeep` placeholdery runtime adresářů a README full rebuild postup. Verze v29 zpřesňuje Docker storage: `/data` je mapováno na named volume `dora_assets_data`, takže data přežijí běžný rebuild a `docker compose down`, ale `docker compose down -v` je vědomý reset dat. Verze v30 sjednocuje dokumentaci s aktuálním kódem: typ třetích stran a dynamický režim se primárně jmenují `third_party`; historické `supplier`, `provider` a `manufacturer` zůstávají pouze jako legacy vstupy normalizované při inicializaci/importu starších modelů.
 
