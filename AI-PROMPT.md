@@ -2,7 +2,7 @@
 
 ## Prompt pro znovuvytvoření aktuální aplikace od začátku
 
-Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v31.
+Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v32.
 
 ---
 
@@ -627,9 +627,10 @@ Použij světlejší technický design:
 - čistý CMDB/architecture styl,
 - světlé panely,
 - jemná technická mřížka v grafu,
-- uzly jako technické karty,
-- barevné akcenty podle typu uzlu,
-- decentní hrany podle typu vazby,
+- uzly jako technické karty s dvouřádkovým labelem `Název` + `Typ`,
+- barevné akcenty podle typu uzlu sladěné s legendou,
+- malý indikátor kritičnosti v rohu uzlu (`!`, `H`, `M`, `L`, `o`),
+- decentní tenčí hrany podle typu vazby se světlým pozadím labelu,
 - dobře čitelný sidebar,
 - moderní modal detailu,
 - tabulky podobné Excelu.
@@ -871,3 +872,16 @@ The assets table must keep the checkbox, ID, type and name columns sticky and na
 The edges table must provide double-click pickers for edge type and criticality, using the same label-first UI as the asset card. Direct edit and TSV copy/paste should continue to work; typed labels should be normalized back to raw DB values before saving.
 
 The HTML/PDF report should use a cleaner card-style layout with KPI boxes, cleaner tables and print CSS that tries to keep the risk heatmap on one page (`break-inside: avoid`, `page-break-inside: avoid`).
+
+
+## Additional requirement from v32
+
+Improve only the visual style of the graph view; do not change the data model, relationship semantics or persistence.
+
+Nodes should have a calmer CMDB/architecture-card style: subtle fills, readable but slightly softened type colors, lighter borders and shadows. Keep enough contrast for readability. The graph label of each node must be two lines: asset name on the first line and the user-facing asset type label on the second line. Do not show asset ID in the node label and do not show criticality as a text line.
+
+Represent criticality as a small visual indicator in the node corner: `!` = critical, `H` = high, `M` = medium, `L` = low, `o` = empty/unknown. No extra criticality legend is required because the sidebar already contains the criticality filter.
+
+Edges should be visually calmer: thinner lines, smaller arrows, lighter colors, user-facing edge type labels instead of raw DB values, and a white or very light label background for readability over the grid. Stronger highlighting should apply only on hover or selection.
+
+The graph grid/background should be less dominant than in v31. Update the color legend in the left sidebar so it matches the softened graph palette.

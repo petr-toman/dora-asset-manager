@@ -168,14 +168,14 @@ a.button {
 .canvas-wrap {
     position: relative;
     background:
-        linear-gradient(rgba(37, 99, 235, .055) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(37, 99, 235, .055) 1px, transparent 1px),
-        linear-gradient(rgba(15, 23, 42, .040) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(15, 23, 42, .040) 1px, transparent 1px),
-        radial-gradient(circle at 22% 18%, rgba(37,99,235,.12), transparent 30%),
-        radial-gradient(circle at 78% 70%, rgba(8,145,178,.10), transparent 34%),
+        linear-gradient(rgba(37, 99, 235, .035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(37, 99, 235, .035) 1px, transparent 1px),
+        linear-gradient(rgba(15, 23, 42, .020) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 23, 42, .020) 1px, transparent 1px),
+        radial-gradient(circle at 22% 18%, rgba(37,99,235,.075), transparent 30%),
+        radial-gradient(circle at 78% 70%, rgba(8,145,178,.065), transparent 34%),
         #f8fbff;
-    background-size: 96px 96px, 96px 96px, 24px 24px, 24px 24px, auto, auto, auto;
+    background-size: 100px 100px, 100px 100px, 25px 25px, 25px 25px, auto, auto, auto;
 }
 .canvas-wrap::before {
     content: "DORA ASSET GRAPH";
@@ -310,12 +310,22 @@ select option { color: #0f172a; background: #f8fafc; }
 }
 
 .legend div { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 7px 0; color: #334155; }
-.dot { width: 12px; height: 12px; display: inline-block; border-radius: 4px; background: #94a3b8; box-shadow: 0 0 0 3px rgba(148,163,184,.18); }
-.dot.hardware { background: #64748b; }
-.dot.software { background: #2563eb; }
-.dot.data { background: #059669; }
-.dot.process { background: #d97706; }
-.dot.third-party { background: #7c3aed; }
+.dot {
+    width: 13px;
+    height: 13px;
+    display: inline-block;
+    border-radius: 5px;
+    background: #f8fafc;
+    border: 2px solid #94a3b8;
+    box-shadow: 0 0 0 3px rgba(148,163,184,.12);
+}
+.dot.hardware { background: #f8fafc; border-color: #7b8798; }
+.dot.software { background: #eef5ff; border-color: #3b82f6; }
+.dot.data { background: #edfdf5; border-color: #22a862; }
+.dot.process { background: #fff8ed; border-color: #f59e0b; }
+.dot.business-function { background: #fff3e8; border-color: #fb923c; }
+.dot.third-party { background: #f6f2ff; border-color: #8b5cf6; }
+.dot.documentation { background: #ecfeff; border-color: #06b6d4; }
 
 .table-view {
     height: calc(100vh - 74px);

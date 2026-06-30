@@ -48,7 +48,7 @@ Při prvním spuštění prázdného datového volume se vytvoří ukázkový mo
 - evidence uzlů: hardware, software, data, procesy, business funkce, `third_party` / 3. strany, sítě, lokality, dokumentace, ICT služby
 - evidence vazeb: contains, hosts, processes_data, supports_process, depends_on atd.
 - hierarchie aktiv přes vazbu `contains`
-- drag & drop graf v Cytoscape.js
+- drag & drop graf v Cytoscape.js s jemnějším CMDB/architecture vzhledem
 - uložení pozic uzlů per view
 - detail assetu po doubleclick se sticky záhlavím/zápatím a editorem vazeb
 - editace DORA atributů: kritičnost, CIA, RTO/RPO/MTD, citlivost dat, kategorie dat, revize
@@ -262,9 +262,9 @@ Nové tlačítko **Plné zobrazení řádků / Kompaktní zobrazení řádků** 
 
 Nastavení režimu se ukládá do `localStorage` pro daný prohlížeč.
 
-## v28/v29/v30/v31 poznámka
+## v28/v29/v30/v31/v32 poznámka
 
-Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat. Verze v30 sjednocuje dokumentaci a interní název dynamického režimu třetích stran na `third_party`; historický API alias `supplier` zůstává jen kvůli zpětné kompatibilitě. Verze v31 upravuje detail assetu, tabulkové filtry, číselníkové pickery v tabulce vazeb a HTML/PDF report.
+Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat. Verze v30 sjednocuje dokumentaci a interní název dynamického režimu třetích stran na `third_party`; historický API alias `supplier` zůstává jen kvůli zpětné kompatibilitě. Verze v31 upravuje detail assetu, tabulkové filtry, číselníkové pickery v tabulce vazeb a HTML/PDF report. Verze v32 zjemňuje grafové zobrazení: dvouřádkové labely uzlů, malý indikátor kritičnosti, tenčí hrany, čitelnější labely vazeb a sladěná legenda barev.
 
 
 
@@ -275,3 +275,10 @@ Detail assetu má sticky záhlaví a sticky zápatí. Záhlaví ukazuje `Název 
 Tabulka assetů má užší sticky identifikační sloupce a nový řádek textových filtrů. Filtrování řádky pouze skrývá přes `display:none`, takže zůstávají v DOM. Tabulka vazeb má double-click pickery pro `Typ vazby` a `Kritičnost` a používá stejné uživatelské popisky jako karta assetu.
 
 HTML/PDF report má novější kartový design a tiskové pravidlo proti zalomení heatmapy rizik.
+
+
+## v32: jemnější graph view
+
+Graph view má klidnější vizuální styl bez změny dat. Uzly zobrazují dvouřádkový label `Název` + `Typ` s uživatelským popiskem typu assetu. Kritičnost se nezobrazuje jako třetí řádek textu, ale jako malý indikátor v rohu uzlu: `!` = critical, `H` = high, `M` = medium, `L` = low, `o` = nevyplněno.
+
+Hrany jsou tenčí, mají jemnější šipky a label vazby má světlé pozadí pro lepší čitelnost přes grid. Labely vazeb používají uživatelské popisky z číselníku. Zvýraznění hran se aplikuje při hoveru nebo výběru. Gridové pozadí i barevná legenda v levém menu jsou sladěné s novou paletou grafu.

@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## v32 - Calmer graph visual design
+
+- Zjemněn vizuální styl graph view bez změny datového modelu nebo logiky vazeb.
+- Uzly v grafu mají čistší CMDB/architecture vzhled, jemnější stíny a méně agresivní ohraničení při zachování čitelného barevného odlišení typů assetů.
+- Label uzlu je dvouřádkový: název assetu a pod ním uživatelský popisek typu assetu, bez ID a bez textové kritičnosti.
+- Kritičnost je v uzlu vyjádřena malým badge indikátorem `!`, `H`, `M`, `L` nebo `o`.
+- Hrany mají tenčí linky, jemnější šipky, světlejší label background a zvýrazňují se až při hoveru nebo výběru.
+- Labely vazeb v grafu používají uživatelské popisky z číselníku, ne raw DB hodnoty.
+- Jemnější je i gridové pozadí grafu.
+- Barevná legenda v levém menu byla sladěna s novou paletou grafu.
+- Aktualizovány `README.md`, `PROJECT_STATE.md` a `AI-PROMPT.md` na stav v32.
+
 ## v31 - Detail card, table filters and report UIX
 
 - Detailní karta assetu má sticky záhlaví a sticky zápatí, aby akce **Uložit**, **Zavřít** a **Smazat asset** zůstaly dostupné i při scrollu dlouhého formuláře.

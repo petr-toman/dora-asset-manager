@@ -229,15 +229,33 @@ async function uploadModelFile(evt) {
 
 
 function nodeLabel(n) {
-    const type = meta.node_types[n.type] || n.type;
-    const crit = n.criticality ? `\n${n.criticality}` : '';
-    return `${n.name}\n${type}${crit}`;
+    const type = meta.node_types[n.type] || n.type || '';
+    return `${n.name || ''}\n${type}`;
+}
+
+function criticalityBadgeText(value) {
+    return ({ critical: '!', high: 'H', medium: 'M', low: 'L' })[String(value || '')] || 'o';
+}
+
+function criticalityBadgeSvg(value) {
+    const raw = String(value || '');
+    const text = criticalityBadgeText(raw);
+    const palette = {
+        critical: { bg: '#fee2e2', border: '#dc2626', text: '#991b1b' },
+        high: { bg: '#ffedd5', border: '#f59e0b', text: '#92400e' },
+        medium: { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af' },
+        low: { bg: '#dcfce7', border: '#22c55e', text: '#166534' },
+        unknown: { bg: '#f8fafc', border: '#cbd5e1', text: '#64748b' }
+    };
+    const c = palette[raw] || palette.unknown;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22"><rect x="2.5" y="2.5" width="17" height="17" rx="8.5" fill="${c.bg}" stroke="${c.border}" stroke-width="1.4"/><text x="11" y="15" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="800" fill="${c.text}">${text}</text></svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
 function cyElements(data) {
     const positions = data.positions || {};
     const nodes = data.nodes.map((n, idx) => ({
-        data: { id: `n${n.id}`, dbid: n.id, label: nodeLabel(n), type: n.type, name: n.name, criticality: n.criticality || '', description: n.description || '' },
+        data: { id: `n${n.id}`, dbid: n.id, label: nodeLabel(n), type: n.type, name: n.name, criticality: n.criticality || '', critBadge: criticalityBadgeSvg(n.criticality), description: n.description || '' },
         position: positions[n.id] || { x: 100 + (idx % 6) * 180, y: 100 + Math.floor(idx / 6) * 130 }
     }));
     const edges = data.edges.map(e => ({
@@ -258,78 +276,105 @@ function initCy(elements) {
                 'shape': 'round-rectangle',
                 'label': 'data(label)',
                 'text-wrap': 'wrap',
-                'text-max-width': 146,
-                'font-size': 11,
+                'text-max-width': 142,
+                'font-size': 10.5,
                 'font-family': 'Inter, Segoe UI, Arial, sans-serif',
-                'font-weight': 800,
+                'font-weight': 720,
+                'line-height': 1.25,
                 'text-valign': 'center',
                 'text-halign': 'center',
-                'width': 170,
-                'height': 74,
+                'width': 160,
+                'height': 68,
                 'background-color': '#ffffff',
                 'background-opacity': 0.98,
+                'background-image': 'data(critBadge)',
+                'background-width': 22,
+                'background-height': 22,
+                'background-fit': 'none',
+                'background-repeat': 'no-repeat',
+                'background-position-x': '94%',
+                'background-position-y': '8%',
+                'background-image-opacity': 1,
                 'border-width': 2,
                 'border-color': '#94a3b8',
-                'border-opacity': .95,
+                'border-opacity': .88,
                 'color': '#172033',
-                'padding': '10px',
-                'shadow-blur': 14,
+                'padding': '12px',
+                'shadow-blur': 8,
                 'shadow-color': '#334155',
-                'shadow-opacity': .16,
+                'shadow-opacity': .10,
                 'shadow-offset-x': 0,
-                'shadow-offset-y': 7
+                'shadow-offset-y': 4
             }},
-            { selector: 'node[type="hardware"]', style: { 'background-color': '#f8fafc', 'border-color': '#64748b' }},
-            { selector: 'node[type="software"]', style: { 'background-color': '#eff6ff', 'border-color': '#2563eb' }},
-            { selector: 'node[type="data"]', style: { 'background-color': '#ecfdf5', 'border-color': '#059669' }},
-            { selector: 'node[type="process"]', style: { 'background-color': '#fff7ed', 'border-color': '#d97706' }},
-            { selector: 'node[type="business_function"]', style: { 'background-color': '#fff1e8', 'border-color': '#ea580c' }},
-            { selector: 'node[type="third_party"]', style: { 'background-color': '#f5f3ff', 'border-color': '#7c3aed' }},
-            { selector: 'node[type="network"], node[type="location"], node[type="ict_service"], node[type="documentation"]', style: { 'background-color': '#ecfeff', 'border-color': '#0891b2' }},
-            { selector: 'node[criticality="low"]', style: { 'border-width': 2 }},
-            { selector: 'node[criticality="medium"]', style: { 'border-width': 3 }},
-            { selector: 'node[criticality="high"]', style: { 'border-width': 4, 'shadow-color': '#d97706', 'shadow-opacity': .22 }},
-            { selector: 'node[criticality="critical"]', style: { 'border-width': 5, 'shadow-color': '#dc2626', 'shadow-opacity': .28 }},
+            { selector: 'node[type="hardware"]', style: { 'background-color': '#f8fafc', 'border-color': '#7b8798' }},
+            { selector: 'node[type="software"]', style: { 'background-color': '#eef5ff', 'border-color': '#3b82f6' }},
+            { selector: 'node[type="data"]', style: { 'background-color': '#edfdf5', 'border-color': '#22a862' }},
+            { selector: 'node[type="process"]', style: { 'background-color': '#fff8ed', 'border-color': '#f59e0b' }},
+            { selector: 'node[type="business_function"]', style: { 'background-color': '#fff3e8', 'border-color': '#fb923c' }},
+            { selector: 'node[type="third_party"]', style: { 'background-color': '#f6f2ff', 'border-color': '#8b5cf6' }},
+            { selector: 'node[type="network"], node[type="location"], node[type="ict_service"], node[type="documentation"]', style: { 'background-color': '#ecfeff', 'border-color': '#06b6d4' }},
             { selector: 'edge', style: {
                 'curve-style': 'bezier',
                 'target-arrow-shape': 'triangle',
-                'arrow-scale': 1.02,
-                'width': 2.2,
-                'line-color': '#64748b',
-                'target-arrow-color': '#64748b',
+                'arrow-scale': .78,
+                'width': 1.35,
+                'line-color': '#8b98aa',
+                'target-arrow-color': '#8b98aa',
+                'opacity': .88,
                 'label': 'data(label)',
-                'font-size': 9,
+                'font-size': 8.5,
                 'font-family': 'Inter, Segoe UI, Arial, sans-serif',
-                'font-weight': 800,
+                'font-weight': 650,
                 'color': '#334155',
                 'text-background-color': '#ffffff',
-                'text-background-opacity': .92,
-                'text-background-padding': 4,
-                'text-border-opacity': .45,
+                'text-background-opacity': .96,
+                'text-background-padding': 3,
+                'text-border-opacity': .30,
                 'text-border-width': 1,
-                'text-border-color': '#cbd5e1',
+                'text-border-color': '#dbe5ef',
                 'text-rotation': 'autorotate',
-                'shadow-blur': 8,
+                'shadow-blur': 3,
                 'shadow-color': '#64748b',
-                'shadow-opacity': .14,
+                'shadow-opacity': .08,
                 'shadow-offset-x': 0,
-                'shadow-offset-y': 2
+                'shadow-offset-y': 1
             }},
-            { selector: 'edge[type="contains"]', style: { 'line-style': 'dashed', 'line-color': '#0891b2', 'target-arrow-color': '#0891b2' }},
-            { selector: 'edge[type="processes_data"], edge[type="uses_data"]', style: { 'line-color': '#059669', 'target-arrow-color': '#059669' }},
-            { selector: 'edge[type="supports_process"], edge[type="supports_function"]', style: { 'line-color': '#d97706', 'target-arrow-color': '#d97706' }},
-            { selector: 'edge[type="provided_by"], edge[type="supplied_by"], edge[type="manufactured_by"]', style: { 'line-color': '#7c3aed', 'target-arrow-color': '#7c3aed' }},
-            { selector: 'edge[type="hosts"], edge[type="runs_on"]', style: { 'line-color': '#2563eb', 'target-arrow-color': '#2563eb' }},
-            { selector: ':selected', style: {
+            { selector: 'edge[type="contains"]', style: { 'line-style': 'dashed', 'line-color': '#0e9abb', 'target-arrow-color': '#0e9abb' }},
+            { selector: 'edge[type="processes_data"], edge[type="uses_data"]', style: { 'line-color': '#22a862', 'target-arrow-color': '#22a862' }},
+            { selector: 'edge[type="supports_process"], edge[type="supports_function"]', style: { 'line-color': '#f59e0b', 'target-arrow-color': '#f59e0b' }},
+            { selector: 'edge[type="provided_by"], edge[type="supplied_by"], edge[type="manufactured_by"]', style: { 'line-color': '#8b5cf6', 'target-arrow-color': '#8b5cf6' }},
+            { selector: 'edge[type="hosts"], edge[type="runs_on"]', style: { 'line-color': '#3b82f6', 'target-arrow-color': '#3b82f6' }},
+            { selector: 'edge.hover', style: {
+                'width': 2.2,
+                'arrow-scale': .98,
+                'opacity': 1,
+                'shadow-blur': 9,
+                'shadow-opacity': .20,
+                'z-index': 999
+            }},
+            { selector: 'node:selected', style: {
                 'border-color': '#0f172a',
-                'line-color': '#0f172a',
-                'target-arrow-color': '#0f172a',
-                'shadow-blur': 24,
+                'border-width': 3,
+                'shadow-blur': 18,
                 'shadow-color': '#2563eb',
-                'shadow-opacity': .38,
+                'shadow-opacity': .28,
                 'underlay-color': '#2563eb',
                 'underlay-opacity': .10,
                 'underlay-padding': 8
+            }},
+            { selector: 'edge:selected', style: {
+                'width': 2.6,
+                'arrow-scale': 1.05,
+                'line-color': '#0f172a',
+                'target-arrow-color': '#0f172a',
+                'opacity': 1,
+                'shadow-blur': 12,
+                'shadow-color': '#2563eb',
+                'shadow-opacity': .32,
+                'underlay-color': '#2563eb',
+                'underlay-opacity': .08,
+                'underlay-padding': 6,
+                'z-index': 1000
             }},
             { selector: '.faded', style: { 'opacity': .20 }},
             { selector: '.hiddenByFilter', style: { 'display': 'none' }}
@@ -348,6 +393,8 @@ function initCy(elements) {
     });
     cy.on('dbltap', 'node', evt => openNodeModalById(evt.target.data('dbid')));
     cy.on('dbltap', 'edge', evt => openEdgeModalById(evt.target.data('dbid')));
+    cy.on('mouseover', 'edge', evt => evt.target.addClass('hover'));
+    cy.on('mouseout', 'edge', evt => evt.target.removeClass('hover'));
     cy.on('dragfree', 'node', evt => saveNodePosition(evt.target));
 }
 
@@ -383,7 +430,9 @@ function updateSelectedInfo() {
         return;
     }
     if (selected.isNode()) {
-        el.innerHTML = `<strong>${escapeHtml(selected.data('name'))}</strong><br>typ: ${escapeHtml(selected.data('type'))}<br>kritičnost: ${escapeHtml(selected.data('criticality') || '-')}`;
+        const typeLabel = choiceLabel('node', 'type', selected.data('type')) || selected.data('type') || '-';
+        const critLabel = choiceLabel('node', 'criticality', selected.data('criticality')) || '-';
+        el.innerHTML = `<strong>${escapeHtml(selected.data('name'))}</strong><br>typ: ${escapeHtml(typeLabel)}<br>kritičnost: ${escapeHtml(critLabel)}`;
     } else {
         el.innerHTML = `<strong>Vazba</strong><br>${escapeHtml(selected.data('label'))}<br>${escapeHtml(selected.data('description') || '')}`;
     }

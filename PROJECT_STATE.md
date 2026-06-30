@@ -1,8 +1,8 @@
 # PROJECT_STATE.md
 
-## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v31
+## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v32
 
-Tento dokument zachycuje aktuální stav aplikace po 31 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
+Tento dokument zachycuje aktuální stav aplikace po 32 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
 
 ## 1. Účel aplikace
 
@@ -19,8 +19,8 @@ Mentální model aplikace je: **webová aplikace jako editor, SQLite soubor jako
 
 ## 2. Aktuální verze
 
-- Aktuální iterace: `v31-detail-table-report-uix`
-- Poslední akceptovaný základ: `v30-third-party-docs-and-mode-cleanup`; v31 upravuje detail assetu, tabulkové filtry, číselníkové editory vazeb a HTML/PDF report
+- Aktuální iterace: `v32-calmer-graph-visual-design`
+- Poslední akceptovaný základ: `v31-detail-table-report-uix`; v32 zjemňuje graph view, labely uzlů/hran, indikátor kritičnosti a barevnou legendu
 - Aplikace běží na portu: `8888`
 - URL: `http://localhost:8888`
 
@@ -440,9 +440,10 @@ Aktuálně použitá varianta je světlejší technický design:
 
 - světlé technické UI,
 - jemná gridová plocha grafu,
-- uzly jako čisté CMDB/architecture karty,
-- barvy podle typu assetu,
-- decentní hrany a popisky,
+- uzly jako čisté CMDB/architecture karty s dvouřádkovým labelem `Název` + `Typ`,
+- barvy podle typu assetu sladěné s legendou v bočním menu,
+- malý indikátor kritičnosti v rohu uzlu (`!`, `H`, `M`, `L`, `o`),
+- decentní tenčí hrany se světlým pozadím labelu a zvýrazněním při hoveru/výběru,
 - světlý technický modal detailu,
 - zasouvací levý panel.
 
@@ -591,6 +592,18 @@ Verze v27 zlepšuje práci s širokou obrazovkou **Assety tabulka**. První iden
 Do toolbaru assetové tabulky byl přidán přepínač kompaktního/plného zobrazení řádků. Kompaktní režim drží řádky ve stejné výšce a dlouhé texty zobrazuje zkráceně přes `...`; uložená hodnota se nezkracuje. Plný režim nechává texty zalamovat a řádky rostou podle obsahu.
 
 Změna je implementována převážně přes CSS a třídy v renderu tabulky; nemění datový model, API ani ukládání tabulky. Zachována je přímá editace, TSV/Excel copy-paste i doubleclick pickery z v26.
+
+
+
+## v32 doplnění
+
+Verze v32 je vizuální UIX iterace nad graph view. Nemění datový model, API ani sémantiku vazeb. Cílem je klidnější a čitelnější graf.
+
+Uzly v grafu zobrazují dvouřádkový label: první řádek je název assetu, druhý řádek je uživatelský popisek typu assetu. V labelu se nezobrazuje ID ani textová kritičnost. Kritičnost je vyjádřena malým badge indikátorem v rohu uzlu: `!` pro critical, `H` pro high, `M` pro medium, `L` pro low a `o` pro nevyplněnou hodnotu.
+
+Hrany mají tenčí linky, jemnější šipky, méně kontrastní paletu a label se světlým pozadím, aby byl čitelný přes grid. Label vazby používá uživatelský popisek z číselníku, ne raw DB hodnotu. Výraznější styl hrany se aplikuje až při hoveru nebo výběru.
+
+Gridové pozadí grafu je jemnější než ve v31. Barevná legenda v levém panelu byla aktualizována tak, aby odpovídala nové paletě uzlů.
 
 ## v31 doplnění
 

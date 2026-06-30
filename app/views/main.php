@@ -61,7 +61,9 @@
             <div><span class="dot software"></span> software</div>
             <div><span class="dot data"></span> data</div>
             <div><span class="dot process"></span> proces</div>
+            <div><span class="dot business-function"></span> business funkce</div>
             <div><span class="dot third-party"></span> 3. strana</div>
+            <div><span class="dot documentation"></span> dokumentace / ICT služba</div>
         </section>
 
         <section class="panel">
