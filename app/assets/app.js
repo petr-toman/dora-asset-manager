@@ -632,6 +632,19 @@ function openEdgeModalById(id) {
     openModal('edgeModal');
 }
 
+function reverseEdgeFormDirection() {
+    const form = $('#edgeForm');
+    if (!form) return;
+    const source = form.elements.source_node_id;
+    const target = form.elements.target_node_id;
+    if (!source || !target) return;
+    const previousSource = source.value;
+    source.value = target.value;
+    target.value = previousSource;
+    source.dispatchEvent(new Event('change', { bubbles: true }));
+    target.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
 function fillForm(form, data) {
     Object.entries(data).forEach(([k, v]) => {
         if (form.elements[k]) form.elements[k].value = v ?? '';
@@ -865,6 +878,18 @@ function renderNodeEdgesTable() {
         desc.addEventListener('change', () => updateNodeEdgeRow(row._rowid, 'description', desc.value));
         descTd.appendChild(desc);
 
+        actionTd.className = 'node-edge-actions';
+
+        const reverse = document.createElement('button');
+        reverse.type = 'button';
+        reverse.className = 'icon-swap';
+        reverse.title = 'Prohodit směr vazby';
+        reverse.setAttribute('aria-label', 'Prohodit Asset A a Asset B');
+        reverse.textContent = '⇄';
+        reverse.disabled = !row.source_node_id && !row.target_node_id;
+        reverse.addEventListener('click', () => reverseNodeEdgeRow(row._rowid));
+        actionTd.appendChild(reverse);
+
         const del = document.createElement('button');
         del.type = 'button';
         del.className = 'icon-trash';
@@ -883,6 +908,17 @@ function updateNodeEdgeRow(rowid, field, value) {
     const row = currentNodeEdges.find(r => r._rowid === rowid);
     if (!row) return;
     row[field] = value;
+    if (row._state !== 'new') row._state = 'dirty';
+    nodeEdgesDirty = true;
+    renderNodeEdgesTable();
+}
+
+function reverseNodeEdgeRow(rowid) {
+    const row = currentNodeEdges.find(r => r._rowid === rowid);
+    if (!row || row._deleted) return;
+    const previousSource = row.source_node_id || '';
+    row.source_node_id = row.target_node_id || '';
+    row.target_node_id = previousSource;
     if (row._state !== 'new') row._state = 'dirty';
     nodeEdgesDirty = true;
     renderNodeEdgesTable();
@@ -2046,6 +2082,7 @@ async function main() {
     $('#nodeForm').addEventListener('change', () => updateNodeModalHeader(formData($('#nodeForm'))));
     $('#btnDeleteNodeFromModal').addEventListener('click', deleteNodeFromModal);
     $('#nodeForm').addEventListener('submit', submitNode);
+    $('#btnReverseEdgeDirection')?.addEventListener('click', reverseEdgeFormDirection);
     $('#edgeForm').addEventListener('submit', submitEdge);
     $('#viewForm').addEventListener('submit', submitView);
     $('#viewForm').elements['name'].addEventListener('input', evt => { evt.target.dataset.userEdited = '1'; });

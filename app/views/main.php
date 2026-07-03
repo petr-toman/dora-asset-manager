@@ -289,8 +289,11 @@
         </div>
         <form id="edgeForm" class="form-grid small">
             <input type="hidden" name="id">
-            <label>Zdroj<select name="source_node_id" id="edgeSource"></select></label>
-            <label>Cíl<select name="target_node_id" id="edgeTarget"></select></label>
+            <div class="edge-direction-row span2">
+                <label>Zdroj<select name="source_node_id" id="edgeSource"></select></label>
+                <button type="button" id="btnReverseEdgeDirection" class="icon-swap edge-modal-swap" title="Prohodit směr vazby" aria-label="Prohodit zdroj a cíl vazby">⇄</button>
+                <label>Cíl<select name="target_node_id" id="edgeTarget"></select></label>
+            </div>
             <label>Typ vazby<select name="type" id="edgeTypeSelect"></select></label>
             <label>Kritičnost<select name="criticality" data-choice="criticality"></select></label>
             <label class="span2">Popis<textarea name="description" rows="3"></textarea></label>

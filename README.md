@@ -270,9 +270,9 @@ Nové tlačítko **Plné zobrazení řádků / Kompaktní zobrazení řádků** 
 
 Nastavení režimu se ukládá do `localStorage` pro daný prohlížeč.
 
-## v28/v29/v30/v31/v32/v33/v34 poznámka
+## v28/v29/v30/v31/v32/v33/v34/v35 poznámka
 
-Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat. Verze v30 sjednocuje dokumentaci a interní název dynamického režimu třetích stran na `third_party`; historický API alias `supplier` zůstává jen kvůli zpětné kompatibilitě. Verze v31 upravuje detail assetu, tabulkové filtry, číselníkové pickery v tabulce vazeb a HTML/PDF report. Verze v32 zjemňuje grafové zobrazení: dvouřádkové labely uzlů, malý indikátor kritičnosti, tenčí hrany, čitelnější labely vazeb a sladěná legenda barev. Verze v33 přidává oblasti assetů (`landscapes`) jako fixních 9 slotů s M:N vazbou `nodes_landscapes`, filtrem grafu podle oblasti a checkboxy oblastí na kartě assetu. Verze v34 doplňuje volitelný automatický layout při akci **Nový view z aktuálního**; původní view se nepřepíše a layout se uloží jen do nově vytvořeného view.
+Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat. Verze v30 sjednocuje dokumentaci a interní název dynamického režimu třetích stran na `third_party`; historický API alias `supplier` zůstává jen kvůli zpětné kompatibilitě. Verze v31 upravuje detail assetu, tabulkové filtry, číselníkové pickery v tabulce vazeb a HTML/PDF report. Verze v32 zjemňuje grafové zobrazení: dvouřádkové labely uzlů, malý indikátor kritičnosti, tenčí hrany, čitelnější labely vazeb a sladěná legenda barev. Verze v33 přidává oblasti assetů (`landscapes`) jako fixních 9 slotů s M:N vazbou `nodes_landscapes`, filtrem grafu podle oblasti a checkboxy oblastí na kartě assetu. Verze v34 doplňuje volitelný automatický layout při akci **Nový view z aktuálního**; původní view se nepřepíše a layout se uloží jen do nově vytvořeného view. Verze v35 doplňuje tlačítko `⇄` pro prohození směru vazby v kartě assetu a v kartě vazby bez okamžitého zápisu do DB.
 
 
 
@@ -304,3 +304,10 @@ V levém panelu je filtr **Oblast assetů** a tlačítko pro přejmenování vš
 Akce **Nový view z aktuálního** otevře dialog s volbou **Nově uspořádat layout**. Defaultní možnost **Původní** zkopíruje aktuální view beze změny pozic. Volby **Mřížka**, **Kruh**, **Soustředné kruhy**, **Hierarchie**, **Přirozené rozložení** a **Náhodně** vytvoří nový view, přepnou aplikaci na něj, aplikují zvolený Cytoscape layout pouze na aktuálně zobrazené uzly a výsledné pozice uloží do nového view.
 
 Původní view se nikdy nepřepisuje automatickým layoutem. Pokud je graf před vytvořením view omezen dynamickým režimem nebo filtrem v UI, layout se aplikuje jen na právě viditelné uzly; ostatní pozice zůstávají zkopírované z původního view.
+
+## v35: prohození směru vazby
+
+V sekci **Vazby assetu** na kartě assetu je u každé vazby malé tlačítko `⇄`. Prohodí Asset A a Asset B, tedy interně `source_node_id` a `target_node_id`. Stejné tlačítko je v popupu/kartě vazby mezi poli **Zdroj** a **Cíl**.
+
+Prohození nemění typ vazby, kritičnost, popis ani ID vazby. Akce pouze upraví rozepsaný formulář; do databáze se změna uloží až po běžném kliknutí na **Uložit**.
+

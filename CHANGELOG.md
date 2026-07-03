@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v35 - Reverse edge direction from relationship editors
+
+- Na kartě assetu v sekci **Vazby assetu** přibylo u každé vazby tlačítko `⇄` pro prohození Asset A a Asset B.
+- V popupu/kartě vazby přibylo stejné tlačítko `⇄` mezi poli **Zdroj** a **Cíl**.
+- Prohození mění pouze směr vazby (`source_node_id` ↔ `target_node_id`); typ vazby, kritičnost, popis a ID vazby zůstávají beze změny.
+- Tlačítko neukládá změnu okamžitě do DB. Uložení proběhne až přes běžné **Uložit** na kartě assetu nebo kartě vazby.
+- Aktualizovány `README.md`, `PROJECT_STATE.md` a `AI-PROMPT.md` na stav v35.
+
 ## v34 - Optional layout when cloning graph view
 
 - Akce **Nový view z aktuálního** má v dialogu novou volbu **Nově uspořádat layout**.

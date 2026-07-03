@@ -1,8 +1,8 @@
 # PROJECT_STATE.md
 
-## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v34
+## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v35
 
-Tento dokument zachycuje aktuální stav aplikace po 34 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
+Tento dokument zachycuje aktuální stav aplikace po 35 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
 
 ## 1. Účel aplikace
 
@@ -20,8 +20,8 @@ Mentální model aplikace je: **webová aplikace jako editor, SQLite soubor jako
 
 ## 2. Aktuální verze
 
-- Aktuální iterace: `v34-clone-view-with-layout`
-- Poslední akceptovaný základ: `v33-asset-landscapes-filtering`; v34 doplňuje volitelný automatický layout při vytváření nového view z aktuálního, bez přepsání původního view
+- Aktuální iterace: `v35-reverse-edge-direction`
+- Poslední akceptovaný základ: `v34-clone-view-layouts`; v35 doplňuje bezpečné prohození směru vazeb v kartě assetu i v kartě vazby
 - Aplikace běží na portu: `8888`
 - URL: `http://localhost:8888`
 
@@ -660,3 +660,10 @@ Graf respektuje filtr podle oblasti: zobrazí assety ve vybrané oblasti a vazby
 Verze v34 doplňuje bezpečné použití automatických Cytoscape layoutů. Layouty nejsou přepínač trvalého režimu grafu ani pravoklikové destruktivní menu. Jsou pouze volbou při vytváření **Nového view z aktuálního**.
 
 Dialog nového view nabízí volby `Původní`, `Mřížka`, `Kruh`, `Soustředné kruhy`, `Hierarchie`, `Přirozené rozložení` a `Náhodně`. Původní view se nikdy nepřepisuje. Pokud je vybrán automatický layout, aplikace vytvoří nový view, načte jej, rozloží pouze aktuálně viditelné uzly a uloží výsledné pozice do nového view.
+
+## v35 doplnění
+
+Verze v35 doplňuje malý editační nástroj pro opravu směru vazeb. V sekci **Vazby assetu** na kartě assetu je u každého řádku tlačítko `⇄`, které prohodí Asset A a Asset B. Stejné tlačítko je i v popupu/kartě vazby mezi poli **Zdroj** a **Cíl**.
+
+Prohození mění pouze `source_node_id` a `target_node_id`. Typ vazby, kritičnost, popis a ID vazby se nemění. Akce není okamžité uložení do databáze; změna se ukládá až běžným tlačítkem **Uložit** na kartě assetu nebo kartě vazby.
+
