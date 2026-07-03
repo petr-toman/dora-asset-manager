@@ -1,8 +1,8 @@
 # PROJECT_STATE.md
 
-## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v33
+## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v34
 
-Tento dokument zachycuje aktuální stav aplikace po 33 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
+Tento dokument zachycuje aktuální stav aplikace po 34 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
 
 ## 1. Účel aplikace
 
@@ -20,8 +20,8 @@ Mentální model aplikace je: **webová aplikace jako editor, SQLite soubor jako
 
 ## 2. Aktuální verze
 
-- Aktuální iterace: `v33-asset-landscapes-filtering`
-- Poslední akceptovaný základ: `v32-calmer-graph-visual-design`; v33 přidává oblasti assetů (`landscapes`), vazby `nodes_landscapes`, filtr grafu podle oblasti a checkboxy oblastí na kartě assetu
+- Aktuální iterace: `v34-clone-view-with-layout`
+- Poslední akceptovaný základ: `v33-asset-landscapes-filtering`; v34 doplňuje volitelný automatický layout při vytváření nového view z aktuálního, bez přepsání původního view
 - Aplikace běží na portu: `8888`
 - URL: `http://localhost:8888`
 
@@ -272,7 +272,7 @@ Views = různé mapy/rozložení nad stejnými daty
 Funkce:
 
 - uložit aktuální view,
-- vytvořit nový view z aktuálního včetně pozic,
+- vytvořit nový view z aktuálního včetně pozic, volitelně s automatickým layoutem nad aktuálně viditelnými uzly,
 - smazat view,
 - chránit výchozí view `Celková mapa`,
 - uchovávat pozice uzlů per view.
@@ -294,7 +294,15 @@ Funkce:
 - vytvoření a mazání uzlů a vazeb,
 - filtry podle typu, kritičnosti a dalších pohledů,
 - dynamické views/režimy: hardware, data, process, third_party, critical, personal data, impact,
-- snap to grid.
+- snap to grid,
+- volitelný automatický layout při akci **Nový view z aktuálního**.
+
+
+### Nový view z aktuálního s layoutem
+
+Od v34 není automatický layout samostatný režim grafu a nepřepisuje aktuální view. Je dostupný pouze v dialogu **Nový view z aktuálního** jako volba **Nově uspořádat layout**.
+
+Volba `Původní` zkopíruje view beze změny pozic. Volby `Mřížka`, `Kruh`, `Soustředné kruhy`, `Hierarchie`, `Přirozené rozložení` a `Náhodně` nejdříve vytvoří nový view z aktuálního, přepnou aplikaci na tento nový view, aplikují zvolený Cytoscape layout jen na aktuálně zobrazené uzly a výsledek uloží do nového view. Původní view zůstává beze změny.
 
 ### Snap to grid
 
@@ -645,3 +653,10 @@ Jde o fixních 9 slotů, nikoli neomezený číselník. Demo seed pojmenovává 
 Karta assetu zobrazuje sekci **Oblasti** jako mřížku 3×3. Pojmenované oblasti jsou editovatelné checkboxy, prázdné sloty jsou zašedlé read-only. Pokud existuje vazba na prázdnou oblast, checkbox zůstane viditelný a zaškrtnutý, aby se prozradilo nekonzistentní přiřazení.
 
 Graf respektuje filtr podle oblasti: zobrazí assety ve vybrané oblasti a vazby mezi právě viditelnými assety. Volba `bez oblasti` ukáže assety bez jakéhokoli přiřazení do `nodes_landscapes`.
+
+
+## v34 doplnění
+
+Verze v34 doplňuje bezpečné použití automatických Cytoscape layoutů. Layouty nejsou přepínač trvalého režimu grafu ani pravoklikové destruktivní menu. Jsou pouze volbou při vytváření **Nového view z aktuálního**.
+
+Dialog nového view nabízí volby `Původní`, `Mřížka`, `Kruh`, `Soustředné kruhy`, `Hierarchie`, `Přirozené rozložení` a `Náhodně`. Původní view se nikdy nepřepisuje. Pokud je vybrán automatický layout, aplikace vytvoří nový view, načte jej, rozloží pouze aktuálně viditelné uzly a uloží výsledné pozice do nového view.

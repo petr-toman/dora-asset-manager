@@ -56,7 +56,7 @@ Při prvním spuštění prázdného datového volume se vytvoří ukázkový mo
 - editace DORA atributů: kritičnost, CIA, RTO/RPO/MTD, citlivost dat, kategorie dat, revize
 - základní rizikové atributy: hrozby, scénáře, pravděpodobnost, dopad, kontroly, reziduální riziko
 - views a dynamické pohledy
-- nový view z aktuálního včetně zkopírování pozic
+- nový view z aktuálního včetně zkopírování pozic a volitelného automatického layoutu nad aktuálně zobrazenými uzly
 - smazání view s ochranou výchozího view `Celková mapa`
 - export JSON
 - více modelů/projektů jako samostatné SQLite dokumenty
@@ -270,9 +270,9 @@ Nové tlačítko **Plné zobrazení řádků / Kompaktní zobrazení řádků** 
 
 Nastavení režimu se ukládá do `localStorage` pro daný prohlížeč.
 
-## v28/v29/v30/v31/v32/v33 poznámka
+## v28/v29/v30/v31/v32/v33/v34 poznámka
 
-Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat. Verze v30 sjednocuje dokumentaci a interní název dynamického režimu třetích stran na `third_party`; historický API alias `supplier` zůstává jen kvůli zpětné kompatibilitě. Verze v31 upravuje detail assetu, tabulkové filtry, číselníkové pickery v tabulce vazeb a HTML/PDF report. Verze v32 zjemňuje grafové zobrazení: dvouřádkové labely uzlů, malý indikátor kritičnosti, tenčí hrany, čitelnější labely vazeb a sladěná legenda barev. Verze v33 přidává oblasti assetů (`landscapes`) jako fixních 9 slotů s M:N vazbou `nodes_landscapes`, filtrem grafu podle oblasti a checkboxy oblastí na kartě assetu.
+Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat. Verze v30 sjednocuje dokumentaci a interní název dynamického režimu třetích stran na `third_party`; historický API alias `supplier` zůstává jen kvůli zpětné kompatibilitě. Verze v31 upravuje detail assetu, tabulkové filtry, číselníkové pickery v tabulce vazeb a HTML/PDF report. Verze v32 zjemňuje grafové zobrazení: dvouřádkové labely uzlů, malý indikátor kritičnosti, tenčí hrany, čitelnější labely vazeb a sladěná legenda barev. Verze v33 přidává oblasti assetů (`landscapes`) jako fixních 9 slotů s M:N vazbou `nodes_landscapes`, filtrem grafu podle oblasti a checkboxy oblastí na kartě assetu. Verze v34 doplňuje volitelný automatický layout při akci **Nový view z aktuálního**; původní view se nepřepíše a layout se uloží jen do nově vytvořeného view.
 
 
 
@@ -297,3 +297,10 @@ Hrany jsou tenčí, mají jemnější šipky a label vazby má světlé pozadí 
 Datový model obsahuje tabulku `landscapes` a vazební tabulku `nodes_landscapes`. Oblasti jsou záměrně omezené na fixních 9 slotů. První tři demo sloty jsou `Backend`, `Frontend/web` a `Infrastruktura`; ostatní jsou prázdné.
 
 V levém panelu je filtr **Oblast assetů** a tlačítko pro přejmenování všech 9 slotů. Karta assetu ukládá přiřazení do oblastí přes 3×3 checkbox grid. Tabulka assetů zobrazuje oblasti na konci jako read-only přehled.
+
+
+## v34: nový view z aktuálního s volitelným layoutem
+
+Akce **Nový view z aktuálního** otevře dialog s volbou **Nově uspořádat layout**. Defaultní možnost **Původní** zkopíruje aktuální view beze změny pozic. Volby **Mřížka**, **Kruh**, **Soustředné kruhy**, **Hierarchie**, **Přirozené rozložení** a **Náhodně** vytvoří nový view, přepnou aplikaci na něj, aplikují zvolený Cytoscape layout pouze na aktuálně zobrazené uzly a výsledné pozice uloží do nového view.
+
+Původní view se nikdy nepřepisuje automatickým layoutem. Pokud je graf před vytvořením view omezen dynamickým režimem nebo filtrem v UI, layout se aplikuje jen na právě viditelné uzly; ostatní pozice zůstávají zkopírované z původního view.

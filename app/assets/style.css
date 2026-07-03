@@ -1340,3 +1340,39 @@ body.sidebar-collapsed .canvas-wrap::before { content: "DORA ASSET GRAPH · SIDE
     .node-landscape-grid,
     .landscape-editor-grid { grid-template-columns: 1fr; }
 }
+
+.view-layout-options {
+    margin: 0;
+    padding: 12px;
+    border: 1px solid rgba(148, 163, 184, .38);
+    border-radius: 12px;
+    background: rgba(248, 250, 252, .72);
+}
+.view-layout-options legend {
+    padding: 0 6px;
+    color: #1e3a8a;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .02em;
+}
+.view-layout-options p {
+    margin: 2px 0 10px;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.35;
+}
+.view-layout-options label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 150px;
+    margin: 4px 10px 4px 0;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 650;
+    letter-spacing: 0;
+    text-transform: none;
+}
+.view-layout-options input[type="radio"] {
+    margin: 0;
+}

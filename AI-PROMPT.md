@@ -2,7 +2,7 @@
 
 ## Prompt pro znovuvytvoření aktuální aplikace od začátku
 
-Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v33.
+Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v34.
 
 ---
 
@@ -472,7 +472,7 @@ V sekci **Pohled**:
 - velikost gridu,
 - `Zarovnat aktuální view`.
 
-`Nový view z aktuálního` zkopíruje aktuální view včetně pozic.
+`Nový view z aktuálního` zkopíruje aktuální view včetně pozic. V dialogu nabízí volbu **Nově uspořádat layout**: `Původní`, `Mřížka`, `Kruh`, `Soustředné kruhy`, `Hierarchie`, `Přirozené rozložení`, `Náhodně`. Default je `Původní`. Pokud je zvolen jiný layout, aplikace nejdřív vytvoří nový view, přepne na něj, aplikuje layout jen na aktuálně zobrazené uzly a uloží výsledek do nového view. Původní view se nesmí přepsat.
 
 `Smazat view` nesmí smazat view s ID 1.
 
@@ -900,3 +900,20 @@ Implementuj od v33 normalizované oblasti assetů:
 - `save_node` ukládá přiřazení oblastí do `nodes_landscapes`,
 - tabulka assetů má read-only sloupec `Oblasti` na konci,
 - graf filtruje assety podle vybrané oblasti a skrývá vazby na skryté assety.
+
+
+## Additional requirement from v34
+
+Automatic Cytoscape layouts must not be implemented as a persistent graph mode and must not overwrite the currently selected view. They are available only as an option in **Nový view z aktuálního**.
+
+The clone-view dialog must include a layout choice with these options:
+
+- `original` / Původní — default, preserve copied positions,
+- `grid` / Mřížka,
+- `circle` / Kruh,
+- `concentric` / Soustředné kruhy,
+- `breadthfirst` / Hierarchie, directed,
+- `cose` / Přirozené rozložení,
+- `random` / Náhodně.
+
+When a non-original layout is selected, the frontend must create the new view first, switch to it, apply the selected Cytoscape layout only to the currently visible nodes/elements, then save the resulting positions into the new view. The source view must remain unchanged. Hidden nodes keep the positions copied from the source view.

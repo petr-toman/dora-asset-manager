@@ -13,6 +13,16 @@ let landscapes = [];
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
+const graphViewLayouts = {
+    original: { label: 'Původní', options: null },
+    grid: { label: 'Mřížka', options: { name: 'grid', fit: true, padding: 50 } },
+    circle: { label: 'Kruh', options: { name: 'circle', fit: true, padding: 50 } },
+    concentric: { label: 'Soustředné kruhy', options: { name: 'concentric', fit: true, padding: 50 } },
+    breadthfirst: { label: 'Hierarchie', options: { name: 'breadthfirst', directed: true, fit: true, padding: 50 } },
+    cose: { label: 'Přirozené rozložení', options: { name: 'cose', animate: true, fit: true, padding: 50 } },
+    random: { label: 'Náhodně', options: { name: 'random', fit: true, padding: 50 } }
+};
+
 const uiLabels = {
     criticality: { low: 'Nízká', medium: 'Střední', high: 'Vysoká', critical: 'Kritická' },
     cia: { low: 'Nízká', medium: 'Střední', high: 'Vysoká', critical: 'Kritická' },
@@ -632,6 +642,7 @@ function formData(form) {
     const data = {};
     [...form.elements].forEach(el => {
         if (!el.name) return;
+        if ((el.type === 'radio' || el.type === 'checkbox') && !el.checked) return;
         data[el.name] = el.value;
     });
     return data;
@@ -994,15 +1005,83 @@ async function submitEdge(evt) {
     toast('Vazba uložena');
 }
 
+
+function visibleGraphElementsForLayout() {
+    if (!cy) return null;
+    const visibleNodes = cy.nodes().filter(n => n.data('dbid') && !n.hasClass('hiddenByFilter'));
+    const visibleNodeIds = new Set(visibleNodes.map(n => n.id()));
+    const visibleEdges = cy.edges().filter(e => !e.hasClass('hiddenByFilter') && visibleNodeIds.has(e.source().id()) && visibleNodeIds.has(e.target().id()));
+    return visibleNodes.union(visibleEdges);
+}
+
+function runCyLayout(elements, options) {
+    return new Promise(resolve => {
+        if (!elements || elements.nodes().length === 0 || !options) {
+            resolve(false);
+            return;
+        }
+        const layout = elements.layout(options);
+        let done = false;
+        const finish = () => {
+            if (done) return;
+            done = true;
+            resolve(true);
+        };
+        layout.on('layoutstop', finish);
+        layout.run();
+        setTimeout(finish, options.name === 'cose' ? 5000 : 600);
+    });
+}
+
+async function applyLayoutToVisibleNodes(layoutKey) {
+    const def = graphViewLayouts[layoutKey];
+    if (!def || !def.options) return false;
+    const elements = visibleGraphElementsForLayout();
+    if (!elements || elements.nodes().length === 0) return false;
+    const options = { ...def.options };
+    await runCyLayout(elements, options);
+    if (isSnapToGridEnabled()) {
+        elements.nodes().forEach(node => node.position(snappedPosition(node.position())));
+    }
+    return true;
+}
+
+function updateCloneLayoutPresetName() {
+    const form = $('#viewForm');
+    if (!form || form.elements.mode.value !== 'clone') return;
+    const baseName = form.dataset.baseName || 'Celková mapa';
+    const layoutKey = form.elements['layout']?.value || 'original';
+    const layoutLabel = graphViewLayouts[layoutKey]?.label || '';
+    if (!form.elements['name'].dataset.userEdited || form.elements['name'].dataset.userEdited === '0') {
+        form.elements['name'].value = layoutKey === 'original' ? `${baseName} - kopie` : `${baseName} - ${layoutLabel}`;
+    }
+    if (!form.elements['description'].dataset.userEdited || form.elements['description'].dataset.userEdited === '0') {
+        form.elements['description'].value = layoutKey === 'original' ? `Kopie view: ${baseName}` : `Kopie view: ${baseName}; automatické rozložení: ${layoutLabel}`;
+    }
+}
+
 async function submitView(evt) {
     evt.preventDefault();
     const data = formData(evt.target);
     let saved;
     if (data.mode === 'clone') {
+        const layoutKey = data.layout || 'original';
         await saveVisiblePositions();
         saved = await postJson('clone_view', data);
         currentViewId = Number(saved.id);
-        toast('Nový view vytvořen z aktuálního');
+        closeModal('viewModal');
+        await loadViews();
+        $('#viewSelect').value = currentViewId;
+        await loadGraph();
+        if (layoutKey !== 'original') {
+            const applied = await applyLayoutToVisibleNodes(layoutKey);
+            if (applied) await saveVisiblePositions();
+            const label = graphViewLayouts[layoutKey]?.label || layoutKey;
+            toast(applied ? `Nový view vytvořen a rozložen: ${label}` : 'Nový view vytvořen; nebylo co rozložit');
+        } else {
+            toast('Nový view vytvořen z aktuálního');
+        }
+        return;
     } else {
         saved = await postJson('save_view', data);
         currentViewId = Number(saved.id || currentViewId);
@@ -1078,27 +1157,36 @@ async function saveVisiblePositions() {
 }
 
 function openSaveViewModal() {
-    clearForm($('#viewForm'));
+    const form = $('#viewForm');
+    clearForm(form);
     const selectedOption = $('#viewSelect').selectedOptions[0];
     $('#viewModalTitle').textContent = 'Uložit aktuální view';
-    $('#viewForm').elements.mode.value = 'save';
-    $('#viewForm').elements.id.value = $('#viewSelect').value || '';
-    $('#viewForm').elements.source_view_id.value = '';
-    $('#viewForm').elements.name.value = selectedOption ? selectedOption.textContent : 'Celková mapa';
-    $('#viewForm').elements.description.value = '';
+    form.elements.mode.value = 'save';
+    form.elements.id.value = $('#viewSelect').value || '';
+    form.elements.source_view_id.value = '';
+    form.elements['name'].value = selectedOption ? selectedOption.textContent : 'Celková mapa';
+    form.elements['description'].value = '';
+    form.elements['name'].dataset.userEdited = '1';
+    form.elements['description'].dataset.userEdited = '1';
+    $('#viewCloneLayoutSection')?.classList.add('hidden');
     openModal('viewModal');
 }
 
 function openCloneViewModal() {
-    clearForm($('#viewForm'));
+    const form = $('#viewForm');
+    clearForm(form);
     const selectedOption = $('#viewSelect').selectedOptions[0];
     const baseName = selectedOption ? selectedOption.textContent : 'Celková mapa';
     $('#viewModalTitle').textContent = 'Nový view z aktuálního';
-    $('#viewForm').elements.mode.value = 'clone';
-    $('#viewForm').elements.id.value = '';
-    $('#viewForm').elements.source_view_id.value = $('#viewSelect').value || currentViewId || 1;
-    $('#viewForm').elements.name.value = baseName + ' - kopie';
-    $('#viewForm').elements.description.value = 'Kopie view: ' + baseName;
+    form.elements.mode.value = 'clone';
+    form.elements.id.value = '';
+    form.elements.source_view_id.value = $('#viewSelect').value || currentViewId || 1;
+    form.dataset.baseName = baseName;
+    form.elements['name'].dataset.userEdited = '0';
+    form.elements['description'].dataset.userEdited = '0';
+    if (form.elements['layout']) form.elements['layout'].value = 'original';
+    $('#viewCloneLayoutSection')?.classList.remove('hidden');
+    updateCloneLayoutPresetName();
     openModal('viewModal');
 }
 
@@ -1960,6 +2048,9 @@ async function main() {
     $('#nodeForm').addEventListener('submit', submitNode);
     $('#edgeForm').addEventListener('submit', submitEdge);
     $('#viewForm').addEventListener('submit', submitView);
+    $('#viewForm').elements['name'].addEventListener('input', evt => { evt.target.dataset.userEdited = '1'; });
+    $('#viewForm').elements['description'].addEventListener('input', evt => { evt.target.dataset.userEdited = '1'; });
+    $$('input[name="layout"]').forEach(r => r.addEventListener('change', updateCloneLayoutPresetName));
     $$('[data-close]').forEach(btn => btn.addEventListener('click', () => closeModal(btn.dataset.close)));
 }
 

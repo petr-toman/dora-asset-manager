@@ -314,6 +314,17 @@
             <input type="hidden" name="mode" value="save">
             <label class="span2">Název<input name="name" required></label>
             <label class="span2">Popis<textarea name="description" rows="3"></textarea></label>
+            <fieldset id="viewCloneLayoutSection" class="span2 view-layout-options hidden">
+                <legend>Nově uspořádat layout</legend>
+                <p>Volba se použije jen při vytvoření nového view z aktuálního. Původní view se nepřepíše.</p>
+                <label><input type="radio" name="layout" value="original" checked> Původní</label>
+                <label><input type="radio" name="layout" value="grid"> Mřížka</label>
+                <label><input type="radio" name="layout" value="circle"> Kruh</label>
+                <label><input type="radio" name="layout" value="concentric"> Soustředné kruhy</label>
+                <label><input type="radio" name="layout" value="breadthfirst"> Hierarchie</label>
+                <label><input type="radio" name="layout" value="cose"> Přirozené rozložení</label>
+                <label><input type="radio" name="layout" value="random"> Náhodně</label>
+            </fieldset>
             <div class="form-actions span2">
                 <button type="button" data-close="viewModal">Zavřít</button>
                 <button type="submit" class="primary">Uložit</button>

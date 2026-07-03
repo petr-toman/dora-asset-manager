@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v34 - Optional layout when cloning graph view
+
+- Akce **Nový view z aktuálního** má v dialogu novou volbu **Nově uspořádat layout**.
+- Defaultní volba `Původní` zachovává dosavadní chování a pouze zkopíruje aktuální view včetně pozic.
+- Volby `Mřížka`, `Kruh`, `Soustředné kruhy`, `Hierarchie`, `Přirozené rozložení` a `Náhodně` vytvoří nový view, přepnou na něj, aplikují odpovídající Cytoscape layout a uloží výsledek do nového view.
+- Původní view se automatickým layoutem nikdy nepřepisuje.
+- Layout se aplikuje jen na aktuálně zobrazené uzly; pozice ostatních uzlů zůstávají zkopírované z původního view.
+- Aktualizovány `README.md`, `PROJECT_STATE.md` a `AI-PROMPT.md` na stav v34.
+
 ## v33 - Asset landscapes / oblasti assetů
 
 - Přidán datový model oblastí assetů: tabulka `landscapes` a vazební tabulka `nodes_landscapes`.
