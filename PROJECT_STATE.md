@@ -1,8 +1,8 @@
 # PROJECT_STATE.md
 
-## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v32
+## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v33
 
-Tento dokument zachycuje aktuální stav aplikace po 32 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
+Tento dokument zachycuje aktuální stav aplikace po 33 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
 
 ## 1. Účel aplikace
 
@@ -13,14 +13,15 @@ Aplikace je single-user webový editor pro evidenci ICT a informačních aktiv p
 - evidenci DORA atributů aktiv,
 - základní rizikové hodnocení,
 - reportování do HTML/PDF a DOCX,
+- členění assetů do technologických oblastí / landscapes pro přehlednější práci s grafem,
 - práci s více oddělenými modely/projekty jako samostatnými SQLite soubory.
 
 Mentální model aplikace je: **webová aplikace jako editor, SQLite soubor jako dokument**. Tedy podobně jako Word nebo Excel, ale pro model DORA aktiv.
 
 ## 2. Aktuální verze
 
-- Aktuální iterace: `v32-calmer-graph-visual-design`
-- Poslední akceptovaný základ: `v31-detail-table-report-uix`; v32 zjemňuje graph view, labely uzlů/hran, indikátor kritičnosti a barevnou legendu
+- Aktuální iterace: `v33-asset-landscapes-filtering`
+- Poslední akceptovaný základ: `v32-calmer-graph-visual-design`; v33 přidává oblasti assetů (`landscapes`), vazby `nodes_landscapes`, filtr grafu podle oblasti a checkboxy oblastí na kartě assetu
 - Aplikace běží na portu: `8888`
 - URL: `http://localhost:8888`
 
@@ -621,3 +622,26 @@ HTML/PDF report byl vizuálně přepracován do kartového layoutu s KPI boxy a 
 
 Verze v28 je technická/provozní iterace bez změny aplikační funkcionality. Přidává `LICENSE`, `.gitignore`, `.gitkeep` placeholdery runtime adresářů a README full rebuild postup. Verze v29 zpřesňuje Docker storage: `/data` je mapováno na named volume `dora_assets_data`, takže data přežijí běžný rebuild a `docker compose down`, ale `docker compose down -v` je vědomý reset dat. Verze v30 sjednocuje dokumentaci s aktuálním kódem: typ třetích stran a dynamický režim se primárně jmenují `third_party`; historické `supplier`, `provider` a `manufacturer` zůstávají pouze jako legacy vstupy normalizované při inicializaci/importu starších modelů.
 
+
+
+## 8. Oblasti assetů / landscapes
+
+Od v33 aplikace používá normalizovaný model oblastí assetů:
+
+```text
+landscapes
+- id INTEGER PRIMARY KEY CHECK (id BETWEEN 1 AND 9)
+- name TEXT
+- sort_order INTEGER
+
+nodes_landscapes
+- node_id INTEGER
+- landscape_id INTEGER
+- PRIMARY KEY(node_id, landscape_id)
+```
+
+Jde o fixních 9 slotů, nikoli neomezený číselník. Demo seed pojmenovává sloty 1-3 jako `Backend`, `Frontend/web` a `Infrastruktura`; sloty 4-9 jsou prázdné. Uživatel může sloty přejmenovat přes malé tlačítko u filtru **Oblast assetů**, ale nemůže vytvářet desátý slot ani mazat oblasti.
+
+Karta assetu zobrazuje sekci **Oblasti** jako mřížku 3×3. Pojmenované oblasti jsou editovatelné checkboxy, prázdné sloty jsou zašedlé read-only. Pokud existuje vazba na prázdnou oblast, checkbox zůstane viditelný a zaškrtnutý, aby se prozradilo nekonzistentní přiřazení.
+
+Graf respektuje filtr podle oblasti: zobrazí assety ve vybrané oblasti a vazby mezi právě viditelnými assety. Volba `bez oblasti` ukáže assety bez jakéhokoli přiřazení do `nodes_landscapes`.

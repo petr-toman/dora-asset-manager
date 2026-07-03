@@ -240,8 +240,30 @@ function init_db(PDO $pdo): void
     $schema = file_get_contents(__DIR__ . '/schema.sql');
     $pdo->exec($schema);
     ensure_schema_upgrades($pdo);
+    ensure_default_landscapes($pdo);
 }
 
+
+function ensure_default_landscapes(PDO $pdo): void
+{
+    $stmt = $pdo->prepare('INSERT OR IGNORE INTO landscapes (id, name, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?)');
+    $now = now_iso();
+    $defaults = [
+        1 => 'Backend',
+        2 => 'Frontend/web',
+        3 => 'Infrastruktura',
+        4 => '',
+        5 => '',
+        6 => '',
+        7 => '',
+        8 => '',
+        9 => '',
+    ];
+    foreach ($defaults as $id => $name) {
+        $stmt->execute([$id, $name, $id, $now, $now]);
+    }
+    $pdo->exec('UPDATE landscapes SET sort_order = id WHERE sort_order IS NULL OR sort_order = 0');
+}
 
 function ensure_schema_upgrades(PDO $pdo): void
 {

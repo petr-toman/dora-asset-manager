@@ -2,7 +2,7 @@
 
 ## Prompt pro znovuvytvoření aktuální aplikace od začátku
 
-Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v32.
+Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v33.
 
 ---
 
@@ -885,3 +885,18 @@ Represent criticality as a small visual indicator in the node corner: `!` = crit
 Edges should be visually calmer: thinner lines, smaller arrows, lighter colors, user-facing edge type labels instead of raw DB values, and a white or very light label background for readability over the grid. Stronger highlighting should apply only on hover or selection.
 
 The graph grid/background should be less dominant than in v31. Update the color legend in the left sidebar so it matches the softened graph palette.
+
+## Oblasti assetů / landscapes
+
+Implementuj od v33 normalizované oblasti assetů:
+
+- tabulka `landscapes` s fixními ID 1 až 9, sloupci `name` a `sort_order`,
+- vazební tabulka `nodes_landscapes` s M:N vazbou mezi `nodes.id` a `landscapes.id`,
+- seed 9 slotů, z toho první tři pojmenované `Backend`, `Frontend/web`, `Infrastruktura`, sloty 4-9 prázdné,
+- žádné mazání oblastí, žádný samostatný groups view a žádné vytváření desáté oblasti,
+- uživatel může jen upravit názvy existujících 9 slotů přes malý editor otevřený z levého panelu,
+- levý panel **Filtr v UI** obsahuje `Oblast assetů`; dropdown nabízí jen neprázdné oblasti a volbu `bez oblasti`,
+- karta assetu obsahuje sekci **Oblasti** jako 3×3 checkbox grid; pojmenované sloty jsou aktivní, prázdné sloty jsou zašedlé read-only,
+- `save_node` ukládá přiřazení oblastí do `nodes_landscapes`,
+- tabulka assetů má read-only sloupec `Oblasti` na konci,
+- graf filtruje assety podle vybrané oblasti a skrývá vazby na skryté assety.

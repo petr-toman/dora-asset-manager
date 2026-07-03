@@ -43,6 +43,8 @@ function seed_demo_data(PDO $pdo): void
 
     $nodes = $data['nodes'] ?? [];
     $edges = $data['edges'] ?? [];
+    $landscapes = $data['landscapes'] ?? [];
+    $nodesLandscapes = $data['nodes_landscapes'] ?? [];
     $views = $data['views'] ?? [];
     $positions = $data['view_node_positions'] ?? [];
 
@@ -52,9 +54,25 @@ function seed_demo_data(PDO $pdo): void
     try {
         // Replace the automatically created default view with the seed view(s).
         $pdo->exec('DELETE FROM view_node_positions');
+        $pdo->exec('DELETE FROM nodes_landscapes');
         $pdo->exec('DELETE FROM edges');
         $pdo->exec('DELETE FROM nodes');
         $pdo->exec('DELETE FROM views');
+
+        if (function_exists('ensure_default_landscapes')) {
+            ensure_default_landscapes($pdo);
+        }
+        $landscapeStmt = $pdo->prepare('UPDATE landscapes SET name = ?, sort_order = ?, updated_at = ? WHERE id = ?');
+        foreach ($landscapes as $landscape) {
+            $id = (int)($landscape['id'] ?? 0);
+            if ($id < 1 || $id > 9) continue;
+            $landscapeStmt->execute([
+                $landscape['name'] ?? '',
+                (int)($landscape['sort_order'] ?? $id),
+                $now,
+                $id,
+            ]);
+        }
 
         $viewStmt = $pdo->prepare('INSERT INTO views (id, name, description, filter_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)');
         foreach ($views as $view) {
@@ -133,6 +151,15 @@ function seed_demo_data(PDO $pdo): void
                 $edge['created_at'] ?? $now,
                 $edge['updated_at'] ?? $now,
             ]);
+        }
+
+        $nodeLandscapeStmt = $pdo->prepare('INSERT OR IGNORE INTO nodes_landscapes (node_id, landscape_id) VALUES (?, ?)');
+        foreach ($nodesLandscapes as $link) {
+            $nodeId = (int)($link['node_id'] ?? 0);
+            $landscapeId = (int)($link['landscape_id'] ?? 0);
+            if ($nodeId > 0 && $landscapeId >= 1 && $landscapeId <= 9) {
+                $nodeLandscapeStmt->execute([$nodeId, $landscapeId]);
+            }
         }
 
         $positionStmt = $pdo->prepare('INSERT INTO view_node_positions (id, view_id, node_id, x, y, width, height, visible, collapsed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');

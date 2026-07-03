@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## v33 - Asset landscapes / oblasti assetů
+
+- Přidán datový model oblastí assetů: tabulka `landscapes` a vazební tabulka `nodes_landscapes`.
+- Model má fixních 9 landscape slotů; demo seed pojmenovává první tři jako `Backend`, `Frontend/web` a `Infrastruktura`, sloty 4-9 jsou prázdné.
+- V levém panelu **Filtr v UI** přibyl filtr `Oblast assetů`; dropdown nabízí pouze neprázdné oblasti a volbu `bez oblasti`.
+- Vedle filtru je tlačítko pro úpravu názvů všech 9 oblastí, bez mazání oblastí a bez samostatného groups view.
+- Karta assetu dostala sekci **Oblasti** jako pevnou mřížku 3×3; pojmenované oblasti jsou aktivní checkboxy, prázdné sloty jsou zašedlé read-only.
+- Při uložení assetu se uloží vazby do `nodes_landscapes`.
+- Tabulka assetů má na konci read-only sloupec `Oblasti`.
+- Grafový filtr podle oblasti skrývá assety mimo zvolenou oblast a s nimi i jejich vazby.
+- HTML/DOCX reporty doplňují informaci o oblastech v detailu assetu.
+- Aktualizovány `README.md`, `PROJECT_STATE.md` a `AI-PROMPT.md` na stav v33.
+
 ## v32 - Calmer graph visual design
 
 - Zjemněn vizuální styl graph view bez změny datového modelu nebo logiky vazeb.

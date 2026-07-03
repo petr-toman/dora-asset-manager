@@ -8,6 +8,7 @@ let currentViewId = 1;
 let currentNodeEdges = [];
 let currentNodeDeletedEdges = [];
 let nodeEdgesDirty = false;
+let landscapes = [];
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -99,6 +100,74 @@ async function postJson(action, payload) {
     });
 }
 
+
+function normalizeLandscapeIds(value) {
+    if (Array.isArray(value)) return value.map(v => Number(v)).filter(v => Number.isInteger(v) && v >= 1 && v <= 9);
+    if (typeof value === 'string') return value.split(/[;,|\s]+/).map(v => Number(v)).filter(v => Number.isInteger(v) && v >= 1 && v <= 9);
+    return [];
+}
+
+function activeLandscapes() {
+    return landscapes.filter(l => String(l.name || '').trim() !== '');
+}
+
+function landscapeNameById(id) {
+    const row = landscapes.find(l => Number(l.id) === Number(id));
+    return row ? String(row.name || '') : '';
+}
+
+function renderLandscapeFilter() {
+    const select = $('#landscapeFilter');
+    if (!select) return;
+    const previous = select.value;
+    select.innerHTML = '';
+    select.append(new Option('všechny oblasti', ''));
+    select.append(new Option('bez oblasti', '__none__'));
+    activeLandscapes().forEach(l => select.append(new Option(l.name, String(l.id))));
+    if ([...select.options].some(o => o.value === previous)) select.value = previous;
+}
+
+async function loadLandscapes() {
+    const data = await fetchJson(`${api}?action=get_landscapes`);
+    landscapes = (data.landscapes || []).map(l => ({ id: Number(l.id), name: String(l.name || ''), sort_order: Number(l.sort_order || l.id) }));
+    renderLandscapeFilter();
+    return landscapes;
+}
+
+function renderLandscapeEditor() {
+    const grid = $('#landscapeEditorGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    for (let i = 1; i <= 9; i++) {
+        const row = landscapes.find(l => Number(l.id) === i) || { id: i, name: '', sort_order: i };
+        const label = document.createElement('label');
+        label.className = 'landscape-editor-slot';
+        label.innerHTML = `<span>${i}</span><input name="landscape_${i}" maxlength="80" autocomplete="off">`;
+        label.querySelector('input').value = row.name || '';
+        grid.appendChild(label);
+    }
+}
+
+function openLandscapeModal() {
+    renderLandscapeEditor();
+    openModal('landscapeModal');
+}
+
+async function saveLandscapeForm(evt) {
+    evt.preventDefault();
+    const rows = [];
+    for (let i = 1; i <= 9; i++) {
+        rows.push({ id: i, name: evt.target.elements[`landscape_${i}`]?.value || '' });
+    }
+    const data = await postJson('save_landscapes', { landscapes: rows });
+    landscapes = (data.landscapes || []).map(l => ({ id: Number(l.id), name: String(l.name || ''), sort_order: Number(l.sort_order || l.id) }));
+    renderLandscapeFilter();
+    renderNodeLandscapeChoices(getCurrentNodeLandscapeIds());
+    closeModal('landscapeModal');
+    await loadGraph();
+    toast('Oblasti uloženy');
+}
+
 function fillSelect(select, options, includeEmpty = true) {
     select.innerHTML = '';
     if (includeEmpty) select.append(new Option('', ''));
@@ -107,6 +176,8 @@ function fillSelect(select, options, includeEmpty = true) {
 
 async function loadMeta() {
     meta = await fetchJson(`${api}?action=meta`);
+    landscapes = (meta.landscapes || []).map(l => ({ id: Number(l.id), name: String(l.name || ''), sort_order: Number(l.sort_order || l.id) }));
+    renderLandscapeFilter();
     fillSelect($('#nodeTypeSelect'), meta.node_types, false);
     fillSelect($('#typeFilter'), meta.node_types, true);
     fillSelect($('#edgeTypeSelect'), meta.edge_types, false);
@@ -255,7 +326,7 @@ function criticalityBadgeSvg(value) {
 function cyElements(data) {
     const positions = data.positions || {};
     const nodes = data.nodes.map((n, idx) => ({
-        data: { id: `n${n.id}`, dbid: n.id, label: nodeLabel(n), type: n.type, name: n.name, criticality: n.criticality || '', critBadge: criticalityBadgeSvg(n.criticality), description: n.description || '' },
+        data: { id: `n${n.id}`, dbid: n.id, label: nodeLabel(n), type: n.type, name: n.name, criticality: n.criticality || '', critBadge: criticalityBadgeSvg(n.criticality), description: n.description || '', landscapeIds: normalizeLandscapeIds(n.landscape_ids), landscapes: n.landscapes || '' },
         position: positions[n.id] || { x: 100 + (idx % 6) * 180, y: 100 + Math.floor(idx / 6) * 130 }
     }));
     const edges = data.edges.map(e => ({
@@ -406,6 +477,10 @@ async function loadGraph() {
     const data = await fetchJson(url);
     graph.nodes = data.nodes;
     graph.edges = data.edges;
+    if (data.landscapes) {
+        landscapes = data.landscapes.map(l => ({ id: Number(l.id), name: String(l.name || ''), sort_order: Number(l.sort_order || l.id) }));
+        renderLandscapeFilter();
+    }
     initCy(cyElements(data));
     refreshEdgeNodeSelects();
     applyUiFilter();
@@ -511,10 +586,12 @@ async function openNodeModalById(id) {
     nodeEdgesDirty = false;
     $('#nodeEdgesSection').classList.add('hidden');
     $('#nodeEdgesGrid tbody').innerHTML = '';
+    renderNodeLandscapeChoices([]);
     if (id) {
         await loadNodeLookup();
         const data = await fetchJson(`${api}?action=get_node&id=${id}`);
         fillForm($('#nodeForm'), data.node);
+        renderNodeLandscapeChoices(data.node.landscape_ids || []);
         updateNodeModalHeader(data.node);
         updateNodeModalDeleteButton(true);
         await loadNodeEdges(id);
@@ -522,6 +599,7 @@ async function openNodeModalById(id) {
         $('#nodeForm').elements.type.value = 'software';
         $('#nodeForm').elements.criticality.value = 'medium';
         $('#nodeForm').elements.status.value = 'active';
+        renderNodeLandscapeChoices([]);
         updateNodeModalHeader(formData($('#nodeForm')), true);
         updateNodeModalDeleteButton(false);
     }
@@ -629,6 +707,40 @@ async function deleteNodeFromModal() {
 function currentNodeIdFromForm() {
     return Number($('#nodeForm').elements.id.value || 0);
 }
+
+
+function getCurrentNodeLandscapeIds() {
+    const grid = $('#nodeLandscapeGrid');
+    if (!grid) return [];
+    return Array.from(grid.querySelectorAll('input[data-landscape-id]:checked'))
+        .map(cb => Number(cb.dataset.landscapeId))
+        .filter(id => Number.isInteger(id) && id >= 1 && id <= 9);
+}
+
+function renderNodeLandscapeChoices(selectedIds = []) {
+    const grid = $('#nodeLandscapeGrid');
+    if (!grid) return;
+    const selected = new Set(normalizeLandscapeIds(selectedIds).map(String));
+    grid.innerHTML = '';
+    for (let i = 1; i <= 9; i++) {
+        const row = landscapes.find(l => Number(l.id) === i) || { id: i, name: '', sort_order: i };
+        const name = String(row.name || '').trim();
+        const item = document.createElement('label');
+        item.className = 'node-landscape-slot';
+        if (!name) item.classList.add('empty');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.dataset.landscapeId = String(i);
+        cb.checked = selected.has(String(i));
+        if (!name) cb.disabled = true;
+        const text = document.createElement('span');
+        text.textContent = name || `Slot ${i} — nepojmenováno`;
+        item.appendChild(cb);
+        item.appendChild(text);
+        grid.appendChild(item);
+    }
+}
+
 
 async function loadNodeEdges(id) {
     const data = await fetchJson(`${api}?action=get_node_edges&id=${encodeURIComponent(id)}`);
@@ -847,6 +959,7 @@ async function submitNode(evt) {
     evt.preventDefault();
     try {
         const data = formData(evt.target);
+        data.landscape_ids = getCurrentNodeLandscapeIds();
         const saved = await postJson('save_node', data);
         if (saved.node && $('#nodeForm').elements.id.value) {
             await saveNodeEdgesIfNeeded();
@@ -928,10 +1041,15 @@ function applyUiFilter() {
     const q = $('#searchBox').value.trim().toLowerCase();
     const type = $('#typeFilter').value;
     const crit = $('#criticalityFilter').value;
+    const landscape = $('#landscapeFilter')?.value || '';
     cy.elements().removeClass('hiddenByFilter');
     cy.nodes().forEach(n => {
-        const text = `${n.data('name')} ${n.data('description')} ${n.data('type')}`.toLowerCase();
-        const hide = (q && !text.includes(q)) || (type && n.data('type') !== type) || (crit && n.data('criticality') !== crit);
+        const text = `${n.data('name')} ${n.data('description')} ${n.data('type')} ${n.data('landscapes') || ''}`.toLowerCase();
+        const nodeLandscapeIds = normalizeLandscapeIds(n.data('landscapeIds'));
+        const landscapeMismatch = landscape === '__none__'
+            ? nodeLandscapeIds.length > 0
+            : (landscape && !nodeLandscapeIds.includes(Number(landscape)));
+        const hide = (q && !text.includes(q)) || (type && n.data('type') !== type) || (crit && n.data('criticality') !== crit) || landscapeMismatch;
         if (hide) n.addClass('hiddenByFilter');
     });
     cy.edges().forEach(e => {
@@ -1010,7 +1128,8 @@ const nodeColumns = [
   ['environment','Prostředí', true], ['location','Lokalita', true], ['status','Stav', true], ['lifecycle_state','Lifecycle', true],
   ['last_reviewed_at','Poslední revize', true], ['review_frequency_months','Revize měs.', true],
   ['threats','Hrozby', true], ['risk_scenarios','Rizikové scénáře', true], ['risk_likelihood','Pravděp. 1-5', true], ['risk_impact','Dopad 1-5', true],
-  ['risk_controls','Kontroly', true], ['residual_risk','Reziduální riziko', true], ['good_to_know','Good-to-know', true]
+  ['risk_controls','Kontroly', true], ['residual_risk','Reziduální riziko', true], ['good_to_know','Good-to-know', true],
+  ['landscapes','Oblasti', false]
 ];
 
 const edgeColumns = [
@@ -1768,6 +1887,7 @@ async function main() {
     initSidebarToggle();
     showPendingToast();
     await loadMeta();
+    await loadLandscapes();
     await loadModels();
     await loadViews();
     initSnapControls();
@@ -1814,10 +1934,13 @@ async function main() {
     $('#btnDownloadModel').addEventListener('click', downloadCurrentModel);
     $('#btnUploadModel').addEventListener('click', openUploadModelDialog);
     $('#modelUploadInput').addEventListener('change', uploadModelFile);
-    $('#btnClearFilter').addEventListener('click', () => { $('#searchBox').value=''; $('#typeFilter').value=''; $('#criticalityFilter').value=''; applyUiFilter(); });
+    $('#btnClearFilter').addEventListener('click', () => { $('#searchBox').value=''; $('#typeFilter').value=''; $('#criticalityFilter').value=''; if ($('#landscapeFilter')) $('#landscapeFilter').value=''; applyUiFilter(); });
     $('#searchBox').addEventListener('input', applyUiFilter);
     $('#typeFilter').addEventListener('change', applyUiFilter);
     $('#criticalityFilter').addEventListener('change', applyUiFilter);
+    $('#landscapeFilter')?.addEventListener('change', applyUiFilter);
+    $('#btnEditLandscapes')?.addEventListener('click', openLandscapeModal);
+    $('#landscapeForm')?.addEventListener('submit', saveLandscapeForm);
 
     document.addEventListener('mousedown', (evt) => {
         if (!evt.target.closest?.('.edge-node-picker') && !evt.target.closest?.('.edge-node-id-cell') && !evt.target.closest?.('.choice-cell')) {

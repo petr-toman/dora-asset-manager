@@ -47,6 +47,7 @@ try {
                 'statuses' => ['active', 'planned', 'retired', 'unknown'],
                 'lifecycle_states' => ['production', 'test', 'development', 'archived', 'unknown'],
                 'risk_levels' => [1, 2, 3, 4, 5],
+                'landscapes' => landscape_rows($pdo),
             ]);
 
         case 'get_graph':
@@ -83,6 +84,14 @@ try {
 
         case 'get_node_lookup':
             get_node_lookup($pdo);
+            break;
+
+        case 'get_landscapes':
+            get_landscapes($pdo);
+            break;
+
+        case 'save_landscapes':
+            save_landscapes($pdo);
             break;
 
         case 'get_views':
@@ -338,6 +347,7 @@ function get_graph(PDO $pdo): void
     $nodeId = isset($_GET['node_id']) ? (int)$_GET['node_id'] : null;
 
     $nodes = $pdo->query('SELECT * FROM nodes ORDER BY type, name')->fetchAll();
+    $nodes = decorate_nodes_with_landscapes($pdo, $nodes);
     $edges = $pdo->query('SELECT * FROM edges ORDER BY id')->fetchAll();
 
     if ($mode !== 'saved') {
@@ -357,6 +367,7 @@ function get_graph(PDO $pdo): void
         'edges' => $edges,
         'positions' => $positions,
         'edge_type_labels' => edge_types(),
+        'landscapes' => landscape_rows($pdo),
     ]);
 }
 
@@ -438,6 +449,7 @@ function get_node(PDO $pdo): void
     $stmt->execute([$id]);
     $node = $stmt->fetch();
     if (!$node) json_response(['ok' => false, 'error' => 'Node not found'], 404);
+    $node = decorate_node_with_landscapes($pdo, $node);
     json_response(['ok' => true, 'node' => $node]);
 }
 
@@ -448,6 +460,7 @@ function save_node(PDO $pdo): void
     $now = now_iso();
 
     $fields = ['type','name','description','owner','business_owner','technical_owner','vendor_manufacturer','criticality','confidentiality','integrity_level','availability','rto_hours','rpo_hours','mtd_hours','data_sensitivity','data_categories','environment','location','status','lifecycle_state','good_to_know','last_reviewed_at','review_frequency_months','threats','risk_scenarios','risk_likelihood','risk_impact','risk_controls','residual_risk'];
+    normalize_node_payload($data);
     validate_node_payload($data);
 
     $before = null;
@@ -485,10 +498,15 @@ function save_node(PDO $pdo): void
         $action = 'create_node';
     }
 
+    if (array_key_exists('landscape_ids', $data)) {
+        save_node_landscape_ids($pdo, $id, $data['landscape_ids']);
+    }
+
     $stmt = $pdo->prepare('SELECT * FROM nodes WHERE id = ?');
     $stmt->execute([$id]);
     $after = $stmt->fetch();
     log_change($pdo, $action, 'node', $id, $before, $after);
+    $after = decorate_node_with_landscapes($pdo, $after);
     json_response(['ok' => true, 'node' => $after]);
 }
 
@@ -647,6 +665,134 @@ function upsert_position_if_changed(PDO $pdo, int $viewId, int $nodeId, float $x
     return true;
 }
 
+function landscape_rows(PDO $pdo): array
+{
+    ensure_default_landscapes($pdo);
+    return $pdo->query('SELECT id, COALESCE(name, \'\') AS name, sort_order FROM landscapes ORDER BY sort_order, id')->fetchAll();
+}
+
+function get_landscapes(PDO $pdo): void
+{
+    json_response(['ok' => true, 'landscapes' => landscape_rows($pdo)]);
+}
+
+function normalize_landscape_name(string $name): string
+{
+    $name = trim(preg_replace('/\\s+/', ' ', $name));
+    if (strlen($name) > 80) {
+        $name = substr($name, 0, 80);
+    }
+    return $name;
+}
+
+function save_landscapes(PDO $pdo): void
+{
+    $data = read_json_body();
+    $rows = $data['landscapes'] ?? [];
+    if (!is_array($rows)) json_response(['ok' => false, 'error' => 'Invalid landscapes payload'], 400);
+
+    $namesById = [];
+    foreach ($rows as $row) {
+        if (!is_array($row)) continue;
+        $id = (int)($row['id'] ?? 0);
+        if ($id < 1 || $id > 9) continue;
+        $namesById[$id] = normalize_landscape_name((string)($row['name'] ?? ''));
+    }
+
+    $seen = [];
+    foreach ($namesById as $name) {
+        if ($name === '') continue;
+        $key = strtolower($name);
+        if (isset($seen[$key])) json_response(['ok' => false, 'error' => 'Názvy oblastí se nesmí opakovat'], 400);
+        $seen[$key] = true;
+    }
+
+    ensure_default_landscapes($pdo);
+    $before = landscape_rows($pdo);
+    $pdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare('UPDATE landscapes SET name = ?, sort_order = ?, updated_at = ? WHERE id = ?');
+        $now = now_iso();
+        for ($id = 1; $id <= 9; $id++) {
+            if (!array_key_exists($id, $namesById)) continue;
+            $stmt->execute([$namesById[$id], $id, $now, $id]);
+        }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        throw $e;
+    }
+    $after = landscape_rows($pdo);
+    log_change($pdo, 'update_landscapes', 'landscape', null, $before, $after);
+    json_response(['ok' => true, 'landscapes' => $after]);
+}
+
+function parse_landscape_ids($value): array
+{
+    if (is_string($value)) {
+        $value = preg_split('/[,;|\\s]+/', $value, -1, PREG_SPLIT_NO_EMPTY);
+    }
+    if (!is_array($value)) return [];
+    $ids = [];
+    foreach ($value as $id) {
+        $id = (int)$id;
+        if ($id >= 1 && $id <= 9) $ids[$id] = true;
+    }
+    return array_keys($ids);
+}
+
+function node_landscape_map(PDO $pdo, array $nodeIds = []): array
+{
+    $map = [];
+    if (!$nodeIds) return $map;
+    $nodeIds = array_values(array_unique(array_map('intval', $nodeIds)));
+    $placeholders = implode(',', array_fill(0, count($nodeIds), '?'));
+    $stmt = $pdo->prepare("SELECT nl.node_id, l.id AS landscape_id, COALESCE(l.name, '') AS name
+                           FROM nodes_landscapes nl
+                           JOIN landscapes l ON l.id = nl.landscape_id
+                           WHERE nl.node_id IN ($placeholders)
+                           ORDER BY l.sort_order, l.id");
+    $stmt->execute($nodeIds);
+    foreach ($stmt->fetchAll() as $row) {
+        $nodeId = (int)$row['node_id'];
+        if (!isset($map[$nodeId])) $map[$nodeId] = ['ids' => [], 'names' => []];
+        $map[$nodeId]['ids'][] = (int)$row['landscape_id'];
+        if (trim((string)$row['name']) !== '') $map[$nodeId]['names'][] = (string)$row['name'];
+    }
+    return $map;
+}
+
+function decorate_nodes_with_landscapes(PDO $pdo, array $nodes): array
+{
+    $ids = array_map(fn($n) => (int)($n['id'] ?? 0), $nodes);
+    $map = node_landscape_map($pdo, $ids);
+    foreach ($nodes as &$node) {
+        $id = (int)($node['id'] ?? 0);
+        $node['landscape_ids'] = $map[$id]['ids'] ?? [];
+        $node['landscapes'] = implode('; ', $map[$id]['names'] ?? []);
+    }
+    unset($node);
+    return $nodes;
+}
+
+function decorate_node_with_landscapes(PDO $pdo, array $node): array
+{
+    $nodes = decorate_nodes_with_landscapes($pdo, [$node]);
+    return $nodes[0] ?? $node;
+}
+
+function save_node_landscape_ids(PDO $pdo, int $nodeId, $value): void
+{
+    if ($nodeId <= 0) return;
+    $ids = parse_landscape_ids($value);
+    $pdo->prepare('DELETE FROM nodes_landscapes WHERE node_id = ?')->execute([$nodeId]);
+    if (!$ids) return;
+    $stmt = $pdo->prepare('INSERT OR IGNORE INTO nodes_landscapes (node_id, landscape_id) VALUES (?, ?)');
+    foreach ($ids as $landscapeId) {
+        $stmt->execute([$nodeId, $landscapeId]);
+    }
+}
+
 function get_node_lookup(PDO $pdo): void
 {
     $rows = $pdo->query('SELECT id, name, type FROM nodes ORDER BY id')->fetchAll();
@@ -764,6 +910,8 @@ function export_json(PDO $pdo): void
         'exported_at' => now_iso(),
         'nodes' => $pdo->query('SELECT * FROM nodes ORDER BY id')->fetchAll(),
         'edges' => $pdo->query('SELECT * FROM edges ORDER BY id')->fetchAll(),
+        'landscapes' => $pdo->query('SELECT * FROM landscapes ORDER BY sort_order, id')->fetchAll(),
+        'nodes_landscapes' => $pdo->query('SELECT * FROM nodes_landscapes ORDER BY node_id, landscape_id')->fetchAll(),
         'views' => $pdo->query('SELECT * FROM views ORDER BY id')->fetchAll(),
         'view_node_positions' => $pdo->query('SELECT * FROM view_node_positions ORDER BY view_id, node_id')->fetchAll(),
         'change_log' => $pdo->query('SELECT * FROM change_log ORDER BY id')->fetchAll(),
@@ -976,7 +1124,20 @@ function upsert_edge(PDO $pdo, array $data): array
 
 function get_nodes_table(PDO $pdo): void
 {
-    $rows = $pdo->query('SELECT * FROM nodes ORDER BY id')->fetchAll();
+    $sql = "SELECT n.*,
+            COALESCE((
+                SELECT GROUP_CONCAT(name, '; ')
+                FROM (
+                    SELECT l.name AS name
+                    FROM nodes_landscapes nl
+                    JOIN landscapes l ON l.id = nl.landscape_id
+                    WHERE nl.node_id = n.id AND TRIM(COALESCE(l.name, '')) <> ''
+                    ORDER BY l.sort_order, l.id
+                )
+            ), '') AS landscapes
+            FROM nodes n
+            ORDER BY n.id";
+    $rows = $pdo->query($sql)->fetchAll();
     json_response(['ok' => true, 'nodes' => $rows]);
 }
 

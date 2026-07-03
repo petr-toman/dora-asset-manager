@@ -2,7 +2,19 @@
 require_once __DIR__ . '/db.php';
 $pdo = db();
 $modelName = function_exists('current_model_name') ? current_model_name() : 'model.sqlite';
-$nodes = $pdo->query('SELECT * FROM nodes ORDER BY type, name')->fetchAll();
+$nodes = $pdo->query("SELECT n.*,
+    COALESCE((
+        SELECT GROUP_CONCAT(name, '; ')
+        FROM (
+            SELECT l.name AS name
+            FROM nodes_landscapes nl
+            JOIN landscapes l ON l.id = nl.landscape_id
+            WHERE nl.node_id = n.id AND TRIM(COALESCE(l.name, '')) <> ''
+            ORDER BY l.sort_order, l.id
+        )
+    ), '') AS landscapes
+    FROM nodes n
+    ORDER BY n.type, n.name")->fetchAll();
 $edges = $pdo->query('SELECT e.*, s.name AS source_name, s.type AS source_type, t.name AS target_name, t.type AS target_type FROM edges e JOIN nodes s ON s.id = e.source_node_id JOIN nodes t ON t.id = e.target_node_id ORDER BY s.name, e.type, t.name')->fetchAll();
 $nodeLabels = [
     'hardware' => 'Hardware', 'software' => 'Software', 'data' => 'Data', 'process' => 'Proces',
@@ -199,6 +211,7 @@ $ratedCount = count($nodes) - count($unrated);
     <table>
     <tr><th>Typ</th><td><?= h(label_report($nodeLabels, $n['type'])) ?></td><th>Kritičnost</th><td><?= h(label_report($levelLabels, $n['criticality'])) ?></td></tr>
     <tr><th>Owner</th><td><?= h($n['owner']) ?></td><th>Prostředí</th><td><?= h($n['environment'] ?: '—') ?></td></tr>
+    <tr><th>Oblasti</th><td colspan="3"><?= h($n['landscapes'] ?: '—') ?></td></tr>
     <tr><th>C/I/A</th><td><?= h(label_report($levelLabels, $n['confidentiality'])) ?> / <?= h(label_report($levelLabels, $n['integrity_level'])) ?> / <?= h(label_report($levelLabels, $n['availability'])) ?></td><th>RTO/RPO/MTD</th><td><?= h($n['rto_hours']) ?> / <?= h($n['rpo_hours']) ?> / <?= h($n['mtd_hours']) ?> h</td></tr>
     <tr><th>Citlivost dat</th><td><?= h(label_report($sensitivityLabels, $n['data_sensitivity'])) ?></td><th>Kategorie dat</th><td><?= h($n['data_categories']) ?></td></tr>
     <tr><th>Hrozby</th><td colspan="3"><?= nl2br(h($n['threats'])) ?></td></tr>

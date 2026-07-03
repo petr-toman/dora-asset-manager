@@ -488,6 +488,107 @@
       "updated_at": "2026-06-28T17:39:06+00:00"
     }
   ],
+  "landscapes": [
+    {
+      "id": 1,
+      "name": "Backend",
+      "sort_order": 1
+    },
+    {
+      "id": 2,
+      "name": "Frontend/web",
+      "sort_order": 2
+    },
+    {
+      "id": 3,
+      "name": "Infrastruktura",
+      "sort_order": 3
+    },
+    {
+      "id": 4,
+      "name": "",
+      "sort_order": 4
+    },
+    {
+      "id": 5,
+      "name": "",
+      "sort_order": 5
+    },
+    {
+      "id": 6,
+      "name": "",
+      "sort_order": 6
+    },
+    {
+      "id": 7,
+      "name": "",
+      "sort_order": 7
+    },
+    {
+      "id": 8,
+      "name": "",
+      "sort_order": 8
+    },
+    {
+      "id": 9,
+      "name": "",
+      "sort_order": 9
+    }
+  ],
+  "nodes_landscapes": [
+    {
+      "node_id": 1,
+      "landscape_id": 1
+    },
+    {
+      "node_id": 2,
+      "landscape_id": 1
+    },
+    {
+      "node_id": 2,
+      "landscape_id": 2
+    },
+    {
+      "node_id": 3,
+      "landscape_id": 3
+    },
+    {
+      "node_id": 4,
+      "landscape_id": 1
+    },
+    {
+      "node_id": 5,
+      "landscape_id": 1
+    },
+    {
+      "node_id": 5,
+      "landscape_id": 2
+    },
+    {
+      "node_id": 6,
+      "landscape_id": 3
+    },
+    {
+      "node_id": 7,
+      "landscape_id": 1
+    },
+    {
+      "node_id": 8,
+      "landscape_id": 1
+    },
+    {
+      "node_id": 9,
+      "landscape_id": 3
+    },
+    {
+      "node_id": 10,
+      "landscape_id": 3
+    },
+    {
+      "node_id": 11,
+      "landscape_id": 1
+    }
+  ],
   "views": [
     {
       "id": 1,

@@ -43,6 +43,14 @@
                 <option value="medium">medium</option>
                 <option value="low">low</option>
             </select>
+            <label>Oblast assetů</label>
+            <div class="landscape-filter-line">
+                <select id="landscapeFilter">
+                    <option value="">všechny oblasti</option>
+                    <option value="__none__">bez oblasti</option>
+                </select>
+                <button id="btnEditLandscapes" type="button" title="Upravit názvy oblastí">✎</button>
+            </div>
             <button id="btnClearFilter">Vyčistit filtr</button>
         </section>
 
@@ -254,6 +262,12 @@
                 </div>
             </section>
 
+            <section id="nodeLandscapesSection" class="span4 node-landscapes-section">
+                <div class="section-title node-landscape-title">Oblasti</div>
+                <p class="node-landscape-hint">Asset může patřit do více oblastí. Pojmenované sloty lze zaškrtnout; prázdné sloty jsou read-only.</p>
+                <div id="nodeLandscapeGrid" class="node-landscape-grid"></div>
+            </section>
+
             <div class="form-actions span4 sticky-actions asset-modal-footer">
                 <div class="asset-modal-footer-left">
                     <button type="button" id="btnDeleteNodeFromModal" class="danger subtle-danger">Smazat asset</button>
@@ -327,6 +341,24 @@
                 <button type="button" id="btnConfirmAssetsCsvImport" class="primary" disabled>Importovat do DB</button>
             </div>
         </div>
+    </div>
+</div>
+
+
+<div id="landscapeModal" class="modal hidden">
+    <div class="modal-content landscape-modal-content">
+        <div class="modal-header">
+            <h2>Oblasti assetů</h2>
+            <button class="icon" data-close="landscapeModal">×</button>
+        </div>
+        <form id="landscapeForm" class="landscape-form">
+            <p class="hint">K dispozici je fixních 9 oblastí. Prázdné sloty se nenabízejí ve filtru, ale na kartě assetu zůstávají viditelné jako zašedlé pozice.</p>
+            <div id="landscapeEditorGrid" class="landscape-editor-grid"></div>
+            <div class="form-actions">
+                <button type="button" data-close="landscapeModal">Zavřít</button>
+                <button type="submit" class="primary">Uložit oblasti</button>
+            </div>
+        </form>
     </div>
 </div>
 

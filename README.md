@@ -48,9 +48,11 @@ Při prvním spuštění prázdného datového volume se vytvoří ukázkový mo
 - evidence uzlů: hardware, software, data, procesy, business funkce, `third_party` / 3. strany, sítě, lokality, dokumentace, ICT služby
 - evidence vazeb: contains, hosts, processes_data, supports_process, depends_on atd.
 - hierarchie aktiv přes vazbu `contains`
+- oblasti assetů (`landscapes`): fixních 9 slotů pro technologické celky, vazby M:N přes `nodes_landscapes`
 - drag & drop graf v Cytoscape.js s jemnějším CMDB/architecture vzhledem
+- filtr grafu podle oblasti assetů v levém panelu
 - uložení pozic uzlů per view
-- detail assetu po doubleclick se sticky záhlavím/zápatím a editorem vazeb
+- detail assetu po doubleclick se sticky záhlavím/zápatím, editorem vazeb a checkboxy oblastí 3×3
 - editace DORA atributů: kritičnost, CIA, RTO/RPO/MTD, citlivost dat, kategorie dat, revize
 - základní rizikové atributy: hrozby, scénáře, pravděpodobnost, dopad, kontroly, reziduální riziko
 - views a dynamické pohledy
@@ -60,7 +62,7 @@ Při prvním spuštění prázdného datového volume se vytvoří ukázkový mo
 - více modelů/projektů jako samostatné SQLite dokumenty
 - nový prázdný model, kopie aktuálního modelu, přepnutí modelu, bezpečné smazání do koše
 - stažení/nahrání SQLite DB souboru pro výměnu modelů mezi instancemi aplikace
-- excel-like tabulka assetů s editací buněk, sticky identifikačními sloupci, DOM-preserving filtrováním, sortováním a copy/paste přes TSV
+- excel-like tabulka assetů s editací buněk, sticky identifikačními sloupci, read-only sloupcem `Oblasti`, DOM-preserving filtrováním, sortováním a copy/paste přes TSV
 - import assetů z CSV s preview a validací před zápisem do DB
 - export assetů do CSV jako šablona nebo přenosový formát
 - excel-like tabulka vazeb s editací buněk, filtrováním, sortováním, copy/paste přes TSV a double-click pickery pro assety/číselníky
@@ -73,6 +75,12 @@ Při prvním spuštění prázdného datového volume se vytvoří ukázkový mo
 ## Licence a git
 
 Projekt obsahuje soubor `LICENSE` s MIT licencí. Runtime SQLite modely jsou standardně uložené v Docker named volume, nikoli v repozitáři. `.gitignore` přesto ignoruje i lokální `./data` SQLite soubory pro případ ručního bind mountu nebo lokálního vývoje. Adresáře `data/`, `data/models/` a `data/deleted/` jsou v repozitáři ponechané přes `.gitkeep`, ale skutečná data se necommitují.
+
+## Oblasti assetů / landscapes
+
+Od v33 má model fixních 9 slotů pro technologické oblasti assetů. První tři jsou v demo modelu pojmenované `Backend`, `Frontend/web` a `Infrastruktura`; zbylé sloty jsou prázdné a uživatel je může přejmenovat přes tlačítko tužky vedle filtru **Oblast assetů** v levém panelu.
+
+Datově jsou oblasti normalizované: tabulka `landscapes` obsahuje ID a text oblasti, vazební tabulka `nodes_landscapes` přiřazuje assety do oblastí. Asset může být v žádné, jedné nebo více oblastech. Karta assetu zobrazuje oblasti jako pevnou mřížku 3×3; prázdné sloty jsou zašedlé a read-only, aby zůstal zachovaný tvar UI a zároveň byly vidět případné vazby na nepojmenované oblasti.
 
 ## CSV import assetů
 
@@ -262,9 +270,9 @@ Nové tlačítko **Plné zobrazení řádků / Kompaktní zobrazení řádků** 
 
 Nastavení režimu se ukládá do `localStorage` pro daný prohlížeč.
 
-## v28/v29/v30/v31/v32 poznámka
+## v28/v29/v30/v31/v32/v33 poznámka
 
-Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat. Verze v30 sjednocuje dokumentaci a interní název dynamického režimu třetích stran na `third_party`; historický API alias `supplier` zůstává jen kvůli zpětné kompatibilitě. Verze v31 upravuje detail assetu, tabulkové filtry, číselníkové pickery v tabulce vazeb a HTML/PDF report. Verze v32 zjemňuje grafové zobrazení: dvouřádkové labely uzlů, malý indikátor kritičnosti, tenčí hrany, čitelnější labely vazeb a sladěná legenda barev.
+Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat. Verze v30 sjednocuje dokumentaci a interní název dynamického režimu třetích stran na `third_party`; historický API alias `supplier` zůstává jen kvůli zpětné kompatibilitě. Verze v31 upravuje detail assetu, tabulkové filtry, číselníkové pickery v tabulce vazeb a HTML/PDF report. Verze v32 zjemňuje grafové zobrazení: dvouřádkové labely uzlů, malý indikátor kritičnosti, tenčí hrany, čitelnější labely vazeb a sladěná legenda barev. Verze v33 přidává oblasti assetů (`landscapes`) jako fixních 9 slotů s M:N vazbou `nodes_landscapes`, filtrem grafu podle oblasti a checkboxy oblastí na kartě assetu.
 
 
 
@@ -282,3 +290,10 @@ HTML/PDF report má novější kartový design a tiskové pravidlo proti zalomen
 Graph view má klidnější vizuální styl bez změny dat. Uzly zobrazují dvouřádkový label `Název` + `Typ` s uživatelským popiskem typu assetu. Kritičnost se nezobrazuje jako třetí řádek textu, ale jako malý indikátor v rohu uzlu: `!` = critical, `H` = high, `M` = medium, `L` = low, `o` = nevyplněno.
 
 Hrany jsou tenčí, mají jemnější šipky a label vazby má světlé pozadí pro lepší čitelnost přes grid. Labely vazeb používají uživatelské popisky z číselníku. Zvýraznění hran se aplikuje při hoveru nebo výběru. Gridové pozadí i barevná legenda v levém menu jsou sladěné s novou paletou grafu.
+
+
+## v33: oblasti assetů
+
+Datový model obsahuje tabulku `landscapes` a vazební tabulku `nodes_landscapes`. Oblasti jsou záměrně omezené na fixních 9 slotů. První tři demo sloty jsou `Backend`, `Frontend/web` a `Infrastruktura`; ostatní jsou prázdné.
+
+V levém panelu je filtr **Oblast assetů** a tlačítko pro přejmenování všech 9 slotů. Karta assetu ukládá přiřazení do oblastí přes 3×3 checkbox grid. Tabulka assetů zobrazuje oblasti na konci jako read-only přehled.
