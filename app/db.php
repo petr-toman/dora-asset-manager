@@ -244,6 +244,50 @@ function init_db(PDO $pdo): void
 }
 
 
+
+function data_sensitivity_levels(): array
+{
+    return [
+        'public'       => 'Veřejná',
+        'internal'     => 'Interní',
+        'confidential' => 'Důvěrná',
+        'restricted'   => 'Vysoce důvěrná / citlivá',
+        'secret'       => 'Tajná / kritická',
+    ];
+}
+
+function normalize_data_sensitivity_value(string $value): string
+{
+    $value = trim($value);
+    if ($value === '') return '';
+
+    $normalized = strtr($value, [
+        'Á'=>'a','Č'=>'c','Ď'=>'d','É'=>'e','Ě'=>'e','Í'=>'i','Ň'=>'n','Ó'=>'o','Ř'=>'r','Š'=>'s','Ť'=>'t','Ú'=>'u','Ů'=>'u','Ý'=>'y','Ž'=>'z',
+        'á'=>'a','č'=>'c','ď'=>'d','é'=>'e','ě'=>'e','í'=>'i','ň'=>'n','ó'=>'o','ř'=>'r','š'=>'s','ť'=>'t','ú'=>'u','ů'=>'u','ý'=>'y','ž'=>'z',
+    ]);
+    $normalized = strtolower($normalized);
+
+    $aliases = [
+        'verejna' => 'public',
+        'public' => 'public',
+        'privatni' => 'internal',
+        'private' => 'internal',
+        'interni' => 'internal',
+        'internal' => 'internal',
+        'duverna' => 'confidential',
+        'confidential' => 'confidential',
+        'vysoce duverna' => 'restricted',
+        'vysoce duverna / citliva' => 'restricted',
+        'citliva' => 'restricted',
+        'restricted' => 'restricted',
+        'tajna' => 'secret',
+        'tajna / kriticka' => 'secret',
+        'secret' => 'secret',
+    ];
+
+    return $aliases[$normalized] ?? $value;
+}
+
 function ensure_default_landscapes(PDO $pdo): void
 {
     $stmt = $pdo->prepare('INSERT OR IGNORE INTO landscapes (id, name, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?)');
@@ -290,6 +334,10 @@ function ensure_schema_upgrades(PDO $pdo): void
     // v26: Supplier, provider and manufacturer are now represented by one node type: third_party.
     // Normalize existing older models transparently so table validation and graph styling stay consistent.
     $pdo->exec("UPDATE nodes SET type = 'third_party' WHERE type IN ('supplier', 'provider', 'manufacturer')");
+
+    // v36: expand data sensitivity from public/private/secret to public/internal/confidential/restricted/secret.
+    // Legacy private/Privátní values become internal.
+    $pdo->exec("UPDATE nodes SET data_sensitivity = 'internal' WHERE data_sensitivity IN ('private', 'Privátní', 'privátní')");
 }
 
 function json_response($data, int $status = 200): void

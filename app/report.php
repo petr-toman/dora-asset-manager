@@ -30,7 +30,7 @@ $edgeLabels = [
     'administered_by' => 'spravuje', 'integrates_with' => 'integruje se s', 'authenticates_via' => 'autentizuje přes',
 ];
 $levelLabels = ['low' => 'Nízká', 'medium' => 'Střední', 'high' => 'Vysoká', 'critical' => 'Kritická', 'unrated' => 'Nehodnoceno'];
-$sensitivityLabels = ['public' => 'Veřejná', 'private' => 'Privátní', 'secret' => 'Tajná'];
+$sensitivityLabels = data_sensitivity_levels();
 function h($s): string { return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 function label_report(array $labels, $value): string { $v = (string)($value ?? ''); return $v === '' ? '—' : ($labels[$v] ?? $v); }
 function level_num_report($v): int { return ['low'=>1,'medium'=>2,'high'=>3,'critical'=>4][(string)$v] ?? 1; }

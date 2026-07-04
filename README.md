@@ -82,6 +82,19 @@ Od v33 má model fixních 9 slotů pro technologické oblasti assetů. První t�
 
 Datově jsou oblasti normalizované: tabulka `landscapes` obsahuje ID a text oblasti, vazební tabulka `nodes_landscapes` přiřazuje assety do oblastí. Asset může být v žádné, jedné nebo více oblastech. Karta assetu zobrazuje oblasti jako pevnou mřížku 3×3; prázdné sloty jsou zašedlé a read-only, aby zůstal zachovaný tvar UI a zároveň byly vidět případné vazby na nepojmenované oblasti.
 
+
+## Citlivost dat
+
+Od v36 používá aplikace pětistupňový číselník citlivosti dat:
+
+- `public` — Veřejná,
+- `internal` — Interní,
+- `confidential` — Důvěrná,
+- `restricted` — Vysoce důvěrná / citlivá,
+- `secret` — Tajná / kritická.
+
+Starší hodnota `private` z předchozích modelů se při migraci automaticky převádí na `internal`. Nové hodnoty se používají v kartě assetu, tabulce assetů, CSV validaci i HTML/DOCX reportech.
+
 ## CSV import assetů
 
 V pohledu **Assety tabulka** jsou tlačítka **Import CSV** a **Export CSV**.
@@ -270,9 +283,9 @@ Nové tlačítko **Plné zobrazení řádků / Kompaktní zobrazení řádků** 
 
 Nastavení režimu se ukládá do `localStorage` pro daný prohlížeč.
 
-## v28/v29/v30/v31/v32/v33/v34/v35 poznámka
+## v28/v29/v30/v31/v32/v33/v34/v35/v36 poznámka
 
-Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat. Verze v30 sjednocuje dokumentaci a interní název dynamického režimu třetích stran na `third_party`; historický API alias `supplier` zůstává jen kvůli zpětné kompatibilitě. Verze v31 upravuje detail assetu, tabulkové filtry, číselníkové pickery v tabulce vazeb a HTML/PDF report. Verze v32 zjemňuje grafové zobrazení: dvouřádkové labely uzlů, malý indikátor kritičnosti, tenčí hrany, čitelnější labely vazeb a sladěná legenda barev. Verze v33 přidává oblasti assetů (`landscapes`) jako fixních 9 slotů s M:N vazbou `nodes_landscapes`, filtrem grafu podle oblasti a checkboxy oblastí na kartě assetu. Verze v34 doplňuje volitelný automatický layout při akci **Nový view z aktuálního**; původní view se nepřepíše a layout se uloží jen do nově vytvořeného view. Verze v35 doplňuje tlačítko `⇄` pro prohození směru vazby v kartě assetu a v kartě vazby bez okamžitého zápisu do DB.
+Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat. Verze v30 sjednocuje dokumentaci a interní název dynamického režimu třetích stran na `third_party`; historický API alias `supplier` zůstává jen kvůli zpětné kompatibilitě. Verze v31 upravuje detail assetu, tabulkové filtry, číselníkové pickery v tabulce vazeb a HTML/PDF report. Verze v32 zjemňuje grafové zobrazení: dvouřádkové labely uzlů, malý indikátor kritičnosti, tenčí hrany, čitelnější labely vazeb a sladěná legenda barev. Verze v33 přidává oblasti assetů (`landscapes`) jako fixních 9 slotů s M:N vazbou `nodes_landscapes`, filtrem grafu podle oblasti a checkboxy oblastí na kartě assetu. Verze v34 doplňuje volitelný automatický layout při akci **Nový view z aktuálního**; původní view se nepřepíše a layout se uloží jen do nově vytvořeného view. Verze v35 doplňuje tlačítko `⇄` pro prohození směru vazby v kartě assetu a v kartě vazby bez okamžitého zápisu do DB. Verze v36 rozšiřuje číselník citlivosti dat na pět úrovní a legacy hodnotu `private` migruje na `internal`.
 
 
 
@@ -311,3 +324,8 @@ V sekci **Vazby assetu** na kartě assetu je u každé vazby malé tlačítko `�
 
 Prohození nemění typ vazby, kritičnost, popis ani ID vazby. Akce pouze upraví rozepsaný formulář; do databáze se změna uloží až po běžném kliknutí na **Uložit**.
 
+
+
+## v36: citlivost dat
+
+Číselník `data_sensitivity` má hodnoty `public`, `internal`, `confidential`, `restricted` a `secret`. UI zobrazuje popisky **Veřejná**, **Interní**, **Důvěrná**, **Vysoce důvěrná / citlivá** a **Tajná / kritická**. Starší `private` se při otevření modelu normalizuje na `internal`.

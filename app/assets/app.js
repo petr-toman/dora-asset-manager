@@ -26,7 +26,7 @@ const graphViewLayouts = {
 const uiLabels = {
     criticality: { low: 'Nízká', medium: 'Střední', high: 'Vysoká', critical: 'Kritická' },
     cia: { low: 'Nízká', medium: 'Střední', high: 'Vysoká', critical: 'Kritická' },
-    data_sensitivity: { public: 'Veřejná', private: 'Privátní', secret: 'Tajná' },
+    data_sensitivity: { public: 'Veřejná', internal: 'Interní', confidential: 'Důvěrná', restricted: 'Vysoce důvěrná / citlivá', secret: 'Tajná / kritická' },
     environment: { prod: 'Produkce', test: 'Test', dev: 'Vývoj', archive: 'Archiv', unknown: 'Neznámé' },
     status: { active: 'Aktivní', planned: 'Plánované', retired: 'Vyřazené', unknown: 'Neznámé' },
     lifecycle_state: { production: 'Produkce', test: 'Test', development: 'Vývoj', archived: 'Archivováno', unknown: 'Neznámé' }
@@ -81,7 +81,7 @@ function fillAssetDetailChoiceSelects() {
     fillChoiceSelect($('#nodeForm select[name="confidentiality"]'), meta.cia_levels || ['low','medium','high','critical'], uiLabels.cia);
     fillChoiceSelect($('#nodeForm select[name="integrity_level"]'), meta.cia_levels || ['low','medium','high','critical'], uiLabels.cia);
     fillChoiceSelect($('#nodeForm select[name="availability"]'), meta.cia_levels || ['low','medium','high','critical'], uiLabels.cia);
-    fillChoiceSelect($('#nodeForm select[name="data_sensitivity"]'), meta.data_sensitivities || ['public','private','secret'], uiLabels.data_sensitivity);
+    fillChoiceSelect($('#nodeForm select[name="data_sensitivity"]'), meta.data_sensitivities || ['public','internal','confidential','restricted','secret'], uiLabels.data_sensitivity);
     fillChoiceSelect($('#nodeForm select[name="environment"]'), meta.environments || ['prod','test','dev','archive','unknown'], uiLabels.environment);
     fillChoiceSelect($('#nodeForm select[name="status"]'), meta.statuses || ['active','planned','retired','unknown'], uiLabels.status);
     fillChoiceSelect($('#nodeForm select[name="lifecycle_state"]'), meta.lifecycle_states || ['production','test','development','archived','unknown'], uiLabels.lifecycle_state);
@@ -1281,7 +1281,7 @@ const choiceSets = {
         confidentiality: () => ['', ...(meta.cia_levels || ['low','medium','high','critical'])],
         integrity_level: () => ['', ...(meta.cia_levels || ['low','medium','high','critical'])],
         availability: () => ['', ...(meta.cia_levels || ['low','medium','high','critical'])],
-        data_sensitivity: () => ['', ...(meta.data_sensitivities || ['public','private','secret'])],
+        data_sensitivity: () => ['', ...(meta.data_sensitivities || ['public','internal','confidential','restricted','secret'])],
         environment: () => ['', ...(meta.environments || ['prod','test','dev','archive','unknown'])],
         status: () => ['', ...(meta.statuses || ['active','planned','retired','unknown'])],
         lifecycle_state: () => ['', ...(meta.lifecycle_states || ['production','test','development','archived','unknown'])]

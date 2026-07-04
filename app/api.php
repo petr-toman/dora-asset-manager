@@ -41,7 +41,7 @@ try {
                 'edge_types' => edge_types(),
                 'criticalities' => ['low', 'medium', 'high', 'critical'],
                 'cia_levels' => ['low', 'medium', 'high', 'critical'],
-                'data_sensitivities' => ['public', 'private', 'secret'],
+                'data_sensitivities' => array_keys(data_sensitivity_levels()),
                 'data_categories' => ['personal', 'company_internal', 'general', 'financial', 'business', 'administrative', 'technological'],
                 'environments' => ['prod', 'test', 'dev', 'archive', 'unknown'],
                 'statuses' => ['active', 'planned', 'retired', 'unknown'],
@@ -943,6 +943,7 @@ function normalize_edge_type_value(string $type): string
 function normalize_node_payload(array &$data): void
 {
     if (isset($data['type'])) $data['type'] = normalize_node_type_value((string)$data['type']);
+    if (isset($data['data_sensitivity'])) $data['data_sensitivity'] = normalize_data_sensitivity_value((string)$data['data_sensitivity']);
 }
 
 function validate_node_payload(array $data): void
@@ -954,7 +955,7 @@ function validate_node_payload(array $data): void
     if (!array_key_exists($type, node_types())) json_response(['ok' => false, 'error' => 'Neplatný typ assetu: ' . $type], 400);
     validate_choice($data, 'criticality', ['low','medium','high','critical']);
     foreach (['confidentiality','integrity_level','availability'] as $f) validate_choice($data, $f, ['low','medium','high','critical']);
-    validate_choice($data, 'data_sensitivity', ['public','private','secret']);
+    validate_choice($data, 'data_sensitivity', array_keys(data_sensitivity_levels()));
     validate_choice($data, 'environment', ['prod','test','dev','archive','unknown']);
     validate_choice($data, 'status', ['active','planned','retired','unknown']);
     validate_choice($data, 'lifecycle_state', ['production','test','development','archived','unknown']);
@@ -1359,6 +1360,7 @@ function normalize_import_node_row(array &$data): void
         if (is_string($v)) $data[$k] = trim($v);
     }
     if (isset($data['type'])) $data['type'] = normalize_node_type_value((string)$data['type']);
+    if (isset($data['data_sensitivity'])) $data['data_sensitivity'] = normalize_data_sensitivity_value((string)$data['data_sensitivity']);
     foreach (['last_reviewed_at'] as $field) {
         if (!empty($data[$field])) {
             $data[$field] = normalize_import_date((string)$data[$field]);
@@ -1400,7 +1402,7 @@ function collect_node_validation_errors(array $data, bool $updateById = false): 
         'confidentiality' => ['low','medium','high','critical'],
         'integrity_level' => ['low','medium','high','critical'],
         'availability' => ['low','medium','high','critical'],
-        'data_sensitivity' => ['public','private','secret'],
+        'data_sensitivity' => array_keys(data_sensitivity_levels()),
         'environment' => ['prod','test','dev','archive','unknown'],
         'status' => ['active','planned','retired','unknown'],
         'lifecycle_state' => ['production','test','development','archived','unknown'],

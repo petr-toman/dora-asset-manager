@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v36 - Expanded data sensitivity classification
+
+- Rozšířen číselník `data_sensitivity` z původních hodnot `public/private/secret` na pět úrovní: `public`, `internal`, `confidential`, `restricted`, `secret`.
+- UI popisky jsou: **Veřejná**, **Interní**, **Důvěrná**, **Vysoce důvěrná / citlivá**, **Tajná / kritická**.
+- Starší hodnota `private` se při otevření/migraci modelu automaticky mapuje na `internal`.
+- Dropdowny na kartě assetu, doubleclick výběry v tabulce assetů, validace API/CSV importu a HTML/DOCX reporty používají nový číselník.
+- Demo seed byl upraven tak, aby ukazoval více úrovní nové škály.
+- Aktualizovány `README.md`, `PROJECT_STATE.md` a `AI-PROMPT.md` na stav v36.
+
 ## v35 - Reverse edge direction from relationship editors
 
 - Na kartě assetu v sekci **Vazby assetu** přibylo u každé vazby tlačítko `⇄` pro prohození Asset A a Asset B.

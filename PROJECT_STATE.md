@@ -1,8 +1,8 @@
 # PROJECT_STATE.md
 
-## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v35
+## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v36
 
-Tento dokument zachycuje aktuální stav aplikace po 35 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
+Tento dokument zachycuje aktuální stav aplikace po 36 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
 
 ## 1. Účel aplikace
 
@@ -20,8 +20,8 @@ Mentální model aplikace je: **webová aplikace jako editor, SQLite soubor jako
 
 ## 2. Aktuální verze
 
-- Aktuální iterace: `v35-reverse-edge-direction`
-- Poslední akceptovaný základ: `v34-clone-view-layouts`; v35 doplňuje bezpečné prohození směru vazeb v kartě assetu i v kartě vazby
+- Aktuální iterace: `v36-data-sensitivity-levels`
+- Poslední akceptovaný základ: `v35-reverse-edge-direction`; v36 rozšiřuje číselník citlivosti dat a migruje legacy `private` na `internal`
 - Aplikace běží na portu: `8888`
 - URL: `http://localhost:8888`
 
@@ -215,6 +215,19 @@ Hlavní atributy uzlu:
 - `residual_risk`,
 - `created_at`,
 - `updated_at`.
+
+
+### Citlivost dat
+
+Aktuální číselník `data_sensitivity` má pět úrovní:
+
+- `public` — Veřejná,
+- `internal` — Interní,
+- `confidential` — Důvěrná,
+- `restricted` — Vysoce důvěrná / citlivá,
+- `secret` — Tajná / kritická.
+
+Starší modely s hodnotou `private` se při otevření automaticky migrují na `internal`.
 
 ### Hlavní tabulka `edges`
 
@@ -667,3 +680,10 @@ Verze v35 doplňuje malý editační nástroj pro opravu směru vazeb. V sekci *
 
 Prohození mění pouze `source_node_id` a `target_node_id`. Typ vazby, kritičnost, popis a ID vazby se nemění. Akce není okamžité uložení do databáze; změna se ukládá až běžným tlačítkem **Uložit** na kartě assetu nebo kartě vazby.
 
+
+
+## v36 doplnění
+
+Verze v36 rozšiřuje klasifikaci citlivosti dat z původní trojice na pět úrovní: `public`, `internal`, `confidential`, `restricted`, `secret`. UI popisky jsou **Veřejná**, **Interní**, **Důvěrná**, **Vysoce důvěrná / citlivá** a **Tajná / kritická**.
+
+Při otevření starších SQLite modelů se hodnota `private` automaticky mapuje na `internal`. Nový číselník používá API metadata, karta assetu, tabulka assetů, CSV import/validace a HTML/DOCX reporty.

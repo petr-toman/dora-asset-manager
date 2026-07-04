@@ -17,6 +17,8 @@ $nodes = $pdo->query("SELECT n.*,
     ORDER BY n.type, n.name")->fetchAll();
 $edges = $pdo->query('SELECT e.*, s.name AS source_name, s.type AS source_type, t.name AS target_name, t.type AS target_type FROM edges e JOIN nodes s ON s.id = e.source_node_id JOIN nodes t ON t.id = e.target_node_id ORDER BY s.name, e.type, t.name')->fetchAll();
 
+$sensitivityLabels = data_sensitivity_levels();
+
 $edgeLabels = [
     'contains' => 'obsahuje', 'hosts' => 'hostuje', 'runs_on' => 'běží na', 'stores' => 'ukládá',
     'processes_data' => 'zpracovává data', 'uses_data' => 'používá data', 'supports_process' => 'podporuje proces',
@@ -186,7 +188,7 @@ foreach ($ranked as $n) {
     $body .= paragraph($n['name'].' — '.$n['_level'].' / '.($n['_score'] === null ? '—' : $n['_score']), 'Heading2');
     if (trim((string)$n['description']) !== '') $body .= paragraph($n['description']);
     $body .= kv_table([
-        ['Typ', $n['type']], ['Kritičnost', $n['criticality']], ['Owner', $n['owner']], ['Business owner', $n['business_owner']], ['Technical owner', $n['technical_owner']], ['Vendor / manufacturer', $n['vendor_manufacturer']], ['Prostředí', $n['environment']], ['Oblasti', $n['landscapes'] ?? ''], ['Stav', $n['status']], ['Lifecycle', $n['lifecycle_state']], ['C/I/A', val($n['confidentiality']).' / '.val($n['integrity_level']).' / '.val($n['availability'])], ['RTO/RPO/MTD', val($n['rto_hours']).' / '.val($n['rpo_hours']).' / '.val($n['mtd_hours']).' h'], ['Citlivost dat', $n['data_sensitivity']], ['Kategorie dat', $n['data_categories']], ['Lokalita', $n['location']], ['Poslední revize', $n['last_reviewed_at']], ['Hrozby', $n['threats']], ['Rizikové scénáře', $n['risk_scenarios']], ['Opatření / kontroly', $n['risk_controls']], ['Reziduální riziko', $n['residual_risk']], ['Good-to-know poznámky', $n['good_to_know']],
+        ['Typ', $n['type']], ['Kritičnost', $n['criticality']], ['Owner', $n['owner']], ['Business owner', $n['business_owner']], ['Technical owner', $n['technical_owner']], ['Vendor / manufacturer', $n['vendor_manufacturer']], ['Prostředí', $n['environment']], ['Oblasti', $n['landscapes'] ?? ''], ['Stav', $n['status']], ['Lifecycle', $n['lifecycle_state']], ['C/I/A', val($n['confidentiality']).' / '.val($n['integrity_level']).' / '.val($n['availability'])], ['RTO/RPO/MTD', val($n['rto_hours']).' / '.val($n['rpo_hours']).' / '.val($n['mtd_hours']).' h'], ['Citlivost dat', val($sensitivityLabels[(string)($n['data_sensitivity'] ?? '')] ?? $n['data_sensitivity'])], ['Kategorie dat', $n['data_categories']], ['Lokalita', $n['location']], ['Poslední revize', $n['last_reviewed_at']], ['Hrozby', $n['threats']], ['Rizikové scénáře', $n['risk_scenarios']], ['Opatření / kontroly', $n['risk_controls']], ['Reziduální riziko', $n['residual_risk']], ['Good-to-know poznámky', $n['good_to_know']],
     ]);
     if (!empty($byNodeOut[(int)$n['id']])) {
         $body .= paragraph('Odchozí vazby', 'Heading3');

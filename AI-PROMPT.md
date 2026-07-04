@@ -2,7 +2,7 @@
 
 ## Prompt pro znovuvytvoření aktuální aplikace od začátku
 
-Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v35.
+Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v36.
 
 ---
 
@@ -340,9 +340,13 @@ Kritičnost/CIA hodnoty:
 
 Citlivost dat:
 
-- `public`
-- `private`
-- `secret`
+- `public` — Veřejná
+- `internal` — Interní
+- `confidential` — Důvěrná
+- `restricted` — Vysoce důvěrná / citlivá
+- `secret` — Tajná / kritická
+
+Legacy hodnota `private` se při otevření starších modelů mapuje na `internal`.
 
 Kategorie dat:
 
@@ -923,4 +927,10 @@ When a non-original layout is selected, the frontend must create the new view fi
 Relationship direction can be reversed from both relationship editors. In the asset detail card, each row in **Vazby assetu** has a small `⇄` button that swaps Asset A and Asset B, i.e. swaps `source_node_id` and `target_node_id`. The current asset remains locked by the row renderer on whichever side it belongs after the swap.
 
 The edge modal has the same `⇄` action between **Zdroj** and **Cíl**. The swap must not change edge type, criticality, description or edge ID. The swap must not write to DB immediately; it only changes the form/row state and is persisted by the normal Save action.
+
+
+
+## v36-data-sensitivity-levels
+
+Aplikace používá rozšířený číselník `data_sensitivity`: `public`, `internal`, `confidential`, `restricted`, `secret` s UI popisky **Veřejná**, **Interní**, **Důvěrná**, **Vysoce důvěrná / citlivá**, **Tajná / kritická**. Starší `private` se automaticky normalizuje na `internal`. Nový číselník musí být použit v metadatech API, kartě assetu, tabulce assetů, CSV validaci/importu a reportech.
 
