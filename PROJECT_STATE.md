@@ -1,8 +1,8 @@
 # PROJECT_STATE.md
 
-## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v36
+## Evidence IT aktiv / DORA Asset Map — stav projektu ve verzi v37
 
-Tento dokument zachycuje aktuální stav aplikace po 36 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
+Tento dokument zachycuje aktuální stav aplikace po 37 iteracích vývoje a slouží jako rychlá orientace pro další vývoj nebo pro navázání v novém AI vlákně.
 
 ## 1. Účel aplikace
 
@@ -20,8 +20,8 @@ Mentální model aplikace je: **webová aplikace jako editor, SQLite soubor jako
 
 ## 2. Aktuální verze
 
-- Aktuální iterace: `v36-data-sensitivity-levels`
-- Poslední akceptovaný základ: `v35-reverse-edge-direction`; v36 rozšiřuje číselník citlivosti dat a migruje legacy `private` na `internal`
+- Aktuální iterace: `v37-development-support`
+- Poslední akceptovaný základ: `v36-data-sensitivity-levels`; v37 přidává Makefile a vývojový docker-compose override bez změny runtime logiky aplikace
 - Aplikace běží na portu: `8888`
 - URL: `http://localhost:8888`
 
@@ -43,6 +43,8 @@ Aktuální základní struktura projektu:
  dora-assets/
  ├── Dockerfile
  ├── docker-compose.yml
+ ├── docker-compose.dev.yml
+ ├── Makefile
  ├── README.md
  ├── PROJECT_STATE.md
  ├── CHANGELOG.md
@@ -85,6 +87,17 @@ volumes:
 ```
 
 Named volume je zvolen záměrně kvůli očekávané Docker semantice: data přežijí `docker compose up --build`, rebuild image i `docker compose down`, ale `docker compose down -v` záměrně odstraní volume a provede čistý reset dat. SQLite modely lze nadále přenášet přes funkce aplikace `Stáhnout DB` a `Nahrát DB`.
+
+Od v37 projekt obsahuje také `Makefile` a `docker-compose.dev.yml`. Běžný režim (`make up`) používá named volume stejně jako základní `docker-compose.yml`. Vývojový režim (`make dev`) používá compose override s bind mounty `./app:/var/www/html` a `./data:/data`, takže lze upravovat PHP/JS/CSS soubory bez rebuild image a data jsou v lokálním adresáři `./data`.
+
+Dostupné make cíle:
+
+```text
+make up          docker compose down + docker compose up -d --build
+make dev         docker compose down + docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+make down        docker compose down
+make initialize  docker compose down -v + docker compose build --no-cache + docker compose up -d
+```
 
 ## 5. Licence, gitignore a runtime data
 
@@ -687,3 +700,10 @@ Prohození mění pouze `source_node_id` a `target_node_id`. Typ vazby, kritičn
 Verze v36 rozšiřuje klasifikaci citlivosti dat z původní trojice na pět úrovní: `public`, `internal`, `confidential`, `restricted`, `secret`. UI popisky jsou **Veřejná**, **Interní**, **Důvěrná**, **Vysoce důvěrná / citlivá** a **Tajná / kritická**.
 
 Při otevření starších SQLite modelů se hodnota `private` automaticky mapuje na `internal`. Nový číselník používá API metadata, karta assetu, tabulka assetů, CSV import/validace a HTML/DOCX reporty.
+
+
+## v37 doplnění
+
+Verze v37 je provozně-vývojová iterace bez změny aplikačního datového modelu a bez změny UI funkcí. Přidává `Makefile` a `docker-compose.dev.yml`.
+
+`make up` slouží pro běžný rebuild a start aplikace na pozadí nad Docker named volume. `make dev` spouští vývojový režim s bind mounty `./app` a `./data`; změny ve zdrojových souborech jsou okamžitě dostupné v kontejneru. `make initialize` provede vědomý reset běžného named volume a čistý rebuild. Lokální dev data v `./data` se tím nemažou automaticky.

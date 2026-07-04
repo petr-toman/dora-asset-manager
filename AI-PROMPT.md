@@ -2,7 +2,7 @@
 
 ## Prompt pro znovuvytvoření aktuální aplikace od začátku
 
-Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v36.
+Tento soubor obsahuje zadání pro ChatGPT nebo jinou AI, podle kterého má být možné znovu vytvořit aplikaci **Evidence IT aktiv / DORA Asset Map** ve stavu odpovídajícím verzi v37.
 
 ---
 
@@ -37,6 +37,8 @@ Aplikace má být jednoduchá, samostatná, přenositelná a spustitelná pomoc�
 docker compose up --build
 ```
 
+Součástí projektu musí být také `Makefile` se zkratkami `up`, `dev`, `down` a `initialize`.
+
 A má běžet na:
 
 ```text
@@ -51,6 +53,8 @@ Vytvoř projektovou strukturu:
 dora-assets/
 ├── Dockerfile
 ├── docker-compose.yml
+├── docker-compose.dev.yml
+├── Makefile
 ├── README.md
 ├── PROJECT_STATE.md
 ├── CHANGELOG.md
@@ -95,6 +99,41 @@ docker compose up -d
 ```
 
 README musí zároveň upozornit, že `down -v` odstraní datový volume a vytvoří se nový seed demo model. Pro běžný rebuild bez ztráty dat má stačit `docker compose up -d --build` nebo `docker compose down` bez `-v` a potom `docker compose up -d`.
+
+Přidej `Makefile`:
+
+```makefile
+.PHONY: up dev down initialize
+
+up:
+	docker compose down
+	docker compose up -d --build
+
+dev:
+	docker compose down
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+down:
+	docker compose down
+
+initialize:
+	docker compose down -v
+	docker compose build --no-cache
+	docker compose up -d
+```
+
+Přidej `docker-compose.dev.yml`:
+
+```yaml
+services:
+  dora-assets:
+    volumes:
+      - ./app:/var/www/html
+      - ./data:/data
+    restart: "no"
+```
+
+README musí vysvětlit rozdíl: běžný režim používá Docker named volume `dora_assets_data`, zatímco `make dev` používá lokální bind mount `./data`. `make initialize` resetuje named volume, ale lokální dev data v `./data` nemaže automaticky.
 
 `Dockerfile` musí instalovat podporu pro SQLite a ZIP:
 
@@ -934,3 +973,8 @@ The edge modal has the same `⇄` action between **Zdroj** and **Cíl**. The swa
 
 Aplikace používá rozšířený číselník `data_sensitivity`: `public`, `internal`, `confidential`, `restricted`, `secret` s UI popisky **Veřejná**, **Interní**, **Důvěrná**, **Vysoce důvěrná / citlivá**, **Tajná / kritická**. Starší `private` se automaticky normalizuje na `internal`. Nový číselník musí být použit v metadatech API, kartě assetu, tabulce assetů, CSV validaci/importu a reportech.
 
+
+
+## v37-development-support
+
+Projekt obsahuje `Makefile` a `docker-compose.dev.yml` pro vývojový provoz. `make up` je běžný rebuild/start na pozadí, `make dev` používá bind mounty `./app:/var/www/html` a `./data:/data`, `make down` zastaví stack bez mazání dat a `make initialize` provede vědomý reset named volume a čistý rebuild. Tato iterace nemění aplikační datový model ani UI chování.

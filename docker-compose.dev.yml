@@ -1,0 +1,6 @@
+services:
+  dora-assets:
+    volumes:
+      - ./app:/var/www/html
+      - ./data:/data
+    restart: "no"

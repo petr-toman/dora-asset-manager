@@ -16,7 +16,16 @@ Spuštění na pozadí:
 docker compose up -d --build
 ```
 
-Full rebuild kontejneru včetně resetu datového volume:
+Od v37 jsou k dispozici i zkratky přes `Makefile`:
+
+```bash
+make up          # běžný rebuild a start na pozadí
+make dev         # vývojový režim s bind mountem ./app a ./data
+make down        # zastavení kontejneru bez smazání datového volume
+make initialize  # čistý rebuild a reset Docker named volume
+```
+
+Full rebuild kontejneru včetně resetu datového volume lze provést také ručně:
 
 ```bash
 docker compose down -v && docker compose build
@@ -41,6 +50,8 @@ SQLite modely/databáze jsou uložené uvnitř kontejneru v cestě `/data`, kter
 
 `docker-compose.yml` používá persistentní named volume `dora_assets_data`. Data tedy přežijí rebuild image i `docker compose down`, ale při `docker compose down -v` se volume smaže. To je záměrné chování pro čistou reinstalaci/reset dat.
 
+Vývojový override `docker-compose.dev.yml` přepíná `/var/www/html` na bind mount `./app` a `/data` na lokální `./data`. To je vhodné pro úpravy PHP/JS/CSS bez rebuildování image. Dev režim tedy nepoužívá named volume `dora_assets_data`; lokální obsah `./data` zůstává na disku i po `make initialize`, pokud jej uživatel nesmaže ručně.
+
 Při prvním spuštění prázdného datového volume se vytvoří ukázkový model `demo.sqlite` se seed daty z `app/demo_seed_data.json`. Pokud aplikace najde starší `/data/assets.sqlite` a adresář modelů je prázdný, zkopíruje jej do `/data/models/assets.sqlite` jako běžný model a zároveň vytvoří `demo.sqlite`.
 
 ## Funkce prototypu
@@ -62,6 +73,7 @@ Při prvním spuštění prázdného datového volume se vytvoří ukázkový mo
 - více modelů/projektů jako samostatné SQLite dokumenty
 - nový prázdný model, kopie aktuálního modelu, přepnutí modelu, bezpečné smazání do koše
 - stažení/nahrání SQLite DB souboru pro výměnu modelů mezi instancemi aplikace
+- development support: `Makefile` a `docker-compose.dev.yml` pro rychlé spuštění běžného/dev/reset režimu
 - excel-like tabulka assetů s editací buněk, sticky identifikačními sloupci, read-only sloupcem `Oblasti`, DOM-preserving filtrováním, sortováním a copy/paste přes TSV
 - import assetů z CSV s preview a validací před zápisem do DB
 - export assetů do CSV jako šablona nebo přenosový formát
@@ -283,9 +295,9 @@ Nové tlačítko **Plné zobrazení řádků / Kompaktní zobrazení řádků** 
 
 Nastavení režimu se ukládá do `localStorage` pro daný prohlížeč.
 
-## v28/v29/v30/v31/v32/v33/v34/v35/v36 poznámka
+## v28/v29/v30/v31/v32/v33/v34/v35/v36/v37 poznámka
 
-Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat. Verze v30 sjednocuje dokumentaci a interní název dynamického režimu třetích stran na `third_party`; historický API alias `supplier` zůstává jen kvůli zpětné kompatibilitě. Verze v31 upravuje detail assetu, tabulkové filtry, číselníkové pickery v tabulce vazeb a HTML/PDF report. Verze v32 zjemňuje grafové zobrazení: dvouřádkové labely uzlů, malý indikátor kritičnosti, tenčí hrany, čitelnější labely vazeb a sladěná legenda barev. Verze v33 přidává oblasti assetů (`landscapes`) jako fixních 9 slotů s M:N vazbou `nodes_landscapes`, filtrem grafu podle oblasti a checkboxy oblastí na kartě assetu. Verze v34 doplňuje volitelný automatický layout při akci **Nový view z aktuálního**; původní view se nepřepíše a layout se uloží jen do nově vytvořeného view. Verze v35 doplňuje tlačítko `⇄` pro prohození směru vazby v kartě assetu a v kartě vazby bez okamžitého zápisu do DB. Verze v36 rozšiřuje číselník citlivosti dat na pět úrovní a legacy hodnotu `private` migruje na `internal`.
+Verze v28 doplnila repozitářovou hygienu a provozní dokumentaci: `LICENSE`, `.gitignore`, placeholdery `.gitkeep` pro runtime datové adresáře a Docker persistentní `/data`. Verze v29 zpřesňuje Docker storage: místo bind mountu používá named volume `dora_assets_data`, aby běžný rebuild/data zachoval, ale `docker compose down -v` záměrně provedl čistý reset dat. Verze v30 sjednocuje dokumentaci a interní název dynamického režimu třetích stran na `third_party`; historický API alias `supplier` zůstává jen kvůli zpětné kompatibilitě. Verze v31 upravuje detail assetu, tabulkové filtry, číselníkové pickery v tabulce vazeb a HTML/PDF report. Verze v32 zjemňuje grafové zobrazení: dvouřádkové labely uzlů, malý indikátor kritičnosti, tenčí hrany, čitelnější labely vazeb a sladěná legenda barev. Verze v33 přidává oblasti assetů (`landscapes`) jako fixních 9 slotů s M:N vazbou `nodes_landscapes`, filtrem grafu podle oblasti a checkboxy oblastí na kartě assetu. Verze v34 doplňuje volitelný automatický layout při akci **Nový view z aktuálního**; původní view se nepřepíše a layout se uloží jen do nově vytvořeného view. Verze v35 doplňuje tlačítko `⇄` pro prohození směru vazby v kartě assetu a v kartě vazby bez okamžitého zápisu do DB. Verze v36 rozšiřuje číselník citlivosti dat na pět úrovní a legacy hodnotu `private` migruje na `internal`. Verze v37 přidává `Makefile` a `docker-compose.dev.yml` pro jednodušší běžné spuštění, vývojový bind-mount režim a čistou inicializaci.
 
 
 
@@ -329,3 +341,10 @@ Prohození nemění typ vazby, kritičnost, popis ani ID vazby. Akce pouze uprav
 ## v36: citlivost dat
 
 Číselník `data_sensitivity` má hodnoty `public`, `internal`, `confidential`, `restricted` a `secret`. UI zobrazuje popisky **Veřejná**, **Interní**, **Důvěrná**, **Vysoce důvěrná / citlivá** a **Tajná / kritická**. Starší `private` se při otevření modelu normalizuje na `internal`.
+
+
+## v37: development support
+
+Verze v37 přidává `Makefile` a `docker-compose.dev.yml`. Běžný režim přes `make up` dál používá Docker named volume `dora_assets_data`. Vývojový režim `make dev` používá bind mounty `./app:/var/www/html` a `./data:/data`, takže změny v aplikačních souborech jsou v kontejneru dostupné bez rebuild image.
+
+`make initialize` provede vědomý reset běžného Docker named volume (`docker compose down -v`), rebuild bez cache a start aplikace. Lokální dev data v `./data` se tím nemažou automaticky.

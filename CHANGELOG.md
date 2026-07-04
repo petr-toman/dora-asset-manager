@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v37 - Development Makefile and compose override
+
+- Přidán `Makefile` se zkratkami `make up`, `make dev`, `make down` a `make initialize`.
+- Přidán `docker-compose.dev.yml` pro vývojový režim s bind mounty `./app:/var/www/html` a `./data:/data` a s `restart: "no"`.
+- `make up` spustí běžný rebuild/start na pozadí nad Docker named volume `dora_assets_data`.
+- `make dev` spustí aplikaci v popředí přes compose override, aby byly vidět logy a změny v `./app` se projevily bez rebuild image.
+- `make initialize` provede čistý reset běžného named volume přes `docker compose down -v`, rebuild bez cache a start aplikace.
+- Aktualizovány `README.md`, `PROJECT_STATE.md` a `AI-PROMPT.md` na stav v37.
+
 ## v36 - Expanded data sensitivity classification
 
 - Rozšířen číselník `data_sensitivity` z původních hodnot `public/private/secret` na pět úrovní: `public`, `internal`, `confidential`, `restricted`, `secret`.
