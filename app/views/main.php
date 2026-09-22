@@ -6,6 +6,7 @@
     <title>Evidence IT aktiv / DORA asset map</title>
     <link rel="stylesheet" href="/assets/style.css">
     <script src="https://unpkg.com/cytoscape@3.30.3/dist/cytoscape.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
 <header class="topbar">
@@ -102,6 +103,15 @@
                 <label>Velikost mřížky [px]<input id="gridSize" type="number" min="10" max="200" step="5" value="40"></label>
                 <button id="btnSnapNow">Zarovnat aktuální view</button>
             </div>
+        </section>
+
+        <section class="panel export-map-panel">
+            <h2>Export mapy</h2>
+            <div class="view-actions">
+                <button id="btnExportMapPng" type="button">Export PNG</button>
+                <button id="btnExportMapPdf" type="button">Export PDF A3</button>
+            </div>
+            <p class="hint">Exportuje aktuálně zobrazený/filtrovaný graf v celé ploše mapy, ne pouze viditelný výřez obrazovky.</p>
         </section>
 
         <section class="panel model-panel">
